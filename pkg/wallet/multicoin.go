@@ -6,17 +6,12 @@ import (
 
 type Coiner interface {
 	Walleter
-	DmsgBlockhainer
+	Blockhainer
 }
 
 // DmsgBlockhainer interface for all blockchain methods executed over remote api using dmsg
-type DmsgBlockhainer interface {
-	GetWalletBalance(wltID string) func()
-	GetTransaction(txid string) func()
-	GetFeeEstimate(coin CoinType) func()
-	CreateTransaction() func()
-	SignTransaction() func()
-	SendTransaction() func()
+type Blockhainer interface {
+	GetBalance() interface{}
 }
 
 // Walleter interface for wallet.Service methods used by the API
@@ -34,3 +29,5 @@ type Walleter interface {
 	UpdateWalletLabel(wltID, label string) error
 	WalletDir() (string, error)
 }
+
+

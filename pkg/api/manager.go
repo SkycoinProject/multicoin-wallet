@@ -31,5 +31,6 @@ func (am *CoinManager) SetupCoinRoutes(prefix string, webHandler func(endpoint s
 	// TODO(therealssj): add all routes
 	for ticker, coin := range am.Coins {
 		webHandler(fmt.Sprintf("%s/%s/getbalance", prefix, ticker), walletCreateHandler(coin))
+
 	}
 }

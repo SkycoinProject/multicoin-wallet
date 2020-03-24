@@ -93,15 +93,6 @@ func (w *DeterministicWallet) GetAddresses() []cipher.Addresser {
 	return w.Entries.getAddresses()
 }
 
-// GetSkycoinAddresses returns all Skycoin addresses in wallet. The wallet's coin type must be Skycoin.
-func (w *DeterministicWallet) GetSkycoinAddresses() ([]cipher.Address, error) {
-	if w.Meta.Coin() != CoinTypeSkycoin {
-		return nil, errors.New("DeterministicWallet coin type is not skycoin")
-	}
-
-	return w.Entries.getSkycoinAddresses(), nil
-}
-
 // GetEntries returns a copy of all entries held by the wallet
 func (w *DeterministicWallet) GetEntries() Entries {
 	return w.Entries.clone()
@@ -118,12 +109,12 @@ func (w *DeterministicWallet) GetEntryAt(i int) Entry {
 }
 
 // GetEntry returns entry of given address
-func (w *DeterministicWallet) GetEntry(a cipher.Address) (Entry, bool) {
+func (w *DeterministicWallet) GetEntry(a cipher.Addresser) (Entry, bool) {
 	return w.Entries.get(a)
 }
 
 // HasEntry returns true if the wallet has an Entry with a given cipher.Address.
-func (w *DeterministicWallet) HasEntry(a cipher.Address) bool {
+func (w *DeterministicWallet) HasEntry(a cipher.Addresser) bool {
 	return w.Entries.has(a)
 }
 

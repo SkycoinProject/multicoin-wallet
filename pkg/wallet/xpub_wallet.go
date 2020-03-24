@@ -113,15 +113,6 @@ func (w *XPubWallet) GetAddresses() []cipher.Addresser {
 	return w.Entries.getAddresses()
 }
 
-// GetSkycoinAddresses returns all Skycoin addresses in wallet. The wallet's coin type must be Skycoin.
-func (w *XPubWallet) GetSkycoinAddresses() ([]cipher.Address, error) {
-	if w.Meta.Coin() != CoinTypeSkycoin {
-		return nil, errors.New("XPubWallet coin type is not skycoin")
-	}
-
-	return w.Entries.getSkycoinAddresses(), nil
-}
-
 // GetEntries returns a copy of all entries held by the wallet
 func (w *XPubWallet) GetEntries() Entries {
 	return w.Entries.clone()
@@ -138,12 +129,12 @@ func (w *XPubWallet) GetEntryAt(i int) Entry {
 }
 
 // GetEntry returns entry of given address
-func (w *XPubWallet) GetEntry(a cipher.Address) (Entry, bool) {
+func (w *XPubWallet) GetEntry(a cipher.Addresser) (Entry, bool) {
 	return w.Entries.get(a)
 }
 
 // HasEntry returns true if the wallet has an Entry with a given cipher.Address.
-func (w *XPubWallet) HasEntry(a cipher.Address) bool {
+func (w *XPubWallet) HasEntry(a cipher.Addresser) bool {
 	return w.Entries.has(a)
 }
 

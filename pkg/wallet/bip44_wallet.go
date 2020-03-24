@@ -129,7 +129,7 @@ func (w *Bip44Wallet) GetEntryAt(i int) Entry {
 }
 
 // GetEntry returns entry of given address
-func (w *Bip44Wallet) GetEntry(a cipher.Address) (Entry, bool) {
+func (w *Bip44Wallet) GetEntry(a cipher.Addresser) (Entry, bool) {
 	if e, ok := w.ExternalEntries.get(a); ok {
 		return e, true
 	}
@@ -138,7 +138,7 @@ func (w *Bip44Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 }
 
 // HasEntry returns true if the wallet has an Entry with a given cipher.Address.
-func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
+func (w *Bip44Wallet) HasEntry(a cipher.Addresser) bool {
 	return w.ExternalEntries.has(a) || w.ChangeEntries.has(a)
 }
 

@@ -485,8 +485,8 @@ type Wallet interface {
 	Fingerprint() string
 	GetAddresses() []cipher.Addresser
 	GetEntryAt(i int) Entry
-	GetEntry(cipher.Address) (Entry, bool)
-	HasEntry(cipher.Address) bool
+	GetEntry(cipher.Addresser) (Entry, bool)
+	HasEntry(cipher.Addresser) bool
 	EntriesLen() int
 	GetEntries() Entries
 

@@ -92,12 +92,12 @@ func (w *CollectionWallet) GetEntryAt(i int) Entry {
 }
 
 // GetEntry returns entry of given address
-func (w *CollectionWallet) GetEntry(a cipher.Address) (Entry, bool) {
+func (w *CollectionWallet) GetEntry(a cipher.Addresser) (Entry, bool) {
 	return w.Entries.get(a)
 }
 
 // HasEntry returns true if the wallet has an Entry with a given cipher.Address.
-func (w *CollectionWallet) HasEntry(a cipher.Address) bool {
+func (w *CollectionWallet) HasEntry(a cipher.Addresser) bool {
 	return w.Entries.has(a)
 }
 

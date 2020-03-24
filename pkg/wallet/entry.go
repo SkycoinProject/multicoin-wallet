@@ -66,32 +66,24 @@ func (entries Entries) clone() Entries {
 	return append(Entries{}, entries...)
 }
 
-func (entries Entries) has(a cipher.Address) bool {
+func (entries Entries) has(a cipher.Addresser) bool {
 	// This doesn't use getEntry() to avoid copying an Entry in the return value,
 	// which may contain a secret key
 	for _, e := range entries {
-		if e.SkycoinAddress() == a {
+		if e.Address.String() == a.String() {
 			return true
 		}
 	}
 	return false
 }
 
-func (entries Entries) get(a cipher.Address) (Entry, bool) {
+func (entries Entries) get(a cipher.Addresser) (Entry, bool) {
 	for _, e := range entries {
-		if e.SkycoinAddress() == a {
+		if e.Address.String() == a.String() {
 			return e, true
 		}
 	}
 	return Entry{}, false
-}
-
-func (entries Entries) getSkycoinAddresses() []cipher.Address {
-	addrs := make([]cipher.Address, len(entries))
-	for i, e := range entries {
-		addrs[i] = e.SkycoinAddress()
-	}
-	return addrs
 }
 
 func (entries Entries) getAddresses() []cipher.Addresser {
