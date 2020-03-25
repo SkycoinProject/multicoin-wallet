@@ -116,7 +116,7 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 	case CoinTypeBitcoin:
 		a, err = cipher.DecodeBase58BitcoinAddress(re.Address)
 	case CoinTypeEthereum:
-		a, err = eth.DecodeEthereumAddress()
+		a = eth.DecodeHexToEthereumAddress(re.Address)
 	default:
 		logger.Panicf("Invalid coin type %q", coinType)
 	}

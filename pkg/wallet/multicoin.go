@@ -29,5 +29,3 @@ type Walleter interface {
 	UpdateWalletLabel(wltID, label string) error
 	WalletDir() (string, error)
 }
-
-

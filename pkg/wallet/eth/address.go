@@ -1,23 +1,25 @@
 package eth
 
 import (
+	"crypto/subtle"
+
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // EthereumAddress is a eth address
 type EthereumAddress struct {
-	Key  common.Hash    // 32 byte pubkey hash
-	Addr common.Address // 20 byte address
+	Addr common.Address // 20 byte address of an Ethereum account
 }
 
 func (addr EthereumAddress) Bytes() []byte {
-	return addr.Addr[:]
+	return addr.Addr.Bytes()
 }
 
 func (addr EthereumAddress) String() string {
-	return addr.String()
+	return addr.Addr.String()
 }
 
 func (addr EthereumAddress) Checksum() cipher.Checksum {
@@ -25,7 +27,7 @@ func (addr EthereumAddress) Checksum() cipher.Checksum {
 }
 
 func (addr EthereumAddress) Verify(key cipher.PubKey) error {
-	if addr.Key != crypto.Keccak256Hash(key[:]) {
+	if subtle.ConstantTimeCompare(addr.Bytes(), crypto.Keccak256(secp256k1.UncompressPubkey(key[:])[1:])[12:]) == 0 {
 		return cipher.ErrAddressInvalidPubKey
 	}
 
@@ -36,13 +38,16 @@ func (addr EthereumAddress) Null() bool {
 	return addr == EthereumAddress{}
 }
 
-// EthereumAddressFromPubKey creates a EthereumAddress from PubKey as keccak256hash(pubkey)
+// EthereumAddressFromPubKey creates a EthereumAddress from a compressed PubKey
 func EthereumAddressFromPubKey(pubKey cipher.PubKey) EthereumAddress {
 	return EthereumAddress{
-		Key: crypto.Keccak256Hash(pubKey[:]),
+		Addr: common.BytesToAddress(crypto.Keccak256(secp256k1.UncompressPubkey(pubKey[:])[1:])[12:]),
 	}
 }
 
-func DecodeEthereumAddress() (EthereumAddress, error) {
-	return EthereumAddress{}, nil
+// DecodeHexToEthereumAddress creates a EthereumAddress from a EIP55-compliant hex string
+func DecodeHexToEthereumAddress(addr string) EthereumAddress {
+	return EthereumAddress{
+		Addr: common.HexToAddress(addr),
+	}
 }
