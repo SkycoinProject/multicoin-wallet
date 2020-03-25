@@ -113,6 +113,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		webHandler("/api/"+apiVersion1+endpoint, handler)
 	}
 
-	gateway.SetupCoinRoutes("/multicoin", webHandlerV1)
+	gateway.SetupMultiCoinRoutes("/multicoin", webHandlerV1)
+
 	return mux
 }

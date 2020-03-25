@@ -1,4 +1,4 @@
-package daemon
+package multicoin
 
 import (
 	"flag"
@@ -15,11 +15,6 @@ var (
 
 // Config records the daemon and build configuration
 type Config struct {
-	App AppConfig
-}
-
-// AppConfig records the app's configuration
-type AppConfig struct {
 	// Remote web interface port
 	WebInterfacePort int
 	// Remote web interface address
@@ -46,8 +41,8 @@ type AppConfig struct {
 }
 
 // NewAppConfig returns a new app config instance
-func NewAppConfig(port int, datadir string) AppConfig {
-	return AppConfig{
+func NewConfig(port int, datadir string) Config {
+	return Config{
 		WebInterfaceAddr: "127.0.0.1",
 		WebInterfacePort: port,
 
@@ -76,14 +71,14 @@ func (c *Config) postProcess() error {
 
 	var err error
 	home := file.UserHome()
-	c.App.DataDirectory, err = file.InitDataDir(replaceHome(c.App.DataDirectory, home))
+	c.DataDirectory, err = file.InitDataDir(replaceHome(c.DataDirectory, home))
 	panicIfError(err, "Invalid DataDirectory")
 
 	return nil
 }
 
 // RegisterFlags binds CLI flags to config values
-func (c *AppConfig) RegisterFlags() {
+func (c *Config) RegisterFlags() {
 	flag.BoolVar(&help, "help", false, "Show help")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
 	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SkycoinProject/multicoin-wallet/pkg/wallet/eth"
+	"github.com/SkycoinProject/multicoin-wallet/pkg/coin/eth"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"

@@ -1,4 +1,4 @@
-package daemon
+package multicoin
 
 import (
 	"fmt"
@@ -15,71 +15,71 @@ import (
 	"github.com/SkycoinProject/multicoin-wallet/pkg/api"
 )
 
-// Daemon represents a hardware wallet daemon instance
-type Daemon struct {
+// MultiCoin represents a multcoin instance
+type MultiCoin struct {
 	config Config
 	logger *logging.Logger
 }
 
-// NewDaemon returns a new hardware wallet daemon instance
-func NewDaemon(config Config, logger *logging.Logger) *Daemon {
-	return &Daemon{
+// NewMultiCoin returns a new multicoin instance
+func NewMultiCoin(config Config, logger *logging.Logger) *MultiCoin {
+	return &MultiCoin{
 		config: config,
 		logger: logger,
 	}
 }
 
-// Run starts the daemon
-func (d *Daemon) Run() error {
+// Run starts the multicoin api server
+func (m *MultiCoin) Run() error {
 	var apiServer *api.Server
 	var retErr error
 	errC := make(chan error, 10)
 
-	logLevel, err := logging.LevelFromString(d.config.App.LogLevel)
+	logLevel, err := logging.LevelFromString(m.config.LogLevel)
 	if err != nil {
 		err = fmt.Errorf("invalid -log-level: %v", err)
-		d.logger.Error(err)
+		m.logger.Error(err)
 		return err
 	}
 
 	logging.SetLevel(logLevel)
 
-	if d.config.App.ColorLog {
+	if m.config.ColorLog {
 		logging.EnableColors()
 	} else {
 		logging.DisableColors()
 	}
 
 	var logFile *os.File
-	if d.config.App.LogToFile {
+	if m.config.LogToFile {
 		var err error
-		logFile, err = d.initLogFile()
+		logFile, err = m.initLogFile()
 		if err != nil {
-			d.logger.Error(err)
+			m.logger.Error(err)
 			return err
 		}
 	}
 
-	host := fmt.Sprintf("%s:%d", d.config.App.WebInterfaceAddr, d.config.App.WebInterfacePort)
+	host := fmt.Sprintf("%s:%d", m.config.WebInterfaceAddr, m.config.WebInterfacePort)
 
-	if d.config.App.ProfileCPU {
-		f, err := os.Create(d.config.App.ProfileCPUFile)
+	if m.config.ProfileCPU {
+		f, err := os.Create(m.config.ProfileCPUFile)
 		if err != nil {
-			d.logger.Error(err)
+			m.logger.Error(err)
 			return err
 		}
 
 		if err := pprof.StartCPUProfile(f); err != nil {
-			d.logger.Error(err)
+			m.logger.Error(err)
 			return err
 		}
 		defer pprof.StopCPUProfile()
 	}
 
-	if d.config.App.HTTPProf {
+	if m.config.HTTPProf {
 		go func() {
-			if err := http.ListenAndServe(d.config.App.HTTPProfHost, nil); err != nil {
-				d.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", d.config.App.HTTPProfHost)
+			if err := http.ListenAndServe(m.config.HTTPProfHost, nil); err != nil {
+				m.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", m.config.HTTPProfHost)
 			}
 		}()
 	}
@@ -94,9 +94,9 @@ func (d *Daemon) Run() error {
 	// Catch SIGUSR1 (prints runtime stack to stdout)
 	go apputil.CatchDebug()
 
-	apiServer, err = d.createServer(host, api.NewGateway())
+	apiServer, err = m.createServer(host, api.NewGateway())
 	if err != nil {
-		d.logger.Error(err)
+		m.logger.Error(err)
 		retErr = err
 		goto earlyShutdown
 	}
@@ -106,7 +106,7 @@ func (d *Daemon) Run() error {
 		defer wg.Done()
 
 		if err := apiServer.Serve(); err != nil {
-			d.logger.Error(err)
+			m.logger.Error(err)
 			errC <- err
 		}
 	}()
@@ -114,21 +114,21 @@ func (d *Daemon) Run() error {
 	select {
 	case <-quit:
 	case retErr = <-errC:
-		d.logger.Error(retErr)
+		m.logger.Error(retErr)
 	}
 
-	d.logger.Info("Shutting down...")
+	m.logger.Info("Shutting down...")
 
 	if apiServer != nil {
-		d.logger.Info("Closing api server")
+		m.logger.Info("Closing api server")
 		apiServer.Shutdown()
 	}
 
-	d.logger.Info("Waiting for goroutines to finish")
+	m.logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
 
 earlyShutdown:
-	d.logger.Info("Goodbye")
+	m.logger.Info("Goodbye")
 
 	if logFile != nil {
 		if err := logFile.Close(); err != nil {
@@ -139,10 +139,10 @@ earlyShutdown:
 	return retErr
 }
 
-func (d *Daemon) initLogFile() (*os.File, error) {
-	logDir := filepath.Join(d.config.App.DataDirectory, "logs")
+func (m *MultiCoin) initLogFile() (*os.File, error) {
+	logDir := filepath.Join(m.config.DataDirectory, "logs")
 	if err := createDirIfNotExist(logDir); err != nil {
-		d.logger.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
+		m.logger.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
 		return nil, fmt.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
 	}
 
@@ -152,7 +152,7 @@ func (d *Daemon) initLogFile() (*os.File, error) {
 
 	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
-		d.logger.Errorf("os.OpenFile(%s) failed: %v", logfile, err)
+		m.logger.Errorf("os.OpenFile(%s) failed: %v", logfile, err)
 		return nil, err
 	}
 
@@ -170,14 +170,14 @@ func createDirIfNotExist(dir string) error {
 	return os.Mkdir(dir, 0750)
 }
 
-func (d *Daemon) createServer(host string, gateway *api.Gateway) (*api.Server, error) {
+func (m *MultiCoin) createServer(host string, gateway *api.Gateway) (*api.Server, error) {
 
 	var s *api.Server
 
 	var err error
 	s, err = api.Create(host, gateway)
 	if err != nil {
-		d.logger.Errorf("Failed to start web GUI: %v", err)
+		m.logger.Errorf("Failed to start web GUI: %v", err)
 		return nil, err
 	}
 
@@ -185,6 +185,6 @@ func (d *Daemon) createServer(host string, gateway *api.Gateway) (*api.Server, e
 }
 
 // ParseConfig prepare the config
-func (d *Daemon) ParseConfig() error {
-	return d.config.postProcess()
+func (m *MultiCoin) ParseConfig() error {
+	return m.config.postProcess()
 }

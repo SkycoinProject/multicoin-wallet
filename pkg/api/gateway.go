@@ -2,27 +2,25 @@ package api
 
 import (
 	"net/http"
+
+	"github.com/SkycoinProject/multicoin-wallet/pkg/coin"
 )
 
 //go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
 
 // Gateway is the api gateway
 type Gateway struct {
-	*CoinManager
+	*coin.CoinManager
 }
 
 // NewGateway creates a Gateway
-func NewGateway(m *CoinManager) *Gateway {
+func NewGateway(cm *coin.CoinManager) *Gateway {
 	return &Gateway{
-		CoinManager: m,
+		cm,
 	}
 }
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
-	MultiCoiner
-}
-
-type MultiCoiner interface {
-	SetupCoinRoutes(prefix string, webHandler func(endpoint string, handler http.Handler))
+	SetupMultiCoinRoutes(prefix string, handler func(endpoint string, handler http.Handler))
 }

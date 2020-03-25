@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SkycoinProject/multicoin-wallet/pkg/wallet/eth"
+	"github.com/SkycoinProject/multicoin-wallet/pkg/coin/eth"
 
 	"github.com/sirupsen/logrus"
 
