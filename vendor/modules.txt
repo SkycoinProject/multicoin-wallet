@@ -1,0 +1,164 @@
+# github.com/NYTimes/gziphandler v1.1.1
+github.com/NYTimes/gziphandler
+# github.com/SkycoinProject/skycoin v0.27.0
+github.com/SkycoinProject/skycoin/src/api
+github.com/SkycoinProject/skycoin/src/cipher
+github.com/SkycoinProject/skycoin/src/cipher/base58
+github.com/SkycoinProject/skycoin/src/cipher/bip32
+github.com/SkycoinProject/skycoin/src/cipher/bip39
+github.com/SkycoinProject/skycoin/src/cipher/bip39/wordlists
+github.com/SkycoinProject/skycoin/src/cipher/bip44
+github.com/SkycoinProject/skycoin/src/cipher/chacha20poly1305
+github.com/SkycoinProject/skycoin/src/cipher/chacha20poly1305/internal/chacha20
+github.com/SkycoinProject/skycoin/src/cipher/encoder
+github.com/SkycoinProject/skycoin/src/cipher/encrypt
+github.com/SkycoinProject/skycoin/src/cipher/pbkdf2
+github.com/SkycoinProject/skycoin/src/cipher/poly1305
+github.com/SkycoinProject/skycoin/src/cipher/ripemd160
+github.com/SkycoinProject/skycoin/src/cipher/scrypt
+github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go
+github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go/secp256k1-go2
+github.com/SkycoinProject/skycoin/src/coin
+github.com/SkycoinProject/skycoin/src/daemon
+github.com/SkycoinProject/skycoin/src/daemon/gnet
+github.com/SkycoinProject/skycoin/src/daemon/pex
+github.com/SkycoinProject/skycoin/src/daemon/strand
+github.com/SkycoinProject/skycoin/src/kvstorage
+github.com/SkycoinProject/skycoin/src/params
+github.com/SkycoinProject/skycoin/src/readable
+github.com/SkycoinProject/skycoin/src/testutil
+github.com/SkycoinProject/skycoin/src/transaction
+github.com/SkycoinProject/skycoin/src/util/droplet
+github.com/SkycoinProject/skycoin/src/util/elapse
+github.com/SkycoinProject/skycoin/src/util/fee
+github.com/SkycoinProject/skycoin/src/util/file
+github.com/SkycoinProject/skycoin/src/util/http
+github.com/SkycoinProject/skycoin/src/util/iputil
+github.com/SkycoinProject/skycoin/src/util/logging
+github.com/SkycoinProject/skycoin/src/util/mathutil
+github.com/SkycoinProject/skycoin/src/util/timeutil
+github.com/SkycoinProject/skycoin/src/util/useragent
+github.com/SkycoinProject/skycoin/src/visor
+github.com/SkycoinProject/skycoin/src/visor/blockdb
+github.com/SkycoinProject/skycoin/src/visor/dbutil
+github.com/SkycoinProject/skycoin/src/visor/historydb
+github.com/SkycoinProject/skycoin/src/wallet
+# github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
+github.com/StackExchange/wmi
+# github.com/VictoriaMetrics/fastcache v1.5.3
+github.com/VictoriaMetrics/fastcache
+# github.com/aristanetworks/goarista v0.0.0-20170210015632-ea17b1a17847
+github.com/aristanetworks/goarista/monotime
+# github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
+github.com/beorn7/perks/quantile
+# github.com/blang/semver v3.5.1+incompatible
+github.com/blang/semver
+# github.com/boltdb/bolt v1.3.1
+github.com/boltdb/bolt
+# github.com/btcsuite/btcd v0.20.1-beta
+github.com/btcsuite/btcd/btcec
+github.com/btcsuite/btcd/btcjson
+github.com/btcsuite/btcd/chaincfg
+github.com/btcsuite/btcd/chaincfg/chainhash
+github.com/btcsuite/btcd/rpcclient
+github.com/btcsuite/btcd/wire
+# github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
+github.com/btcsuite/btclog
+# github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
+github.com/btcsuite/btcutil
+github.com/btcsuite/btcutil/base58
+github.com/btcsuite/btcutil/bech32
+# github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd
+github.com/btcsuite/go-socks/socks
+# github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792
+github.com/btcsuite/websocket
+# github.com/cenkalti/backoff v2.2.1+incompatible
+github.com/cenkalti/backoff
+# github.com/cespare/xxhash/v2 v2.1.1
+github.com/cespare/xxhash/v2
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/elastic/gosigar v0.8.1-0.20180330100440-37f05ff46ffa
+github.com/elastic/gosigar
+github.com/elastic/gosigar/sys/windows
+# github.com/ethereum/go-ethereum v1.9.12
+github.com/ethereum/go-ethereum
+github.com/ethereum/go-ethereum/common
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/common/mclock
+github.com/ethereum/go-ethereum/common/prque
+github.com/ethereum/go-ethereum/core/types
+github.com/ethereum/go-ethereum/crypto
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/ethdb
+github.com/ethereum/go-ethereum/log
+github.com/ethereum/go-ethereum/metrics
+github.com/ethereum/go-ethereum/params
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/trie
+# github.com/go-ole/go-ole v1.2.1
+github.com/go-ole/go-ole
+github.com/go-ole/go-ole/oleutil
+# github.com/go-stack/stack v1.8.0
+github.com/go-stack/stack
+# github.com/golang/protobuf v1.3.2-0.20190517061210-b285ee9cfc6c
+github.com/golang/protobuf/proto
+# github.com/golang/snappy v0.0.1
+github.com/golang/snappy
+# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/mattn/go-colorable v0.1.0
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.5-0.20180830101745-3fb116b82035
+github.com/mattn/go-isatty
+# github.com/matttproud/golang_protobuf_extensions v1.0.1
+github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
+github.com/mgutz/ansi
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/prometheus/client_golang v0.9.1
+github.com/prometheus/client_golang/prometheus
+github.com/prometheus/client_golang/prometheus/internal
+github.com/prometheus/client_golang/prometheus/promhttp
+# github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
+github.com/prometheus/client_model/go
+# github.com/prometheus/common v0.0.0-20181113130724-41aa239b4cce
+github.com/prometheus/common/expfmt
+github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
+github.com/prometheus/common/model
+# github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d
+github.com/prometheus/procfs
+github.com/prometheus/procfs/internal/util
+github.com/prometheus/procfs/nfs
+github.com/prometheus/procfs/xfs
+# github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00
+github.com/rs/cors
+# github.com/rs/xhandler v0.0.0-20160618193221-ed27b6fd6521
+github.com/rs/xhandler
+# github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc
+github.com/shopspring/decimal
+# github.com/sirupsen/logrus v1.4.2
+github.com/sirupsen/logrus
+# github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
+github.com/steakknife/bloomfilter
+# github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3
+github.com/steakknife/hamming
+# github.com/stretchr/testify v1.5.1
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+# golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
+golang.org/x/crypto/ripemd160
+golang.org/x/crypto/sha3
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+golang.org/x/net/context
+# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
+golang.org/x/sys/cpu
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# gopkg.in/yaml.v2 v2.2.2
+gopkg.in/yaml.v2
