@@ -1,4 +1,4 @@
-package multicoin
+package main
 
 import (
 	"flag"
@@ -20,10 +20,6 @@ var (
 	multiCoinConfig = multicoin.NewConfig(serverPort, dataDir)
 	parseFlags      = true
 )
-
-func init() {
-
-}
 
 func main() {
 	if parseFlags {

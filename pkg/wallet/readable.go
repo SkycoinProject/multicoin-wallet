@@ -1,8 +1,11 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
+
+	"github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go"
 
 	"github.com/SkycoinProject/multicoin-wallet/pkg/coin/eth"
 
@@ -27,7 +30,12 @@ func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEnt
 	}
 
 	if !e.Public.Null() {
-		re.Public = e.Public.Hex()
+		switch coinType {
+		case CoinTypeEthereum:
+			re.Public = hex.EncodeToString(secp256k1.UncompressPubkey(e.Public[:]))
+		default:
+			re.Public = e.Public.Hex()
+		}
 	}
 
 	if !e.Secret.Null() {
