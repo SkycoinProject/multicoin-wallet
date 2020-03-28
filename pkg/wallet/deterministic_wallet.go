@@ -146,6 +146,7 @@ func (w *DeterministicWallet) GenerateAddresses(num uint64) ([]cipher.Addresser,
 	makeAddress := w.Meta.AddressConstructor()
 	for i, s := range seckeys {
 		p := cipher.MustPubKeyFromSecKey(s)
+
 		a := makeAddress(p)
 		addrs[i] = a
 		w.Entries = append(w.Entries, Entry{

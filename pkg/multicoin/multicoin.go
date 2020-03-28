@@ -9,6 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SkycoinProject/multicoin-wallet/pkg/coin"
+	"github.com/SkycoinProject/multicoin-wallet/pkg/coin/btc"
+
 	"github.com/SkycoinProject/skycoin/src/util/apputil"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
 
@@ -94,7 +97,18 @@ func (m *MultiCoin) Run() error {
 	// Catch SIGUSR1 (prints runtime stack to stdout)
 	go apputil.CatchDebug()
 
-	apiServer, err = m.createServer(host, api.NewGateway())
+	btcInstance := btc.New()
+	coins := map[coin.Ticker]coin.Coin{
+		"btc": btcInstance,
+	}
+	manager, err := coin.NewCoinManager(coins)
+	if err != nil {
+		m.logger.Error(err)
+		retErr = err
+		goto earlyShutdown
+	}
+
+	apiServer, err = m.createServer(host, api.NewGateway(manager))
 	if err != nil {
 		m.logger.Error(err)
 		retErr = err

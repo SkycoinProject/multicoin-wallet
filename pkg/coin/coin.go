@@ -5,5 +5,5 @@ import (
 )
 
 type Coin interface {
-	SetupRoutes(prefix string, handler func(endpoint string, handler http.Handler))
+	SetupRoutes(prefix string, webhandler func(string, http.Handler))
 }

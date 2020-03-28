@@ -26,6 +26,12 @@ type muxConfig struct {
 	host string
 }
 
+// HTTPError is included in an HTTPResponse
+type HTTPError struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 // Server exposes an HTTP API
 type Server struct {
 	server   *http.Server
@@ -113,7 +119,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		webHandler("/api/"+apiVersion1+endpoint, handler)
 	}
 
-	gateway.SetupMultiCoinRoutes("/multicoin", webHandlerV1)
+	gateway.SetupCoinRoutes("/multicoin", webHandlerV1)
 
 	return mux
 }
