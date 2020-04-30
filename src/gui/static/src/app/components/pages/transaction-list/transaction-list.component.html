@@ -1,0 +1,145 @@
+<app-header [headline]="'history.title-and-button' | translate"></app-header>
+
+<!-- Message shown if there are no wallets. -->
+<div class="container" *ngIf="!userHasWallets">
+  <app-loading-content
+    [isLoading]="false"
+    [noDataText]="'history.no-txs'"
+  ></app-loading-content>
+</div>
+
+<div class="container" *ngIf="userHasWallets">
+  <!-- Filtering options. -->
+  <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="transactionsLoaded">
+    <mat-select
+      multiple
+      formControlName="filter"
+      [placeholder]="'history.no-filter' | translate"
+      id="filter"
+    >
+      <!-- Filter groups for the wallets showing all addresses. -->
+      <mat-optgroup *ngFor="let wallet of walletsShowingAllAddresses" label="
+        {{ wallet.label }} - {{ wallet.coins | amount }}
+        ({{ wallet.hours | amount:false }})
+      ">
+        <mat-option *ngIf="wallet.addresses.length > 1" [value]="wallet">
+          {{ 'history.all-addresses' | translate }}
+        </mat-option>
+        <mat-option *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
+          {{ address.address }} - {{ address.coins | amount }}
+          ({{ address.hours | amount:false }})
+        </mat-option>
+      </mat-optgroup>
+      <!-- Filter group for all wallets not showing addresses. -->
+      <mat-optgroup
+        *ngIf="walletsNotShowingAddresses.length > 0"
+        [label]="('history.' + (walletsShowingAllAddresses.length > 0 ? 'other-wallets' : 'wallets') + '-title') | translate"
+      >
+        <ng-container *ngFor="let wallet of walletsNotShowingAddresses">
+          <mat-option [value]="wallet">
+            {{ wallet.label }} - {{ wallet.coins | amount }} ({{ wallet.hours | amount:false }})
+          </mat-option>
+        </ng-container>
+      </mat-optgroup>
+      <!-- Filter group for all the addresses shown independently. -->
+      <mat-optgroup *ngIf="addresses.length > 0" [label]="'history.addresses' | translate">
+        <mat-option *ngFor="let address of addresses" [value]="address" [disabled]="address.showingWholeWallet">
+          {{ address.walletName }} - {{ address.address }} - {{ address.coins | amount }} ({{ address.hours | amount:false }})
+        </mat-option>
+      </mat-optgroup>
+      <!-- Content for showing the selected filters. -->
+      <mat-select-trigger>
+        <span *ngIf="form.get('filter').value.length === 1">{{ 'history.filter' | translate }}</span>
+        <span *ngIf="form.get('filter').value.length > 1">{{ 'history.filters' | translate }}</span>
+        <ng-container *ngFor="let filter of form.get('filter').value; let i = index">
+          <div class="filter text-truncate" *ngIf="filter.label || !filter.showingWholeWallet">
+            <span *ngIf="filter.label">{{ filter.label }}</span>
+            <span *ngIf="filter.walletName">{{ filter.walletName }} - </span>
+            <span *ngIf="filter.address">{{ filter.address }}</span>
+            - {{ filter.coins | amount }}
+            ({{ filter.hours | amount:false }})
+          </div>
+        </ng-container>
+      </mat-select-trigger>
+    </mat-select>
+    <img class="x-button image-button" src="assets/img/delete-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
+    <mat-icon class="options-button" [inline]="true" [matMenuTriggerFor]="optionsMenu" *ngIf="userHasMultipleWallets">more_vert</mat-icon>
+    <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
+      <button mat-menu-item (click)="switchAddressesVisibility()">
+        {{ ('history.' + (showAddresses ? 'hide' : 'show') + '-addresses') | translate }}
+      </button>
+    </mat-menu>
+  </div>
+
+  <app-loading-content
+    [isLoading]="!transactionsLoaded"
+    [noDataText]="!allTransactions || allTransactions.length === 0 ? 'history.no-txs' : 'history.no-txs-filter'"
+    *ngIf="!transactions || transactions.length === 0"
+  ></app-loading-content>
+
+  <!-- Transaction list. -->
+  <div class="paper" *ngIf="transactions && transactions.length > 0">
+    <ng-container *ngFor="let transaction of transactions">
+      <div class="-transaction" (click)="showTransaction(transaction)">
+        <!-- Icon. -->
+        <div class="-icon" [ngClass]="{ '-pending': !transaction.confirmed }">
+          <img [src]="'assets/img/' + getTransactionIconName(transaction) + '-blue.png'">
+        </div>
+        <div class="-address">
+          <!-- First line. -->
+          <h4>
+            <ng-container *ngIf="transaction.type === oldTransactionTypes.Outgoing">
+              {{ ('history.' + (transaction.confirmed ? 'sent' : 'sending')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+            </ng-container>
+            <ng-container *ngIf="transaction.type === oldTransactionTypes.Incoming">
+              {{ ('history.' + (transaction.confirmed ? 'received' : 'receiving')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+            </ng-container>
+            <ng-container *ngIf="transaction.type === oldTransactionTypes.MovedBetweenAddresses">
+              {{ ('history.' + (transaction.confirmed ? 'moved' : 'moving')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+            </ng-container>
+            <ng-container *ngIf="transaction.type === oldTransactionTypes.MovedBetweenWallets">
+              {{ ('history.' + (transaction.confirmed ? 'moved-wallet' : 'moving-wallet')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+            </ng-container>
+            <ng-container *ngIf="transaction.type === oldTransactionTypes.MixedOrUnknown">
+              {{ 'history.complex-transaction' | translate }}
+            </ng-container>
+            <!-- Involved wallets, if the addresses are being shown. -->
+            <span *ngIf="showAddresses && userHasMultipleWallets">
+              {{ ('history.involved-wallet' + (transaction.numberOfInvolvedLocalWallets !== 1 ? 's' : '') + '-small-label') | translate }}
+              <span>{{ transaction.involvedLocalWallets }}</span>
+            </span>
+          </h4>
+          <!-- Addresses. -->
+          <ng-container *ngIf="showAddresses">
+            <div class="-item" *ngFor="let address of transaction.relevantAddresses">
+              <app-qr-code-button [address]="address"></app-qr-code-button>
+              <span class="break-all">{{ address }}</span>
+            </div>
+          </ng-container>
+          <!-- Note. -->
+          <div class="-item" *ngIf="transaction.note">
+            <span>{{ 'history.transaction-note-small-label' | translate }} <span class="black-text">{{ transaction.note }}</span></span>
+          </div>
+          <!-- Involved wallets, if the addresses are not being shown. -->
+          <div class="-item" *ngIf="!showAddresses">
+            <span>
+              {{ ('history.involved-wallet' + (transaction.numberOfInvolvedLocalWallets !== 1 ? 's' : '') + '-small-label') | translate }}
+              <span class="black-text">{{ transaction.involvedLocalWallets }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="-balance">
+          <div class="-top-line" *ngIf="transaction.confirmed">{{ transaction.timestamp | dateTime }}</div>
+          <ng-container *ngIf="transaction.type !== oldTransactionTypes.MixedOrUnknown">
+            <div class="-top-line yellow-text" *ngIf="!transaction.confirmed">{{ 'history.pending-indication' | translate }}</div>
+            <h4>{{ transaction.balance.toString() | amount }}</h4>
+            <p *ngIf="price" [matTooltip]="'tx.current-rate-help' | translate">
+              {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+            </p>
+          </ng-container>
+        </div>
+      </div>
+    </ng-container>
+    <div *ngIf="viewingTruncatedList" class="view-all-button" (click)="showAll()">{{ 'history.view-all' | translate:{ number:totalElements } }}</div>
+  </div>
+</div>

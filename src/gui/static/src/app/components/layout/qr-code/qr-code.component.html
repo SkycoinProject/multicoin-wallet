@@ -1,0 +1,87 @@
+<app-modal [headline]="(!showingLastOfWallet ? 'qr.title' : 'qr.receive-title') | translate" [dialog]="dialogRef">
+  <!-- Loading indicator. -->
+  <app-loading-content
+    [isLoading]="loading"
+    [noDataText]="loadingErrorMsg"
+    *ngIf="loading || loadingErrorMsg"
+  ></app-loading-content>
+
+  <ng-container *ngIf="!loading && !loadingErrorMsg">
+    <!-- QR code. -->
+    <div class="qr-container">
+      <div #qrArea class="qr"></div>
+    </div>
+    <div class="separator"></div>
+    <!-- QR data. -->
+    <div class="data-container" *ngIf="formVisible">
+      <div class="title">{{ 'qr.data-label' | translate }}</div>
+      <div class="data" (click)="copyText(currentQrContent)"><span class="text">{{ currentQrContent }}</span><span class="fa copy">&#xf0c5;</span></div>
+    </div>
+    <!-- Address. -->
+    <div class="data-container" *ngIf="!formVisible">
+      <div class="title">
+        {{ 'qr.address-label' | translate }}
+        <mat-icon class="help-icon" [matTooltip]="'qr.address-info' | translate" *ngIf="showingLastOfWallet">help</mat-icon>
+        <!-- Waning shown if the address has already been used. -->
+        <mat-icon
+          [inline]="true"
+          class="warning-icon red-text"
+          *ngIf="showingLastOfWallet && !lastAdderessIsUnused"
+          [matTooltip]="'qr.used-address-warning' | translate"
+        >warning</mat-icon>
+      </div>
+      <div class="data" (click)="copyText(currentAddress)"><span class="text">{{ currentAddress }}</span><span class="fa copy">&#xf0c5;</span></div>
+    </div>
+
+    <!-- Address history link. -->
+    <div class="addresses-link-container" *ngIf="!formVisible">
+      <app-arrow-link
+        *ngIf="showingLastOfWallet"
+        [pointForward]="true"
+        [text]="'qr.address-history-link'"
+        (pressed)="goToAddressHistory()"
+        [noPadding]="true">
+      </app-arrow-link>
+      <!-- Waning shown if the address has already been used. -->
+      <mat-icon
+        [inline]="true"
+        class="warning-icon yellow-text"
+        *ngIf="previouslyUsedAddresses"
+        [matTooltip]="'qr.unused-addresses-warning' | translate"
+      >warning</mat-icon>
+    </div>
+
+    <!-- Form link. -->
+    <div>
+      <app-arrow-link
+        *ngIf="!formVisible && !data.showAddressOnly"
+        [text]="'qr.request-link'"
+        (pressed)="showForm()"
+        [noPadding]="true">
+      </app-arrow-link>
+    </div>
+
+    <!-- Form. -->
+    <div class="separator form-separator" *ngIf="formVisible"></div>
+    <div [formGroup]="form" *ngIf="formVisible">
+      <div class="form-field">
+        <label for="coins">
+          {{ 'qr.amount-label' | translate }} <span class="red-text" *ngIf="invalidCoins">{{ 'qr.invalid' | translate }}</span>
+        </label>
+        <input maxlength="20" formControlName="coins" id="coins">
+      </div>
+      <div class="form-field">
+        <label for="hours">
+          {{ 'qr.hours-label' | translate }} <span class="red-text" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
+        </label>
+        <input maxlength="20" formControlName="hours" id="hours">
+      </div>
+      <div class="form-field">
+        <label for="note">
+          {{ 'qr.message-label' | translate }}
+        </label>
+        <input maxlength="100" formControlName="note" id="note">
+      </div>
+    </div>
+  </ng-container>
+</app-modal>

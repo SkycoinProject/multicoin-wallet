@@ -1,0 +1,38 @@
+<div>
+  <app-header [headline]="'backup.title' | translate"></app-header>
+
+  <!-- Info area. -->
+  <div class="container">
+    <div class="paper small-padding mb-0">
+      <p class="mt-0">{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
+      <p>{{ 'backup.seed-warning' | translate }}</p>
+      <p class="grey-text mb-0">
+        <small [innerHtml]="'backup.desc' | translate"></small>
+      </p>
+    </div>
+
+    <app-loading-content
+      [isLoading]="false"
+      noDataText="backup.no-wallets"
+      *ngIf="validWallets.length === 0"
+    ></app-loading-content>
+
+    <!-- Wallet list. -->
+    <div class="-table" *ngIf="validWallets.length > 0">
+      <div class="-headers">
+        <div class="-width-250">{{ 'backup.wallet-table-label' | translate }}</div>
+        <div class="-width-150">{{ 'backup.filename-table-label' | translate }}</div>
+        <div class="-flex-fill"></div>
+      </div>
+      <div class="-body">
+        <div class="-row" *ngFor="let wallet of validWallets">
+          <div class="-width-250 text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
+          <div class="-width-150">{{ wallet.id }}</div>
+          <div class="-flex-fill text-right">
+            <span class="link" (click)="showSeed(wallet)">{{ 'backup.show-seed-button' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

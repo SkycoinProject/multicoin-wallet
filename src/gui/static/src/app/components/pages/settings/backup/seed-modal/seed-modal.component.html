@@ -1,0 +1,19 @@
+<app-modal [headline]="'backup.seed-modal-window.title' | translate" [dialog]="dialogRef">
+  <div class="form-field" *ngIf="walletTypeText">
+    <label for="type">{{ 'backup.seed-modal-window.type-label' | translate }}</label>
+    <input id="type" readonly [value]="walletTypeText | translate" />
+  </div>
+  <div class="form-field">
+    <label for="seed">{{ 'backup.seed-modal-window.seed-label' | translate }}</label>
+    <textarea id="seed" readonly>{{ data.seed }}</textarea>
+  </div>
+  <div class="form-field" *ngIf="data.passphrase">
+    <label for="passphrase">{{ 'backup.seed-modal-window.passphrase-label' | translate }}</label>
+    <input id="passphrase" readonly [value]="data.passphrase" />
+  </div>
+  <div class="-buttons">
+    <app-button (action)="dialogRef.close()" class="primary-button">
+      {{ 'common.close-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

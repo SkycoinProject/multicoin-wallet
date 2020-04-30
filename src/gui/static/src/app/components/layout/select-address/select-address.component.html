@@ -1,0 +1,46 @@
+<app-modal [headline]="'select-address.title' | translate" [dialog]="dialogRef">
+  <div class="wallet-container list-button-container light-button-theme" *ngFor="let element of listElements">
+    <!-- Wallet name. -->
+    <div class="title"><span title="{{ element.label }}">{{ element.label }}</span>
+      <!-- Legacy label. -->
+      <div *ngIf="hasVariousWalletTypes && element.originalWallet.walletType === walletTypes.Deterministic" class="wallet-type-label">
+        <span [matTooltip]="'wallet.legacy-info' | translate">
+          {{ 'wallet.legacy-small-label' | translate }}
+          <mat-icon [inline]="true">help</mat-icon>
+        </span>
+      </div>
+      <div *ngIf="hasVariousWalletTypes && element.originalWallet.walletType === walletTypes.XPub" class="wallet-type-label">
+        <span [matTooltip]="'wallet.xpub-info' | translate">
+          {{ 'wallet.xpub-small-label' | translate }}
+          <mat-icon [inline]="true">help</mat-icon>
+        </span>
+      </div>
+    </div>
+    <!-- Buttons for bip44 and xPub wallets. -->
+    <ng-container *ngIf="element.originalWallet.walletType !== walletTypes.Deterministic">
+      <button mat-button color="primary" (click)="getAddress(element.originalWallet)">
+        {{ 'get-address.title' | translate }}
+      </button>
+      <button mat-button color="primary" (click)="viewAddresses(element.originalWallet)">
+        {{ 'select-address.wallet-addresses' | translate }}
+      </button>
+    </ng-container>
+    <!-- Address list. -->
+    <ng-container *ngIf="element.originalWallet.walletType === walletTypes.Deterministic && element.addresses.length > 0">
+      <ng-container *ngFor="let address of element.addresses">
+        <button mat-button color="primary" (click)="select(address.address)">
+          <div class="address">{{ address.address }}</div>
+          <div class="balance">{{ address.coins | amount:true:'first' }}
+            <span class="grey-text">{{ address.coins | amount:true:'last' }} | </span>
+            {{ address.hours | amount:false:'first' }}
+            <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
+          </div>
+        </button>
+      </ng-container>
+    </ng-container>
+    <!-- Msg if the wallet does not have addresses. -->
+    <ng-container *ngIf="element.originalWallet.walletType === walletTypes.Deterministic && element.addresses.length === 0">
+      <div class="no-addresses-msg"><mat-icon [inline]="true">error</mat-icon>{{ 'select-address.no-addresses' | translate }}</div>
+    </ng-container>
+  </div>
+</app-modal>
