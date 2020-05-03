@@ -552,13 +552,13 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
   }
 
   /**
-   * Saves on persistent storage the data of all the hw wallets on the wallet list. It overwrites
-   * the previously saved data. It also calls informDataUpdated().
+   * Saves on persistent storage the data of the hw wallets on the wallet list for the current
+   * coin. It overwrites the previously saved data. It also calls informDataUpdated().
    */
   private saveHardwareWalletsAndInformUpdate() {
     const hardwareWallets: WalletBase[] = [];
 
-    this.walletsList.map(wallet => {
+    this.currentWalletsList.map(wallet => {
       if (wallet.isHardware) {
         hardwareWallets.push(this.createHardwareWalletData(
           wallet.label,

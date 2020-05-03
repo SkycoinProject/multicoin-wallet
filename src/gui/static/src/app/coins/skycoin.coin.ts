@@ -1,7 +1,9 @@
 import { Coin } from './coin';
 import { environment } from '../../environments/environment';
+import { CoinTypes } from './coin-types';
 
 export class SkycoinCoin extends Coin {
+  coinType = CoinTypes.Fiber;
   devOnly = false;
   isLocal = true;
   nodeUrl = environment.nodeUrl;

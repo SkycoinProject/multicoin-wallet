@@ -12,6 +12,7 @@ import { WalletUtilsOperator } from './coin-specific/wallet-utils-operator';
 import { WalletsAndAddressesOperator } from './coin-specific/wallets-and-addresses-operator';
 import { CoinService } from './coin.service';
 import { OperatorsGenerator } from './coin-specific/operators-generator';
+import { CoinTypes } from '../coins/coin-types';
 
 /**
  * Set will all the operators needed for a coin.
@@ -52,7 +53,7 @@ export class OperatorService {
     return this.currentOperatorsSubject.asObservable();
   }
 
-  initialize(fiberOperatorsGenerator: OperatorsGenerator) {
+  initialize(fiberOperatorsGenerator: OperatorsGenerator, btcOperatorsGenerator: OperatorsGenerator) {
     this.coinService.currentCoin.subscribe(coin => {
       // Wait 1 frame before removing the operators, to give time for the pages to
       // be removed.
@@ -70,7 +71,11 @@ export class OperatorService {
         }
 
         // Replace the current operators.
-        this.operators = fiberOperatorsGenerator.generate(coin, this.injector);
+        if (coin.coinType === CoinTypes.Fiber) {
+          this.operators = fiberOperatorsGenerator.generate(coin, this.injector);
+        } else {
+          this.operators = btcOperatorsGenerator.generate(coin, this.injector);
+        }
 
         this.currentOperatorsSubject.next(this.operators);
       });

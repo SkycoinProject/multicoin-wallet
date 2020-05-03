@@ -1,7 +1,10 @@
+import { CoinTypes } from './coin-types';
+
 /**
  * Base class with the properties of the coins this wallet can work with.
  */
 export abstract class Coin {
+  abstract coinType: CoinTypes;
   abstract devOnly: boolean;
   abstract isLocal: boolean;
   nodeUrl: string;

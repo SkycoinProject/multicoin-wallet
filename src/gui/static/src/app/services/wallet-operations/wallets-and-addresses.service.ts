@@ -8,6 +8,8 @@ import { FiberWalletsAndAddressesOperator } from '../coin-specific/fiber/fiber-w
 import { WalletsAndAddressesOperator, LastAddress, CreateWalletArgs } from '../coin-specific/wallets-and-addresses-operator';
 import { redirectToErrorPage } from '../../utils/errors';
 import { OperatorService } from '../operators.service';
+import { CoinTypes } from '../../coins/coin-types';
+import { BtcWalletsAndAddressesOperator } from '../coin-specific/btc/btc-wallets-and-addresses-operator';
 
 /**
  * Manages the list with the wallets and its addresses. It works like a CRUD for the wallet list,
@@ -23,7 +25,7 @@ export class WalletsAndAddressesService {
   /**
    * Temporal operators used only for loading all the wallets.
    */
-  private tempOperators: FiberWalletsAndAddressesOperator[];
+  private tempOperators: WalletsAndAddressesOperator[];
 
   // List with all the wallets of all coins registered in the app. It is used for initializing
   // The operators.
@@ -195,7 +197,11 @@ export class WalletsAndAddressesService {
     // Create one temporal operator for each coin.
     this.tempOperators = [];
     this.coinService.coins.forEach(coin => {
-      this.tempOperators.push(new FiberWalletsAndAddressesOperator(this.injector, coin));
+      if (coin.coinType === CoinTypes.Fiber) {
+        this.tempOperators.push(new FiberWalletsAndAddressesOperator(this.injector, coin));
+      } else if (coin.coinType === CoinTypes.BTC) {
+        this.tempOperators.push(new BtcWalletsAndAddressesOperator(this.injector, coin));
+      }
     });
 
     // Load the wallets of every coin.
@@ -226,7 +232,7 @@ export class WalletsAndAddressesService {
    * the wallets. After finishing using one, it will be cleaned and removed from the array.
    * @returns An array with all the loaded wallets.
    */
-  private loadWalletsRecursively(currentWallets: WalletBase[], operators: FiberWalletsAndAddressesOperator[]): Observable<WalletBase[]> {
+  private loadWalletsRecursively(currentWallets: WalletBase[], operators: WalletsAndAddressesOperator[]): Observable<WalletBase[]> {
     return operators[operators.length - 1].loadWallets().pipe(mergeMap((wallets: WalletBase[]) => {
       currentWallets = wallets.concat(currentWallets);
 

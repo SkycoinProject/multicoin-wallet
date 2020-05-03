@@ -5,7 +5,6 @@ import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http
 
 import { processServiceError } from '../../utils/errors';
 import { OperationError } from '../../utils/operation-error';
-import { CoinService } from '../coin.service';
 
 // IMPORTANT: AFTER MAKING MODIFICATIONS TO THIS INTERFACE YOU MUST ALSO
 // MAKE APPROPIATE CHANGES TO THE createDefaultRequestOptions

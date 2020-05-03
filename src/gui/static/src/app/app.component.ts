@@ -19,6 +19,7 @@ import { BlockchainService } from './services/blockchain.service';
 import { NetworkService } from './services/network.service';
 import { OperatorService } from './services/operators.service';
 import { FiberOperatorsGenerator } from './services/coin-specific/fiber/fiber-operators-generator';
+import { BtcOperatorsGenerator } from './services/coin-specific/btc/btc-operators-generator';
 
 /**
  * Main component for the app.
@@ -52,8 +53,7 @@ export class AppComponent implements OnInit {
     operatorService: OperatorService,
   ) {
     coinService.initialize();
-
-    operatorService.initialize(new FiberOperatorsGenerator());
+    operatorService.initialize(new FiberOperatorsGenerator(), new BtcOperatorsGenerator());
 
     // When the coin is changed, remove the content for 3 frames, which forces the pages to be
     // recreated and gives time for the system vars to be resetted.
