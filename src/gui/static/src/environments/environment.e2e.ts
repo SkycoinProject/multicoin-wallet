@@ -5,6 +5,7 @@ export const environment = {
   production: true,
   tellerUrl: '/teller/',
   isInE2eMode: true,
+  ignoreNonFiberNetworIssues: false,
 
   // NOTE: the Swaplab integration currently works with Skycoin only.
   swaplab: {

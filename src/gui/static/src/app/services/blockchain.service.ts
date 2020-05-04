@@ -5,6 +5,13 @@ import { BlockchainOperator } from './coin-specific/blockchain-operator';
 import { OperatorService } from './operators.service';
 
 /**
+ * Data about the current state of the blockchain in the node.
+ */
+export interface BlockchainState {
+  lastBlock: BasicBlockInfo;
+  coinSupply: CoinSupply;
+}
+/**
  * Basic info of the last block added to the blockchain.
  */
 export interface BasicBlockInfo {
@@ -64,16 +71,9 @@ export class BlockchainService {
   }
 
   /**
-   * Gets the basic info of the last block added to the blockchain.
+   * Gets the basic info of the last block and the coin supply of the blockchain .
    */
-  getLastBlock(): Observable<BasicBlockInfo> {
-    return this.operator.getLastBlock();
-  }
-
-  /**
-   * Gets info about the coin supply of the blockchain.
-   */
-  getCoinSupply(): Observable<CoinSupply> {
-    return this.operator.getCoinSupply();
+  getBlockchainState(): Observable<BlockchainState> {
+    return this.operator.getBlockchainState();
   }
 }

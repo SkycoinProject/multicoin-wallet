@@ -197,7 +197,7 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
     let wallets: WalletBase[] = [];
 
     // Do not get software wallets for now.
-    let softwareWalletsStep: Observable<WalletBase[]> = of([]);
+    const softwareWalletsStep: Observable<WalletBase[]> = of([]);
 
     // Get the software wallets.
     return softwareWalletsStep.pipe(mergeMap((response: any[]) => {

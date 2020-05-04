@@ -3,6 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 
 import { BlockchainService, BasicBlockInfo, CoinSupply } from '../../../../services/blockchain.service';
+import { CoinService } from '../../../../services/coin.service';
 
 /**
  * Shows the state of the the blockchain on the node.
@@ -19,13 +20,20 @@ export class BlockchainComponent implements OnInit, OnDestroy {
   private operationSubscription: SubscriptionLike;
 
   // Time interval in which periodic data updates will be made.
-  private readonly updatePeriod = 5 * 1000;
+  private updatePeriod = 5 * 1000;
   // Time interval in which the periodic data updates will be restarted after an error.
-  private readonly errorUpdatePeriod = 2 * 1000;
+  private errorUpdatePeriod = 2 * 1000;
 
   constructor(
     private blockchainService: BlockchainService,
-  ) { }
+    coinService: CoinService,
+  ) {
+    // Intervals for updating the data must be longer if connecting to a remote node.
+    if (!coinService.currentCoinInmediate.isLocal) {
+      this.updatePeriod = 60 * 1000;
+      this.errorUpdatePeriod = 10 * 1000;
+    }
+  }
 
   ngOnInit() {
     this.startDataRefreshSubscription(0);
@@ -39,12 +47,9 @@ export class BlockchainComponent implements OnInit, OnDestroy {
   private startDataRefreshSubscription(delayMs: number) {
     this.removeOperationSubscription();
 
-    this.operationSubscription = of(0).pipe(delay(delayMs), mergeMap(() => this.blockchainService.getLastBlock()), mergeMap(block => {
-      this.block = block;
-
-      return this.blockchainService.getCoinSupply();
-    })).subscribe(coinSupply => {
-      this.coinSupply = coinSupply;
+    this.operationSubscription = of(0).pipe(delay(delayMs), mergeMap(() => this.blockchainService.getBlockchainState())).subscribe(state => {
+      this.block = state.lastBlock;
+      this.coinSupply = state.coinSupply;
 
       // Update again after a delay.
       this.startDataRefreshSubscription(this.updatePeriod);

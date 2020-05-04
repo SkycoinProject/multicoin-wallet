@@ -5,15 +5,15 @@ import { Injector } from '@angular/core';
 
 import { NodeOperator } from '../node-operator';
 import { Coin } from '../../../coins/coin';
-import { FiberApiService } from '../../api/fiber-api.service';
+import { BtcApiService } from '../../api/btc-api.service';
 
 /**
- * Operator for NodeService to be used with Fiber coins.
+ * Operator for NodeService to be used with btc-like coins.
  *
  * You can find more information about the functions and properties this class implements by
  * checking NodeService and NodeOperator.
  */
-export class FiberNodeOperator implements NodeOperator {
+export class BtcNodeOperator implements NodeOperator {
   get remoteNodeDataUpdated(): Observable<boolean> {
     return this.remoteNodeDataUpdatedInternal.asObservable();
   }
@@ -27,24 +27,24 @@ export class FiberNodeOperator implements NodeOperator {
   get currentMaxDecimals() {
     return this.currentMaxDecimalsInternal;
   }
-  private currentMaxDecimalsInternal = 100;
+  private currentMaxDecimalsInternal = 8;
 
   get burnRate() {
     return this.burnRateInternal;
   }
-  private burnRateInternal = new BigNumber(2);
+  private burnRateInternal = new BigNumber(1);
 
   // Coin the current instance will work with.
   private currentCoin: Coin;
 
   // Services used by this operator.
-  private fiberApiService: FiberApiService;
+  private btcApiService: BtcApiService;
 
   private basicInfoSubscription: Subscription;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.fiberApiService = injector.get(FiberApiService);
+    this.btcApiService = injector.get(BtcApiService);
 
     this.currentCoin = currentCoin;
 
@@ -67,10 +67,11 @@ export class FiberNodeOperator implements NodeOperator {
       this.basicInfoSubscription.unsubscribe();
     }
 
-    this.basicInfoSubscription = of(1).pipe(delay(delayMs), mergeMap(() => this.fiberApiService.get(this.currentCoin.nodeUrl, 'health'))).subscribe(response => {
-      this.nodeVersionInternal = response.version.version;
-      this.burnRateInternal = new BigNumber(response.user_verify_transaction.burn_factor);
-      this.currentMaxDecimalsInternal = response.user_verify_transaction.max_decimals;
+    this.basicInfoSubscription = of(1).pipe(
+      delay(delayMs),
+      mergeMap(() => this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getinfo')),
+    ).subscribe(response => {
+      this.nodeVersionInternal = response.version;
 
       this.remoteNodeDataUpdatedInternal.next(true);
     }, () => {

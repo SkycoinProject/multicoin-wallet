@@ -3,7 +3,7 @@ import { delay, map, mergeMap } from 'rxjs/operators';
 import { NgZone, Injector } from '@angular/core';
 
 import { Coin } from '../../../coins/coin';
-import { BasicBlockInfo, CoinSupply, ProgressEvent } from '../../blockchain.service';
+import { BasicBlockInfo, ProgressEvent, BlockchainState } from '../../blockchain.service';
 import { BlockchainOperator } from '../blockchain-operator';
 import { FiberApiService } from '../../api/fiber-api.service';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
@@ -66,6 +66,12 @@ export class FiberBlockchainOperator implements BlockchainOperator {
     this.fiberApiService = injector.get(FiberApiService);
     this.ngZone = injector.get(NgZone);
 
+    // Intervals for updating the data must be longer if connecting to a remote node.
+    if (!currentCoin.isLocal) {
+      this.updatePeriod = 120 * 1000;
+      this.errorUpdatePeriod = 30 * 1000;
+    }
+
     // Get the operators and only then start using them.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
       if (operators) {
@@ -89,23 +95,28 @@ export class FiberBlockchainOperator implements BlockchainOperator {
     this.progressSubject.complete();
   }
 
-  getLastBlock(): Observable<BasicBlockInfo> {
-    return this.fiberApiService.get(this.currentCoin.nodeUrl, 'last_blocks', { num: 1 }).pipe(map(blocks => {
-      return {
+  getBlockchainState(): Observable<BlockchainState> {
+    let lastBlock: BasicBlockInfo;
+
+    // Get the last block info.
+    return this.fiberApiService.get(this.currentCoin.nodeUrl, 'last_blocks', { num: 1 }).pipe(mergeMap(blocks => {
+      lastBlock = {
         seq: blocks.blocks[0].header.seq,
         timestamp: blocks.blocks[0].header.timestamp,
         hash: blocks.blocks[0].header.block_hash,
       };
-    }));
-  }
 
-  getCoinSupply(): Observable<CoinSupply> {
-    return this.fiberApiService.get(this.currentCoin.nodeUrl, 'coinSupply').pipe(map(supply => {
+      // Get the coin supply info.
+      return this.fiberApiService.get(this.currentCoin.nodeUrl, 'coinSupply');
+    }), map(supply => {
       return {
-        currentSupply: supply.current_supply,
-        totalSupply: supply.total_supply,
-        currentCoinhourSupply: supply.current_coinhour_supply,
-        totalCoinhourSupply: supply.total_coinhour_supply,
+        lastBlock: lastBlock,
+        coinSupply: {
+          currentSupply: supply.current_supply,
+          totalSupply: supply.total_supply,
+          currentCoinhourSupply: supply.current_coinhour_supply,
+          totalCoinhourSupply: supply.total_coinhour_supply,
+        },
       };
     }));
   }

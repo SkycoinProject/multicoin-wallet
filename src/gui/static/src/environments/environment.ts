@@ -8,6 +8,11 @@ export const environment = {
   production: false,
   tellerUrl: '/teller/',
   isInE2eMode: false,
+  /**
+   * If true and while using non-fiber coins, the blockchain will always appear as synchronized
+   * and no error will be shown if the node is not connected to other nodes.
+   */
+  ignoreNonFiberNetworIssues: true,
 
   // NOTE: the Swaplab integration currently works with Skycoin only.
   swaplab: {

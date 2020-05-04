@@ -130,6 +130,7 @@ import { SelectCoinOverlayComponent } from './components/layout/select-coin-over
 import { FiberApiService } from './services/api/fiber-api.service';
 import { WalletUtilsService } from './services/wallet-operations/wallet-utils.service';
 import { OperatorService } from './services/operators.service';
+import { BtcApiService } from './services/api/btc-api.service';
 
 @NgModule({
   declarations: [
@@ -307,6 +308,7 @@ import { OperatorService } from './services/operators.service';
     NodeService,
     WalletUtilsService,
     OperatorService,
+    BtcApiService,
     {
       provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
       useValue: {

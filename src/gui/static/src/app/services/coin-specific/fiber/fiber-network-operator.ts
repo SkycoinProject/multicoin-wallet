@@ -21,11 +21,11 @@ export class FiberNetworkOperator implements NetworkOperator {
   /**
    * Time interval in which periodic data updates will be made.
    */
-  private readonly updatePeriod = 5 * 1000;
+  private updatePeriod = 5 * 1000;
   /**
    * Time interval in which the periodic data updates will be restarted after an error.
    */
-  private readonly errorUpdatePeriod = 5 * 1000;
+  private errorUpdatePeriod = 5 * 1000;
 
   /**
    * List of default addresses to which the node will always try connect to when started.
@@ -52,6 +52,12 @@ export class FiberNetworkOperator implements NetworkOperator {
     this.ngZone = injector.get(NgZone);
 
     this.currentCoin = currentCoin;
+
+    // Intervals for updating the data must be longer if connecting to a remote node.
+    if (!currentCoin.isLocal) {
+      this.updatePeriod = 120 * 1000;
+      this.errorUpdatePeriod = 30 * 1000;
+    }
 
     // Start updating the data periodically.
     this.startDataRefreshSubscription(0);

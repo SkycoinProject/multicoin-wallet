@@ -15,6 +15,12 @@ const PROXY_CONFIG = {
       req.headers["origin"] = 'http://127.0.0.1:6420';
     }
   },
+  "/local-btcd": {
+    "target": "http://localhost:18556/",
+    "logLevel": "debug",
+    "changeOrigin": true,
+    pathRewrite: {'^/local-btcd' : ''}
+  },
   "/teller/*": {
     "target": "http://127.0.0.1:7071",
     "pathRewrite": {

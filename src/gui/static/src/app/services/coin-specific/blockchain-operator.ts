@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 
-import { BasicBlockInfo, CoinSupply, ProgressEvent } from '../blockchain.service';
+import { ProgressEvent, BlockchainState } from '../blockchain.service';
 
 /**
  * Interface with the elements the operators for BlockchainService must have.
@@ -17,6 +17,5 @@ export interface BlockchainOperator {
   dispose();
 
   // Functions related to the state of the blockchain. Documented on the service.
-  getLastBlock(): Observable<BasicBlockInfo>;
-  getCoinSupply(): Observable<CoinSupply>;
+  getBlockchainState(): Observable<BlockchainState>;
 }
