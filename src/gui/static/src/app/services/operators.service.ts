@@ -46,8 +46,8 @@ export class OperatorService {
   ) { }
 
   /**
-   * Returns the currently active operators. It returns null while the first set of operators
-   * is being created.
+   * Returns the currently active operators. It returns null while the operators
+   * are being created.
    */
   get currentOperators(): Observable<OperatorSet> {
     return this.currentOperatorsSubject.asObservable();
@@ -69,6 +69,8 @@ export class OperatorService {
           this.operators.walletUtilsOperator.dispose();
           this.operators.walletsAndAddressesOperator.dispose();
         }
+
+        this.currentOperatorsSubject.next(null);
 
         // Replace the current operators.
         if (coin.coinType === CoinTypes.Fiber) {

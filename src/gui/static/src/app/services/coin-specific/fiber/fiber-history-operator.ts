@@ -44,12 +44,9 @@ export class FiberHistoryOperator implements HistoryOperator {
     this.storageService = injector.get(StorageService);
 
     // Get the operators.
-    this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
-      if (operators) {
-        this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
-        this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
-        this.operatorsSubscription.unsubscribe();
-      }
+    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
+      this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
     });
 
     this.currentCoin = currentCoin;

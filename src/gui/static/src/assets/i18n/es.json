@@ -13,7 +13,8 @@
     "continue-button": "Continuar",
     "close-button": "Cerrar",
     "generic-confirmation-check": "Entiendo los riesgos y deseo continuar",
-    "copied": "El texto ha sido copiado al portapapeles."
+    "copied": "El texto ha sido copiado al portapapeles.",
+    "confirmations": "Confirmaciones"
   },
 
   "errors": {

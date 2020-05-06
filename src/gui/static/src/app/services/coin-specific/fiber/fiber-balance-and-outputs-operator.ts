@@ -1,5 +1,5 @@
 import { forkJoin as observableForkJoin, of, Observable, ReplaySubject, Subscription, BehaviorSubject } from 'rxjs';
-import { mergeMap, map, switchMap, tap, delay } from 'rxjs/operators';
+import { mergeMap, map, switchMap, tap, delay, filter, first } from 'rxjs/operators';
 import { NgZone, Injector } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 
@@ -81,17 +81,14 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
     }
 
     // Get the operators and only then start using them.
-    this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
-      if (operators) {
-        this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
-        this.operatorsSubscription.unsubscribe();
+    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
 
-        // Update the balance immediately each time the wallets are updated.
-        this.walletsSubscription = this.walletsAndAddressesOperator.currentWallets.subscribe(wallets => {
-          this.savedWalletsList = wallets;
-          this.startDataRefreshSubscription(0, true);
-        });
-      }
+      // Update the balance immediately each time the wallets are updated.
+      this.walletsSubscription = this.walletsAndAddressesOperator.currentWallets.subscribe(wallets => {
+        this.savedWalletsList = wallets;
+        this.startDataRefreshSubscription(0, true);
+      });
     });
 
     this.currentCoin = currentCoin;

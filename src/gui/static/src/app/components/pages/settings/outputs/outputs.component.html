@@ -12,7 +12,8 @@
       <div class="-headers">
         <div class="-flex-fill text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
         <div class="-width-150 text-right">{{ 'coinSymbol' | commonText }}</div>
-        <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
+        <div *ngIf="!showConfirmations" class="-width-150 text-right">{{ 'hours' | commonText }}</div>
+        <div *ngIf="showConfirmations" class="-width-150 text-right">{{ 'common.confirmations' | translate }}</div>
       </div>
       <div class="-body">
         <ng-container *ngFor="let address of wallet.addresses">
@@ -25,7 +26,14 @@
           <div class="-row" *ngFor="let output of address.outputs">
             <div class="-flex-fill -hash">{{ output.hash }}</div>
             <div class="-width-150 text-right">{{ output.coins | amount:true:'first' }}</div>
-            <div class="-width-150 text-right grey-text">{{ output.hours | amount:false:'first' }}</div>
+            <div *ngIf="!showConfirmations" class="-width-150 text-right grey-text">{{ output.hours | amount:false:'first' }}</div>
+            <div
+              *ngIf="showConfirmations"
+              [ngClass]="{'green-text': output.confirmations >= confirmationsNeeded, 'red-text': output.confirmations < confirmationsNeeded}"
+              class="-width-150 text-right"
+            >
+              {{ output.confirmations }}
+            </div>
           </div>
         </ng-container>
       </div>

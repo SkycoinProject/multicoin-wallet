@@ -13,7 +13,8 @@
     "continue-button": "Continue",
     "close-button": "Close",
     "generic-confirmation-check": "I understand the risks and want to continue",
-    "copied": "The text has been copied to the clipboard."
+    "copied": "The text has been copied to the clipboard.",
+    "confirmations": "Confirmations"
   },
 
   "errors": {

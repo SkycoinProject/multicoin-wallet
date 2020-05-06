@@ -1,6 +1,6 @@
 import { of, Observable, ReplaySubject, Subscription, BehaviorSubject, throwError, forkJoin, Subject } from 'rxjs';
 import { NgZone, Injector } from '@angular/core';
-import { mergeMap, map, switchMap, catchError, delay, tap, first } from 'rxjs/operators';
+import { mergeMap, map, switchMap, catchError, delay, tap, first, filter } from 'rxjs/operators';
 import BigNumber from 'bignumber.js';
 
 import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, WalletWithOutputs, walletWithOutputsFromBase } from '../../wallet-operations/wallet-objects';
@@ -12,6 +12,7 @@ import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { BtcApiService } from '../../api/btc-api.service';
 import { OperationError } from '../../../utils/operation-error';
 import { processServiceError } from '../../../utils/errors';
+import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
 
 /**
  * Balance and outputs of a wallet, for internal use.
@@ -100,17 +101,14 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     }
 
     // Get the operators and only then start using them.
-    this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
-      if (operators) {
-        this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
-        this.operatorsSubscription.unsubscribe();
+    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
 
-        // Update the balance immediately each time the wallets are updated.
-        this.walletsSubscription = this.walletsAndAddressesOperator.currentWallets.subscribe(wallets => {
-          this.savedWalletsList = wallets;
-          this.startDataRefreshSubscription(0, true);
-        });
-      }
+      // Update the balance immediately each time the wallets are updated.
+      this.walletsSubscription = this.walletsAndAddressesOperator.currentWallets.subscribe(wallets => {
+        this.savedWalletsList = wallets;
+        this.startDataRefreshSubscription(0, true);
+      });
     });
 
     this.currentCoin = currentCoin;
@@ -417,6 +415,8 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   private retrieveWalletBalance(wallet: WalletWithBalance, useSavedBalanceData: boolean): Observable<boolean> {
     let query: Observable<WalletBalance>;
 
+    let hasUnconfirmedTxs = false;
+
     if (!useSavedBalanceData) {
       // Get all outputs.
       const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
@@ -429,6 +429,10 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         result.forEach(output => {
           if (addresses.has(output.address)) {
             addresses.get(output.address).push(output);
+
+            if (output.confirmations < (this.currentCoin.config as BtcCoinConfig).confirmationsNeeded) {
+              hasUnconfirmedTxs = true;
+            }
           }
         });
 
@@ -476,10 +480,8 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         }
       });
 
-      // Check if there are pending transactions.
       if (!useSavedBalanceData) {
-        // TODO: inform if there are pending transactions.
-        return false;
+        return hasUnconfirmedTxs;
       } else {
         return this.hasPendingTransactionsSubject.value;
       }
@@ -524,6 +526,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
                         coins: new BigNumber(output.value),
                         hash: this.getOutputId(tx.txid, output.n),
                         hours: new BigNumber(0),
+                        confirmations: tx.confirmations ? tx.confirmations : 0,
                       };
 
                       outputs.set(processedOutput.hash, processedOutput);

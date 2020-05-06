@@ -1,5 +1,6 @@
 import { Coin } from './coin';
 import { CoinTypes } from './coin-types';
+import { BtcCoinConfig } from './config/btc.coin-config';
 
 export class BtcCoin extends Coin {
   coinType = CoinTypes.BTC;
@@ -14,4 +15,5 @@ export class BtcCoin extends Coin {
   priceTickerId = 'btc-bitcoin';
   explorerUrl = 'https://explorer.testcoin.net';
   assetsFolderName = 'testcoin';
+  config = new BtcCoinConfig();
 }

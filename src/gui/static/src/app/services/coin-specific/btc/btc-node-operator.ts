@@ -6,6 +6,7 @@ import { Injector } from '@angular/core';
 import { NodeOperator } from '../node-operator';
 import { Coin } from '../../../coins/coin';
 import { BtcApiService } from '../../api/btc-api.service';
+import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
 
 /**
  * Operator for NodeService to be used with btc-like coins.
@@ -25,9 +26,8 @@ export class BtcNodeOperator implements NodeOperator {
   private nodeVersionInternal = '';
 
   get currentMaxDecimals() {
-    return this.currentMaxDecimalsInternal;
+    return (this.currentCoin.config as BtcCoinConfig).decimals;
   }
-  private currentMaxDecimalsInternal = 8;
 
   get burnRate() {
     return this.burnRateInternal;

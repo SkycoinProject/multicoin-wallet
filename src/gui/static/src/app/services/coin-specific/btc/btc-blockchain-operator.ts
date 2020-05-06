@@ -1,5 +1,5 @@
 import { Subscription, of, Observable, ReplaySubject } from 'rxjs';
-import { delay, map, mergeMap } from 'rxjs/operators';
+import { delay, map, mergeMap, filter, first } from 'rxjs/operators';
 import { NgZone, Injector } from '@angular/core';
 
 import { Coin } from '../../../coins/coin';
@@ -10,6 +10,7 @@ import { OperatorService } from '../../operators.service';
 import { BtcApiService } from '../../api/btc-api.service';
 import BigNumber from 'bignumber.js';
 import { environment } from '../../../../environments/environment';
+import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
 
 /**
  * Operator for BlockchainService to be used with btc-like coins..
@@ -59,14 +60,11 @@ export class BtcBlockchainOperator implements BlockchainOperator {
     }
 
     // Get the operators and only then start using them.
-    this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
-      if (operators) {
-        this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
-        this.operatorsSubscription.unsubscribe();
+    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
 
-        // Start checking the state of the blockchain.
-        this.startDataRefreshSubscription(0);
-      }
+      // Start checking the state of the blockchain.
+      this.startDataRefreshSubscription(0);
     });
 
     this.currentCoin = currentCoin;
@@ -93,16 +91,16 @@ export class BtcBlockchainOperator implements BlockchainOperator {
     }), map(result => {
       let currentBlock = result.height + 1;
       let currentSupply = new BigNumber(0);
-      let reward = new BigNumber(50);
+      let reward = new BigNumber((this.currentCoin.config as BtcCoinConfig).initialMiningReward);
 
       // Calculate how many coins have been mined.
       while (currentBlock > 0) {
-        if (currentBlock < 210000) {
+        if (currentBlock < (this.currentCoin.config as BtcCoinConfig).halvingBlocks) {
           currentSupply = currentSupply.plus(reward.multipliedBy(currentBlock));
           currentBlock = 0;
         } else {
-          currentSupply = currentSupply.plus(reward.multipliedBy(210000));
-          currentBlock -= 210000;
+          currentSupply = currentSupply.plus(reward.multipliedBy((this.currentCoin.config as BtcCoinConfig).halvingBlocks));
+          currentBlock -= (this.currentCoin.config as BtcCoinConfig).halvingBlocks;
           reward = reward.dividedBy(2);
         }
       }
@@ -149,7 +147,7 @@ export class BtcBlockchainOperator implements BlockchainOperator {
           this.progressSubject.next({
             currentBlock: 0,
             highestBlock: 0,
-            synchronized: environment.ignoreNonFiberNetworIssues ? true : Date.now() - (result.time + 1000) < 5400000,
+            synchronized: environment.ignoreNonFiberNetworIssues ? true : Date.now() - (result.time + 1000) < (this.currentCoin.config as BtcCoinConfig).outOfSyncMinutes * 60000,
           });
 
           this.startDataRefreshSubscription(this.updatePeriod);

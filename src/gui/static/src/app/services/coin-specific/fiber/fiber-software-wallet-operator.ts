@@ -1,5 +1,5 @@
 import { Observable, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, filter, first } from 'rxjs/operators';
 import { Injector } from '@angular/core';
 
 import { WalletBase } from '../../wallet-operations/wallet-objects';
@@ -34,11 +34,8 @@ export class FiberSoftwareWalletOperator implements SoftwareWalletOperator {
     this.fiberApiService = injector.get(FiberApiService);
 
     // Get the operators.
-    this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
-      if (operators) {
-        this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
-        this.operatorsSubscription.unsubscribe();
-      }
+    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
     });
 
     this.currentCoin = currentCoin;

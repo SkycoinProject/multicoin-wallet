@@ -1,5 +1,5 @@
 import { Subscription, of, Observable, ReplaySubject } from 'rxjs';
-import { delay, map, mergeMap } from 'rxjs/operators';
+import { delay, map, mergeMap, filter, first } from 'rxjs/operators';
 import { NgZone, Injector } from '@angular/core';
 
 import { Coin } from '../../../coins/coin';
@@ -73,14 +73,11 @@ export class FiberBlockchainOperator implements BlockchainOperator {
     }
 
     // Get the operators and only then start using them.
-    this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
-      if (operators) {
-        this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
-        this.operatorsSubscription.unsubscribe();
+    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
 
-        // Start checking the state of the blockchain.
-        this.startDataRefreshSubscription(0);
-      }
+      // Start checking the state of the blockchain.
+      this.startDataRefreshSubscription(0);
     });
 
     this.currentCoin = currentCoin;

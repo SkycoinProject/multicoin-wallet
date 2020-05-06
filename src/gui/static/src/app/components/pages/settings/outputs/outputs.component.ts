@@ -1,10 +1,13 @@
 import { Component, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
+import { retryWhen, delay } from 'rxjs/operators';
 
 import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
 import { WalletWithOutputs } from '../../../../services/wallet-operations/wallet-objects';
-import { retryWhen, delay } from 'rxjs/operators';
+import { CoinService } from '../../../../services/coin.service';
+import { CoinTypes } from '../../../../coins/coin-types';
+import { BtcCoinConfig } from '../../../../coins/config/btc.coin-config';
 
 /**
  * Allows to see the list of unspent outputs of the registered wallets. The list can be
@@ -18,21 +21,36 @@ import { retryWhen, delay } from 'rxjs/operators';
 export class OutputsComponent implements OnDestroy {
   wallets: WalletWithOutputs[]|null;
 
+  // If true, the page will show a column with how many confirmations the outputs has, instead
+  // of the hours column.
+  showConfirmations = false;
+  // Now many confirmations a transaction must have to be considered fully confirmed.
+  confirmationsNeeded = 0;
+
   private outputsSubscription: SubscriptionLike;
+  private navigationSubscription: SubscriptionLike;
 
   constructor(
     route: ActivatedRoute,
+    coinService: CoinService,
     private balanceAndOutputsService: BalanceAndOutputsService,
   ) {
     // Reload the data every time the url params change.
-    route.queryParams.subscribe(params => {
+    this.navigationSubscription = route.queryParams.subscribe(params => {
       this.wallets = null;
       this.loadData(params);
     });
+
+    this.showConfirmations = coinService.currentCoinInmediate.coinType !== CoinTypes.Fiber;
+
+    if (coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
+      this.confirmationsNeeded = (coinService.currentCoinInmediate.config as BtcCoinConfig).confirmationsNeeded;
+    }
   }
 
   ngOnDestroy() {
     this.removeOutputsSubscription();
+    this.navigationSubscription.unsubscribe();
   }
 
   private loadData(lastRouteParams: Params) {

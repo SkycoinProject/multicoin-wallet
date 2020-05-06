@@ -23,6 +23,7 @@ export interface Output {
   address: string;
   coins: BigNumber;
   hours: BigNumber;
+  confirmations?: number;
 }
 
 /**
