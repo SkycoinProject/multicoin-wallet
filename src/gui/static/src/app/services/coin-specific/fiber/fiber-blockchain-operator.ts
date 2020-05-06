@@ -40,11 +40,11 @@ export class FiberBlockchainOperator implements BlockchainOperator {
   /**
    * Time interval in which periodic data updates will be made.
    */
-  private readonly updatePeriod = 2 * 1000;
+  private updatePeriod = 2 * 1000;
   /**
    * Time interval in which the periodic data updates will be restarted after an error.
    */
-  private readonly errorUpdatePeriod = 2 * 1000;
+  private errorUpdatePeriod = 2 * 1000;
 
   /**
    * allows to know the current synchronization state of the blockchain.

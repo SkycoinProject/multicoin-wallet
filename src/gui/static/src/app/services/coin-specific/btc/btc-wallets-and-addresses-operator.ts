@@ -1,6 +1,5 @@
 import { of, Observable, Subscription, ReplaySubject } from 'rxjs';
 import { mergeMap, map } from 'rxjs/operators';
-import { TranslateService } from '@ngx-translate/core';
 import { Injector } from '@angular/core';
 
 import { HwWalletService } from '../../hw-wallet.service';
@@ -9,7 +8,6 @@ import { redirectToErrorPage } from '../../../utils/errors';
 import { StorageService, StorageType } from '../../storage.service';
 import { Coin } from '../../../coins/coin';
 import { WalletsAndAddressesOperator, LastAddress, CreateWalletArgs } from '../wallets-and-addresses-operator';
-import { BtcApiService } from '../../api/btc-api.service';
 
 /**
  * Operator for WalletsAndAddressesService to be used with btc-like coins.
@@ -25,6 +23,11 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
    * in the code to make it unique for the current coin.
    */
   private hwWalletsDataStorageKey = 'hw-wallets';
+  /**
+   * Key used for saving the software wallet list in persistent storage. At this state it is only
+   * for testing. NOTE: the value is changed in the code to make it unique for the current coin.
+   */
+  private swWalletsDataStorageKey = 'sw-wallets';
 
   // List with all the wallets of all coins and the subject used for informing when the list
   // has been modified.
@@ -53,6 +56,7 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
     // to correspond to the selected coin.
     this.currentCoin = currentCoin;
     this.hwWalletsDataStorageKey = this.hwWalletsDataStorageKey + '-' + currentCoin.coinName;
+    this.swWalletsDataStorageKey = this.swWalletsDataStorageKey + '-' + currentCoin.coinName;
   }
 
   initialize(wallets: WalletBase[]) {
@@ -196,11 +200,8 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
   loadWallets(): Observable<WalletBase[]> {
     let wallets: WalletBase[] = [];
 
-    // Do not get software wallets for now.
-    const softwareWalletsStep: Observable<WalletBase[]> = of([]);
-
     // Get the software wallets.
-    return softwareWalletsStep.pipe(mergeMap((response: any[]) => {
+    return this.loadSoftwareWallets().pipe(mergeMap((response: any[]) => {
       wallets = response;
 
       // Get the hardware wallets.
@@ -261,6 +262,34 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
             wallet.coin = this.currentCoin.coinName;
 
             wallet.id = this.getHwWalletID(wallet.addresses[0].address);
+          });
+
+          return loadedWallets;
+        }
+
+        return [];
+      }),
+    );
+  }
+
+  /**
+   * Loads all the software wallets saved on the persistent storage. At this state is only
+   * for testing.
+   */
+  private loadSoftwareWallets(): Observable<WalletBase[]> {
+    return this.storageService.get(StorageType.CLIENT, this.swWalletsDataStorageKey).pipe(
+      map(storedWallets => {
+        if (storedWallets) {
+          let loadedWallets: WalletBase[] = JSON.parse(storedWallets);
+
+          loadedWallets = loadedWallets.filter(wallet => wallet.coin === this.currentCoin.coinName);
+          loadedWallets.forEach(wallet => {
+            // The wallet must be identified as a software wallet and have at least one address.
+            // This is just a precaution.
+            wallet.isHardware = false;
+            if (!wallet.addresses) {
+              wallet.addresses = [{ address: 'invalid', confirmed: true, }];
+            }
           });
 
           return loadedWallets;

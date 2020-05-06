@@ -18,17 +18,6 @@ export class BalanceAndOutputsService {
    */
   private operator: BalanceAndOutputsOperator;
 
-  /**
-   * Last moment in which the balance was updated.
-   */
-  get lastBalancesUpdateTime(): Date {
-    if (this.operator) {
-      return this.operator.lastBalancesUpdateTime;
-    } else {
-      return new Date(2000, 1);
-    }
-  }
-
   constructor(operatorService: OperatorService) {
     // Maintain the operator updated.
     operatorService.currentOperators.subscribe(operators => {
@@ -38,6 +27,14 @@ export class BalanceAndOutputsService {
         this.operator = null;
       }
     });
+  }
+
+  /**
+   * Gets the last moment in which the balance was updated. Emits every time the system
+   * finishes checking the balance.
+   */
+  get lastBalancesUpdateTime(): Observable<Date> {
+    return this.operator.lastBalancesUpdateTime;
   }
 
   /**

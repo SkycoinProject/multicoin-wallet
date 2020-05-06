@@ -4,6 +4,7 @@ import { SubscriptionLike } from 'rxjs';
 
 import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
 import { WalletWithOutputs } from '../../../../services/wallet-operations/wallet-objects';
+import { retryWhen, delay } from 'rxjs/operators';
 
 /**
  * Allows to see the list of unspent outputs of the registered wallets. The list can be
@@ -40,20 +41,22 @@ export class OutputsComponent implements OnDestroy {
     this.removeOutputsSubscription();
 
     // Periodically get the list of wallets with the outputs.
-    this.outputsSubscription = this.balanceAndOutputsService.outputsWithWallets.subscribe(wallets => {
-      // The original response object is modified. No copy is created before doing this
-      // because the data is only used by this page.
-      this.wallets = wallets.map(wallet => {
-        // Include only addresses with outputs or the requested address.
-        wallet.addresses = wallet.addresses.filter(address => {
-          if (address.outputs.length > 0) {
-            return addr ? address.address === addr : true;
-          }
-        });
+    this.outputsSubscription = this.balanceAndOutputsService.outputsWithWallets
+      .pipe(retryWhen(errors => errors.pipe(delay(2000))))
+      .subscribe(wallets => {
+        // The original response object is modified. No copy is created before doing this
+        // because the data is only used by this page.
+        this.wallets = wallets.map(wallet => {
+          // Include only addresses with outputs or the requested address.
+          wallet.addresses = wallet.addresses.filter(address => {
+            if (address.outputs.length > 0) {
+              return addr ? address.address === addr : true;
+            }
+          });
 
-        return wallet;
-      }).filter(wallet => wallet.addresses.length > 0);
-    });
+          return wallet;
+        }).filter(wallet => wallet.addresses.length > 0);
+      });
   }
 
   private removeOutputsSubscription() {

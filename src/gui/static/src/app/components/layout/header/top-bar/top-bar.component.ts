@@ -36,6 +36,8 @@ export class TopBarComponent implements OnInit, OnDestroy {
   hasManyCoins = false;
   // Currently selected coin.
   currentCoin: Coin;
+  // The last moment in which the balance was updated.
+  lastBalancesUpdateTime = new Date(2000, 1);
 
   private subscriptionsGroup: Subscription[] = [];
 
@@ -66,7 +68,10 @@ export class TopBarComponent implements OnInit, OnDestroy {
     }));
 
     this.subscriptionsGroup.push(
-      this.balanceAndOutputsService.walletsWithBalance.subscribe(() => this.timeSinceLastBalanceUpdate = this.getTimeSinceLastBalanceUpdate()),
+      this.balanceAndOutputsService.lastBalancesUpdateTime.subscribe(date => {
+        this.lastBalancesUpdateTime = date;
+        this.timeSinceLastBalanceUpdate = this.getTimeSinceLastBalanceUpdate();
+      }),
     );
 
     this.subscriptionsGroup.push(
@@ -104,7 +109,7 @@ export class TopBarComponent implements OnInit, OnDestroy {
 
   // Gets how many minutes ago the balance was refreshed.
   private getTimeSinceLastBalanceUpdate(): number {
-    const diffMs: number = new Date().getTime() - this.balanceAndOutputsService.lastBalancesUpdateTime.getTime();
+    const diffMs: number = new Date().getTime() - this.lastBalancesUpdateTime.getTime();
 
     return Math.floor(diffMs / 60000);
   }

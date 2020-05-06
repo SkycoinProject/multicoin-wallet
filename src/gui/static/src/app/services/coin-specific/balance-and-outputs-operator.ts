@@ -9,7 +9,7 @@ import { Output } from '../wallet-operations/transaction-objects';
  */
 export interface BalanceAndOutputsOperator {
   // Properties for getting access to general info. Documented on the service.
-  lastBalancesUpdateTime: Date;
+  lastBalancesUpdateTime: Observable<Date>;
   walletsWithBalance: Observable<WalletWithBalance[]>;
   hasPendingTransactions: Observable<boolean>;
   firstFullUpdateMade: Observable<boolean>;

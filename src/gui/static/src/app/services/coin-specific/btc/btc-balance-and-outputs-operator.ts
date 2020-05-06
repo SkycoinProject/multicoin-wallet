@@ -1,18 +1,37 @@
-import { of, Observable, ReplaySubject, Subscription, BehaviorSubject } from 'rxjs';
+import { of, Observable, ReplaySubject, Subscription, BehaviorSubject, throwError, forkJoin, Subject } from 'rxjs';
 import { NgZone, Injector } from '@angular/core';
+import { mergeMap, map, switchMap, catchError, delay, tap, first } from 'rxjs/operators';
+import BigNumber from 'bignumber.js';
 
-import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, WalletWithOutputs } from '../../wallet-operations/wallet-objects';
+import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, WalletWithOutputs, walletWithOutputsFromBase } from '../../wallet-operations/wallet-objects';
 import { Output } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { BtcApiService } from '../../api/btc-api.service';
+import { OperationError } from '../../../utils/operation-error';
+import { processServiceError } from '../../../utils/errors';
+
+/**
+ * Balance and outputs of a wallet, for internal use.
+ */
+class WalletBalance {
+  balance = new BigNumber(0);
+  outputs: Output[] = [];
+  addresses = new Map<string, AddressBalance>();
+}
+
+/**
+ * Balance and outputs of an address, for internal use.
+ */
+class AddressBalance {
+  balance = new BigNumber(0);
+  outputs: Output[] = [];
+}
 
 /**
  * Operator for BalanceAndOutputsService to be used with btc-like coins.
- *
- * NOTE: still under heavy development.
  *
  * You can find more information about the functions and properties this class implements by
  * checking BalanceAndOutputsOperator and BalanceAndOutputsService.
@@ -23,6 +42,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   private walletsWithBalanceSubject: ReplaySubject<WalletWithBalance[]> = new ReplaySubject<WalletWithBalance[]>(1);
 
   // Subject for providing information in the getters below.
+  private lastBalancesUpdateTimeSubject: ReplaySubject<Date> = new ReplaySubject<Date>(1);
   private hasPendingTransactionsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private firstFullUpdateMadeSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private hadErrorRefreshingBalanceSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
@@ -33,17 +53,32 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   private operatorsSubscription: Subscription;
 
   /**
+   * Time interval in which periodic data updates will be made.
+   */
+  private updatePeriod = 10 * 1000;
+  /**
+   * Time interval in which the periodic data updates will be restarted after an error.
+   */
+  private errorUpdatePeriod = 2 * 1000;
+
+  /**
+   * After the service retrieves the balance of each wallet, the balance and outputs returned
+   * by the node for each wallet is saved here, accessible via the wallet id.
+   */
+  private savedBalanceData = new Map<string, WalletBalance>();
+  /**
+   * Allows to know when the value of savedBalanceData has been updated.
+   */
+  private savedBalanceDataSubject: Subject<void> = new Subject<void>();
+  /**
+   * Temporal map for updating savedBalanceData only after retrieving the data of all wallets,
+   * to avoid problems when the balance update procedure is cancelled early.
+   */
+  private temporalSavedBalanceData = new Map<string, WalletBalance>();
+  /**
    * Saves the lastest, most up to date, wallet list obtained from the wallets service.
    */
   private savedWalletsList: WalletBase[];
-
-  /**
-   * Last moment in which the balance was updated.
-   */
-  get lastBalancesUpdateTime(): Date {
-    return this.lastBalancesUpdateTimeInternal;
-  }
-  private lastBalancesUpdateTimeInternal: Date = new Date();
 
   // Coin the current instance will work with.
   private currentCoin: Coin;
@@ -57,6 +92,12 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     // Get the services.
     this.btcApiService = injector.get(BtcApiService);
     this.ngZone = injector.get(NgZone);
+
+    // Intervals for updating the data must be longer if connecting to a remote node.
+    if (!currentCoin.isLocal) {
+      this.updatePeriod = 600 * 1000;
+      this.errorUpdatePeriod = 60 * 1000;
+    }
 
     // Get the operators and only then start using them.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
@@ -84,11 +125,17 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       this.dataRefreshSubscription.unsubscribe();
     }
 
+    this.lastBalancesUpdateTimeSubject.complete();
     this.walletsWithBalanceSubject.complete();
     this.hasPendingTransactionsSubject.complete();
     this.firstFullUpdateMadeSubject.complete();
     this.hadErrorRefreshingBalanceSubject.complete();
     this.refreshingBalanceSubject.complete();
+    this.savedBalanceDataSubject.complete();
+  }
+
+  get lastBalancesUpdateTime(): Observable<Date> {
+    return this.lastBalancesUpdateTimeSubject.asObservable();
   }
 
   get walletsWithBalance(): Observable<WalletWithBalance[]> {
@@ -112,15 +159,90 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   }
 
   get outputsWithWallets(): Observable<WalletWithOutputs[]> {
-   return of([]);
+    // Run each time the wallet list changes.
+    return this.walletsWithBalance.pipe(switchMap(wallets => {
+      const addresses = wallets.map(wallet => wallet.addresses.map(address => address.address).join(',')).join(',');
+
+      // Get the unspent outputs of the list of addresses.
+      return this.getOutputs(addresses);
+    }), map(outputs => {
+      // Build the response.
+      const walletsList: WalletWithOutputs[] = [];
+      this.walletsWithBalanceList.forEach(wallet => {
+        const newWallet = walletWithOutputsFromBase(wallet);
+        walletsList.push(newWallet);
+
+        newWallet.addresses.forEach(address => {
+          address.outputs = outputs.filter(output => output.address === address.address);
+        });
+      });
+
+      return walletsList;
+    }));
   }
 
   getOutputs(addresses: string): Observable<Output[]> {
-    return of([]);
+    // Put the requested addresses in a map.
+    const requestedAddressesMap = new Map<string, boolean>();
+    addresses.split(',').forEach(address => requestedAddressesMap.set(address.trim(), true));
+
+    // Check if all requested addresses are part of the user wallets.
+    let addressesAreLocal = false;
+    if (this.savedWalletsList) {
+      const addressesFoundMap = new Map<string, boolean>();
+
+      this.savedWalletsList.forEach(wallet => {
+        wallet.addresses.forEach(address => {
+          if (requestedAddressesMap.has(address.address)) {
+            addressesFoundMap.set(address.address, true);
+          }
+        });
+      });
+
+      addressesAreLocal = addressesFoundMap.size === requestedAddressesMap.size;
+    }
+
+    // If all the addresses are part of the user wallets, get the outputs from the data
+    // which is saved while updating the balance.
+    if (addressesAreLocal) {
+      // Refresh the user balance, to make savedBalanceData contain an updated list of all
+      // the ouputs in the user wallets.
+      this.refreshBalance();
+
+      // Wait for savedBalanceData to be updated.
+      return this.savedBalanceDataSubject.pipe(first(), map(() => {
+        let response: Output[] = [];
+
+        // Get the data of each wallet.
+        this.savedBalanceData.forEach(walletBalance => {
+          // If an address of the wallet is one of the requested addresses, add the outputs
+          // to the response and remove the address from the requested addresses list.
+          const addressesToRemove: string[] = [];
+          requestedAddressesMap.forEach((value, requestedAddress) => {
+            if (walletBalance.addresses.has(requestedAddress)) {
+              response = response.concat(walletBalance.addresses.get(requestedAddress).outputs);
+              addressesToRemove.push(requestedAddress);
+            }
+          });
+
+          addressesToRemove.forEach(address => {
+            requestedAddressesMap.delete(address);
+          });
+        });
+
+        return response;
+      }));
+    } else {
+      // If one or more addresses are not part of the user wallets, get all the outputs
+      // from the node.
+      return this.retrieveOutputs(addresses);
+    }
   }
 
   getWalletUnspentOutputs(wallet: WalletBase): Observable<Output[]> {
-    return of([]);
+    const addresses = wallet.addresses.map(a => a.address).join(',');
+
+    return this.getOutputs(addresses);
   }
 
   refreshBalance() {
@@ -143,18 +265,337 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       this.dataRefreshSubscription.unsubscribe();
     }
 
-    // Simulate a 0 balance response.
+    if (this.savedWalletsList) {
+      this.ngZone.runOutsideAngular(() => {
+        this.dataRefreshSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
+          // Inform the balance is being updated.
+          this.ngZone.run(() => {
+            this.refreshingBalanceSubject.next(true);
+          });
 
-    this.walletsWithBalanceList = this.savedWalletsList.map(wallet => {
-      return walletWithBalanceFromBase(wallet);
+          // Update the wallet list with the last saved data, if requested.
+          if (updateWalletsFirst) {
+            return this.refreshBalances(this.savedWalletsList, true);
+          } else {
+            return of(0);
+          }
+        }), mergeMap(() => {
+          // Refresh the balance.
+          return this.refreshBalances(this.savedWalletsList, false);
+        })).subscribe(
+          () => {
+            this.ngZone.run(() => {
+              this.hadErrorRefreshingBalanceSubject.next(false);
+              this.refreshingBalanceSubject.next(false);
+            });
+
+            // Repeat the operation after a delay.
+            this.startDataRefreshSubscription(this.updatePeriod, false);
+          },
+          () => {
+            this.ngZone.run(() => {
+              this.hadErrorRefreshingBalanceSubject.next(true);
+              this.refreshingBalanceSubject.next(false);
+            });
+
+            // Repeat the operation after a delay.
+            this.startDataRefreshSubscription(this.errorUpdatePeriod, false);
+          },
+        );
+      });
+    }
+  }
+
+  /**
+   * Refreshes the wallets on walletsWithBalanceList and their balances.
+   * @param wallets The current wallet lists.
+   * @param forceQuickCompleteArrayUpdate If true, the balance data saved on savedBalanceData
+   * will be used to set the balance of the wallet list, instead of getting the data from
+   * the node. If false, the balance data is obtained from the node and savedBalanceData is
+   * updated.
+   */
+  private refreshBalances(wallets: WalletBase[], forceQuickCompleteArrayUpdate: boolean): Observable<any> {
+    // Create a copy of the wallet list.
+    const temporalWallets: WalletWithBalance[] = [];
+    wallets.forEach(wallet => {
+      temporalWallets.push(walletWithBalanceFromBase(wallet));
     });
 
-    this.hadErrorRefreshingBalanceSubject.next(false);
-    this.refreshingBalanceSubject.next(false);
-    this.firstFullUpdateMadeSubject.next(true);
-    this.hasPendingTransactionsSubject.next(false);
+    // This will help to update savedBalanceData when finishing the procedure.
+    if (!forceQuickCompleteArrayUpdate) {
+      this.temporalSavedBalanceData = new Map<string, any>();
+    }
 
-    this.informDataUpdated();
+    let procedure: Observable<boolean[]>;
+    if (wallets.length > 0) {
+      // Get the balance of each wallet.
+      procedure = forkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, forceQuickCompleteArrayUpdate)));
+    } else {
+      // Create a fake response, as there are no wallets.
+      procedure = of([false]);
+    }
+
+    // Calculate the balance of each wallet.
+    return procedure.pipe(tap(walletHasPendingTx => {
+      this.hasPendingTransactionsSubject.next(walletHasPendingTx.some(value => value));
+
+      if (!forceQuickCompleteArrayUpdate) {
+        this.ngZone.run(() => {
+          this.lastBalancesUpdateTimeSubject.next(new Date());
+        });
+      }
+
+      if (!this.walletsWithBalanceList || forceQuickCompleteArrayUpdate || this.walletsWithBalanceList.length !== temporalWallets.length) {
+        // Update the whole list.
+        this.walletsWithBalanceList = temporalWallets;
+        this.informDataUpdated();
+      } else {
+        // If there is a change in the IDs of the wallet list, update the whole list.
+        let changeDetected = false;
+        this.walletsWithBalanceList.forEach((currentWallet, i) => {
+          if (currentWallet.id !== temporalWallets[i].id) {
+            changeDetected = true;
+          }
+        });
+
+        if (changeDetected) {
+          this.walletsWithBalanceList = temporalWallets;
+          this.informDataUpdated();
+        } else {
+          // Update only the balances with changes.
+          this.walletsWithBalanceList.forEach((currentWallet, i) => {
+            if (!currentWallet.coins.isEqualTo(temporalWallets[i].coins) || !currentWallet.hours.isEqualTo(temporalWallets[i].hours)) {
+              currentWallet.coins = temporalWallets[i].coins;
+              currentWallet.hours = temporalWallets[i].hours;
+              changeDetected = true;
+            }
+
+            if (currentWallet.addresses.length !== temporalWallets[i].addresses.length) {
+              currentWallet.addresses = temporalWallets[i].addresses;
+              changeDetected = true;
+            } else {
+              currentWallet.addresses.forEach((currentAddress, j) => {
+                if (!currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins) || !currentAddress.hours.isEqualTo(temporalWallets[i].addresses[j].hours)) {
+                  currentAddress.coins = temporalWallets[i].addresses[j].coins;
+                  currentAddress.hours = temporalWallets[i].addresses[j].hours;
+                  changeDetected = true;
+                }
+              });
+            }
+          });
+
+          // If any of the balances changed, inform that there were changes.
+          if (changeDetected) {
+            this.informDataUpdated();
+          }
+        }
+      }
+
+      if (!forceQuickCompleteArrayUpdate) {
+        this.savedBalanceData = this.temporalSavedBalanceData;
+        this.ngZone.run(() => this.savedBalanceDataSubject.next());
+        if (!this.firstFullUpdateMadeSubject.value) {
+          // Inform that the service already obtained the balance from the node for the first time.
+          this.ngZone.run(() => {
+            this.firstFullUpdateMadeSubject.next(true);
+          });
+        }
+      }
+    }));
+  }
+
+  /**
+   * Gets from the node the balance of a wallet and uses the retrieved data to update an instamce
+   * of WalletWithBalance. It also saves the retrieved data on temporalSavedBalanceData.
+   * @param wallet Wallet to update.
+   * @param useSavedBalanceData If true, the balance data saved on savedBalanceData
+   * will be used instead of retrieving the data from the node.
+   * @returns True if there are one or more pending transactions that will affect the balance of
+   * the provided walled, false otherwise. If useSavedBalanceData is true, the value of
+   * hasPendingTransactionsSubject will be returned.
+   */
+  private retrieveWalletBalance(wallet: WalletWithBalance, useSavedBalanceData: boolean): Observable<boolean> {
+    let query: Observable<WalletBalance>;
+
+    if (!useSavedBalanceData) {
+      // Get all outputs.
+      const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
+      query = this.retrieveOutputs(formattedAddresses).pipe(mergeMap(result => {
+        // Build a map which will contain the outputs of each address of the wallet.
+        const addresses = new Map<string, Output[]>();
+        wallet.addresses.forEach(address => addresses.set(address.address, []));
+
+        // Add the outputs to the map.
+        result.forEach(output => {
+          if (addresses.has(output.address)) {
+            addresses.get(output.address).push(output);
+          }
+        });
+
+        const response = new WalletBalance();
+
+        addresses.forEach((addressOutputs, address) => {
+          // Calculate the balance of the address.
+          const addressBalance = new AddressBalance();
+          addressOutputs.forEach(output => {
+            addressBalance.outputs.push(output);
+            addressBalance.balance = addressBalance.balance.plus(output.coins);
+          });
+
+          // Add the values to the balance of the wallet.
+          response.addresses.set(address, addressBalance);
+          response.balance = response.balance.plus(addressBalance.balance);
+          response.outputs = response.outputs.concat(addressBalance.outputs);
+        });
+
+        return of(response);
+      }));
+    } else {
+      // Get the balance from the saved data, if possible.
+      if (this.savedBalanceData.has(wallet.id)) {
+        query = of(this.savedBalanceData.get(wallet.id));
+      } else {
+        query = of(new WalletBalance());
+      }
+    }
+
+    // Add the values to the wallet object.
+    return query.pipe(map(balance => {
+      this.temporalSavedBalanceData.set(wallet.id, balance);
+
+      wallet.coins = balance.balance;
+      wallet.hours = new BigNumber(0);
+
+      wallet.addresses.forEach(address => {
+        if (balance.addresses.has(address.address)) {
+          address.coins = balance.addresses.get(address.address).balance;
+          address.hours = new BigNumber(0);
+        } else {
+          address.coins = new BigNumber(0);
+          address.hours = new BigNumber(0);
+        }
+      });
+
+      // Check if there are pending transactions.
+      if (!useSavedBalanceData) {
+        // TODO: inform if there are pending transactions.
+        return false;
+      } else {
+        return this.hasPendingTransactionsSubject.value;
+      }
+    }));
+  }
+
+  /**
+   * Gets the list of unspent outputs of a list of addresses. The data is not automatically
+   * updated.
+   * @param addresses List of addresses, comma separated.
+   * @returns Array with all the unspent outputs owned by any of the provide addresses.
+   */
+  private retrieveOutputs(addresses: string): Observable<Output[]> {
+    if (!addresses) {
+      return of([]);
+    } else {
+      let addressesArray = addresses.split(',');
+      addressesArray = addressesArray.map(address => address.trim());
+
+      const addressesMap = new Map<string, boolean>();
+      addressesArray.forEach(address => {
+        addressesMap.set(address, true);
+      });
+
+      // Get the transaction history of each address and process the response.
+      return this.recursivelyGetTransactions(addressesArray, []).pipe(map(response => {
+        const outputs = new Map<string, Output>();
+        // Check each transaction.
+        response.forEach(tx => {
+          if (tx.vout) {
+            // Check each output.
+            (tx.vout as any[]).forEach(output => {
+              if (output.scriptPubKey && output.scriptPubKey.addresses) {
+                // Only consider outputs with known types and just one destination address.
+                if (output.scriptPubKey.type === 'pubkeyhash' || output.scriptPubKey.type === 'witness_v0_keyhash') {
+                  if ((output.scriptPubKey.addresses as any[]).length === 1) {
+                    // Ignore outputs for unwanted addresses.
+                    if (addressesMap.has((output.scriptPubKey.addresses as any[])[0])) {
+                      // Build the output instance and add it to the response.
+                      const processedOutput: Output = {
+                        address: (output.scriptPubKey.addresses as any[])[0],
+                        coins: new BigNumber(output.value),
+                        hash: this.getOutputId(tx.txid, output.n),
+                        hours: new BigNumber(0),
+                      };
+
+                      outputs.set(processedOutput.hash, processedOutput);
+                    }
+                  }
+                }
+              }
+            });
+          }
+
+          // Check each input.
+          if (tx.vin) {
+            // If an input has been previously added to the response, remove it, as it has
+            // already been used.
+            (tx.vin as any[]).forEach(input => {
+              if (input.txid && input.vout !== null && input.vout !== undefined) {
+                outputs.delete(this.getOutputId(input.txid, input.vout));
+              }
+            });
+          }
+        });
+
+        // Convert the response to an array.
+        const finalResponse: Output[] = [];
+        outputs.forEach(output => {
+          finalResponse.push(output);
+        });
+
+        return finalResponse;
+      }));
+    }
+  }
+
+  /**
+   * Gets the transaction history of the address in the provided address list.
+   * @param addresses Addresses to check.
+   * @param currentElements Already obtained transactions. For internal use.
+   * @returns Array with all the transactions related to the provided address list, in the
+   * format returned by the node.
+   */
+  private recursivelyGetTransactions(addresses: string[], currentElements: any[]): Observable<any[]> {
+    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'searchrawtransactions', [addresses[addresses.length - 1], 1, 0, 1000000, 1])
+      .pipe(catchError((err: OperationError) => {
+        err = processServiceError(err);
+
+        // If the node returns -5, it means there are no transactions for the address.
+        if (
+          (err.originalError && err.originalError.code && err.originalError.code === -5) ||
+          (err.originalServerErrorMsg && err.originalServerErrorMsg.toLowerCase().includes('No information available about address'.toLowerCase()))
+        ) {
+          return of ([]);
+        }
+
+        return throwError(err);
+      }), mergeMap((response) => {
+        currentElements = currentElements.concat(response);
+        addresses.pop();
+
+        if (addresses.length === 0) {
+          return of(currentElements);
+        }
+
+        // Continue to the next step.
+        return this.recursivelyGetTransactions(addresses, currentElements);
+      }));
+  }
+
+  /**
+   * Returns the ID of an output. It is just txId + '/' + outputIndex;
+   */
+  private getOutputId(txId: string, outputIndex: number): string {
+    return (txId + '') + '/' + (outputIndex + '');
   }
 
   /**

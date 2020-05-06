@@ -718,8 +718,9 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
     return this.storageService.get(StorageType.CLIENT, this.swWalletsDataStorageKey).pipe(
       map(storedWallets => {
         if (storedWallets) {
-          const loadedWallets: WalletBase[] = JSON.parse(storedWallets);
+          let loadedWallets: WalletBase[] = JSON.parse(storedWallets);
 
+          loadedWallets = loadedWallets.filter(wallet => wallet.coin === this.currentCoin.coinName);
           loadedWallets.forEach(wallet => {
             // The wallet must be identified as a software wallet and have at least one address.
             // This is just a precaution.

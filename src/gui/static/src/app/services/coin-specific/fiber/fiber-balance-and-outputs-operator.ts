@@ -27,6 +27,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
   private walletsWithBalanceSubject: ReplaySubject<WalletWithBalance[]> = new ReplaySubject<WalletWithBalance[]>(1);
 
   // Subject for providing information in the getters below.
+  private lastBalancesUpdateTimeSubject: ReplaySubject<Date> = new ReplaySubject<Date>(1);
   private hasPendingTransactionsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private firstFullUpdateMadeSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private hadErrorRefreshingBalanceSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
@@ -39,11 +40,11 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
   /**
    * Time interval in which periodic data updates will be made.
    */
-  private readonly updatePeriod = 10 * 1000;
+  private updatePeriod = 10 * 1000;
   /**
    * Time interval in which the periodic data updates will be restarted after an error.
    */
-  private readonly errorUpdatePeriod = 2 * 1000;
+  private errorUpdatePeriod = 2 * 1000;
 
   /**
    * After the service retrieves the balance of each wallet, the response returned by the node for each
@@ -60,14 +61,6 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
    */
   private savedWalletsList: WalletBase[];
 
-  /**
-   * Last moment in which the balance was updated.
-   */
-  get lastBalancesUpdateTime(): Date {
-    return this.lastBalancesUpdateTimeInternal;
-  }
-  private lastBalancesUpdateTimeInternal: Date = new Date();
-
   // Coin the current instance will work with.
   private currentCoin: Coin;
 
@@ -80,6 +73,12 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
     // Get the services.
     this.fiberApiService = injector.get(FiberApiService);
     this.ngZone = injector.get(NgZone);
+
+    // Intervals for updating the data must be longer if connecting to a remote node.
+    if (!currentCoin.isLocal) {
+      this.updatePeriod = 600 * 1000;
+      this.errorUpdatePeriod = 60 * 1000;
+    }
 
     // Get the operators and only then start using them.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.subscribe(operators => {
@@ -107,11 +106,16 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
       this.dataRefreshSubscription.unsubscribe();
     }
 
+    this.lastBalancesUpdateTimeSubject.complete();
     this.walletsWithBalanceSubject.complete();
     this.hasPendingTransactionsSubject.complete();
     this.firstFullUpdateMadeSubject.complete();
     this.hadErrorRefreshingBalanceSubject.complete();
     this.refreshingBalanceSubject.complete();
+  }
+
+  get lastBalancesUpdateTime(): Observable<Date> {
+    return this.lastBalancesUpdateTimeSubject.asObservable();
   }
 
   get walletsWithBalance(): Observable<WalletWithBalance[]> {
@@ -144,10 +148,11 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
     }), map(outputs => {
       // Build the response.
       const walletsList: WalletWithOutputs[] = [];
-      this.walletsWithBalanceList.forEach(wallet => walletsList.push(walletWithOutputsFromBase(wallet)));
+      this.walletsWithBalanceList.forEach(wallet => {
+        const newWallet = walletWithOutputsFromBase(wallet);
+        walletsList.push(newWallet);
 
-      walletsList.forEach(wallet => {
-        wallet.addresses.forEach(address => {
+        newWallet.addresses.forEach(address => {
           address.outputs = outputs.filter(output => output.address === address.address);
         });
       });
@@ -329,7 +334,9 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
       this.hasPendingTransactionsSubject.next(walletHasPendingTx.some(value => value));
 
       if (!forceQuickCompleteArrayUpdate) {
-        this.lastBalancesUpdateTimeInternal = new Date();
+        this.ngZone.run(() => {
+          this.lastBalancesUpdateTimeSubject.next(new Date());
+        });
       }
 
       if (!this.walletsWithBalanceList || forceQuickCompleteArrayUpdate || this.walletsWithBalanceList.length !== temporalWallets.length) {
