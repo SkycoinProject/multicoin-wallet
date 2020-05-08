@@ -39,9 +39,9 @@ export interface TransactionBase {
    */
   outputs: Output[];
   /**
-   * Amount of hours burned by the transaction.
+   * Transaction fee.
    */
-  hoursBurned: BigNumber;
+  fee: BigNumber;
   /**
    * Local note set by the user to identify the transaction.
    */
@@ -132,10 +132,6 @@ export interface OldTransaction extends TransactionBase {
    */
   id: string;
   /**
-   * Block were the transaction was included.
-   */
-  block: number;
-  /**
    * Transaction timestamp, in Unix time.
    */
   timestamp: number;
@@ -143,6 +139,10 @@ export interface OldTransaction extends TransactionBase {
    * If the transaction has been already confirmed by the network.
    */
   confirmed: boolean;
+  /**
+   * How many confirmations the transaction has in the network.
+   */
+  confirmations: number;
   /**
    * Transaction type.
    */

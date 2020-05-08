@@ -15,4 +15,5 @@ export class TestCoin extends Coin {
   priceTickerId = 'btc-bitcoin';
   explorerUrl = 'https://explorer.testcoin.net';
   assetsFolderName = 'testcoin';
+  confirmationsNeeded = 1;
 }

@@ -15,26 +15,38 @@
           </div>
         </ng-container>
         <ng-container *ngIf="!isPreview">
+          <div class="-data" [ngClass]="{'green-text': transaction.confirmed, 'red-text': !transaction.confirmed}">
+            <span>{{ 'tx.status-small-label' | translate }}</span>
+            <span>{{ (transaction.confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded} }}</span>
+            <span *ngIf="!transaction.confirmed">
+              <mat-icon
+                [matTooltip]="'history.confirmations-help' | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded}"
+                [inline]="true"
+              >
+                help
+              </mat-icon>
+            </span>
+          </div>
           <div class="-data">
             <span>{{ ('tx.wallet' + (oldTransaction.numberOfInvolvedLocalWallets > 1 ? 's' : '') + '-small-label') | translate }}</span>
             <span>{{ oldTransaction.involvedLocalWallets }}</span>
           </div>
-          <div class="-data">
+          <div class="-data" *ngIf="transaction.timestamp >= 0">
             <span>{{ 'tx.date-small-label' | translate }}</span> <span>{{ transaction.timestamp | dateTime }}</span>
           </div>
-          <div class="-data">
-            <span>{{ 'tx.status-small-label' | translate }}</span> <span>{{ (transaction.confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate }}</span>
-          </div>
         </ng-container>
-        <div class="-data">
+        <div class="-data" *ngIf="coinHasHours">
           <span>{{ 'tx.hours-small-label' | translate }}</span>
           <span>
             <ng-container *ngIf="isPreview || oldTransaction.type !== oldTransactionTypes.MixedOrUnknown">
               {{ sentOrReceivedHours | amount:false:'first' }} {{ hoursText | translate }}
               |
             </ng-container>
-            {{ transaction.hoursBurned | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
+            {{ transaction.fee | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
+        </div>
+        <div class="-data" *ngIf="!coinHasHours">
+          <span>{{ 'tx.fee-small-label' | translate }}</span> <span>{{ transaction.fee | amount }}</span>
         </div>
         <div class="-data" *ngIf="!isPreview">
           <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.id }}</span>
@@ -81,9 +93,14 @@
         <div class="-number">{{ i + 1 }}</div>
         <div class="-info">
           <div class="-address">
-            {{ input.address }}
+            <ng-container *ngIf="input.address">
+              {{ input.address }}
+            </ng-container>
+            <ng-container *ngIf="!input.address">
+              {{ 'tx.coinbase' | translate }}
+            </ng-container>
             <!-- Label shown if the user owns the address. -->
-            <div class="-internal-label" *ngIf="internalAddressesMap.has(input.address)">
+            <div class="-internal-label" *ngIf="input.address && internalAddressesMap.has(input.address)">
               <span *ngIf="!userHasMultipleWallets">
                 {{ 'tx.internal' | translate }}
               </span>
@@ -92,10 +109,10 @@
               </span>
             </div>
           </div>
-          <div class="-data">
+          <div class="-data" *ngIf="input.address">
             <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins | amount:true:'first' }}
           </div>
-          <div class="-data">
+          <div class="-data" *ngIf="input.address">
             <span>{{ 'tx.hours-small-label' | translate }}</span> {{ input.hours | amount:false:'first' }}
           </div>
         </div>

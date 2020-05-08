@@ -156,7 +156,7 @@ export class FiberSpendingOperator implements SpendingOperator {
         }),
         coinsToSend: amountToSend,
         hoursToSend: hoursToSend,
-        hoursBurned: new BigNumber(data.transaction.fee),
+        fee: new BigNumber(data.transaction.fee),
         from: senderString,
         to: destinations.map(destination => destination.address).join(', '),
         wallet: wallet,

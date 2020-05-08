@@ -25,5 +25,6 @@ export abstract class Coin {
   explorerUrl: string;
   abstract assetsFolderName: string;
   headerHasGradient = true;
+  abstract confirmationsNeeded: number;
   config: any;
 }

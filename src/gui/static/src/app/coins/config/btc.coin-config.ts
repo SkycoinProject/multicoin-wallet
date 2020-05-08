@@ -4,10 +4,6 @@
  */
 export class BtcCoinConfig {
   /**
-   * Now many confirmations a transaction must have to be considered fully confirmed.
-   */
-  confirmationsNeeded = 3;
-  /**
    * Max number of decimals in which each coin can be divided.
    */
   decimals = 8;

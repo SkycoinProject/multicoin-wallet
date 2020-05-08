@@ -363,6 +363,7 @@
     "status-small-label": "Status:",
     "coins-small-label": "Coins:",
     "hours-small-label": "Hours:",
+    "fee-small-label": "Fee:",
     "id-small-label": "Tx ID:",
     "note-small-label": "Note:",
     "without-note": "Without note",
@@ -375,8 +376,9 @@
     "outputs-title": "Outputs",
     "internal": "You own this address",
     "confirmed-transaction": "Confirmed",
-    "pending-transaction": "Pending",
-    "current-rate-help": "Calculated at the current rate."
+    "pending-transaction": "Pending ({{currentConfirmations}} / {{confirmationsNeeded}})",
+    "current-rate-help": "Calculated at the current rate.",
+    "coinbase": "COINBASE (new coins)"
   },
 
   "edit-note": {
@@ -461,7 +463,8 @@
     "sent": "{{ coinName }} Sent",
     "receiving": "Receiving {{ coinName }}",
     "received": "{{ coinName }} Received",
-    "pending-indication": "Pending",
+    "pending-indication": "Pending ({{currentConfirmations}} / {{confirmationsNeeded}})",
+    "confirmations-help": "The transaction only has {{currentConfirmations}} of {{confirmationsNeeded}} confirmations needed for being considered completed.",
     "transaction-note-small-label": "Note:",
     "involved-wallets-small-label": "Involved local wallets:",
     "involved-wallet-small-label": "Involved local wallet:",
@@ -476,7 +479,8 @@
     "addresses": "Addresses",
     "view-all": "View all {{ number }} transactions",
     "show-addresses": "Show the addresses",
-    "hide-addresses": "Hide the addresses"
+    "hide-addresses": "Hide the addresses",
+    "balance-help": "Does not include {{ amount }} paid as fee."
   },
 
   "address-history": {

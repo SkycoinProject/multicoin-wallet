@@ -12,6 +12,8 @@ import { BalanceAndOutputsService } from '../../../services/wallet-operations/ba
 import { OldTransaction, OldTransactionTypes } from '../../../services/wallet-operations/transaction-objects';
 import { WalletTypes } from '../../../services/wallet-operations/wallet-objects';
 import { getTransactionIconName } from '../../../utils/history-utils';
+import { CoinService } from '../../../services/coin.service';
+import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Represents a wallet, to be used as filter.
@@ -78,6 +80,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   // Contains the addresses which were specifically selected as filters via URL params, but are
   // part of wallets which are not suposed to show its addresses on the filter list.
   addresses: Address[];
+  // If true, the currently selected coin uses coin hours to pay the tx fees.
+  feePaidInHours = false;
+  // How many confirmations a transaction must have to be considered fully confirmed.
+  confirmationsNeeded = 0;
   transactionsLoaded = false;
   form: FormGroup;
 
@@ -111,11 +117,14 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     private historyService: HistoryService,
     balanceAndOutputsService: BalanceAndOutputsService,
     route: ActivatedRoute,
+    coinService: CoinService,
   ) {
-
     this.form = this.formBuilder.group({
       filter: [[]],
     });
+
+    this.feePaidInHours = coinService.currentCoinInmediate.coinType === CoinTypes.Fiber;
+    this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
 
     // Get the filters requested in the URL.
     this.routeSubscription = route.queryParams.subscribe(params => {

@@ -144,12 +144,25 @@
       font-size: $font-size-mini;
       font-weight: 300;
       margin: 0 0 4px 0;
+
+      mat-icon {
+        position: relative;
+        top: 1px;
+        opacity: 0.7;
+      }
     }
 
     h4 {
       color: $black;
       font-weight: 700;
       margin: 0 0 8px 0;
+
+      mat-icon {
+        position: relative;
+        top: 1px;
+        font-size: $font-size-mini;
+        opacity: 0.7;
+      }
     }
 
     p {

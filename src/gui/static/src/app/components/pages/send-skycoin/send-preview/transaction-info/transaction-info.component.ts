@@ -10,6 +10,8 @@ import { PriceService } from '../../../../../services/price.service';
 import { WalletsAndAddressesService } from '../../../../../services/wallet-operations/wallets-and-addresses.service';
 import { getTransactionIconName } from '../../../../../utils/history-utils';
 import { WalletBase } from '../../../../../services/wallet-operations/wallet-objects';
+import { CoinTypes } from '../../../../../coins/coin-types';
+import { CoinService } from '../../../../../services/coin.service';
 
 /**
  * Allows to view the details of a transaction which is about to be sent or a transaction
@@ -33,6 +35,10 @@ export class TransactionInfoComponent implements OnDestroy {
   userHasMultipleWallets = false;
   // List with all the addresses the user has and their corresponding wallets.
   internalAddressesMap = new Map<string, WalletBase>();
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
+  // How many confirmations a transaction must have to be considered fully confirmed.
+  confirmationsNeeded = 0;
 
   oldTransactionTypes = OldTransactionTypes;
 
@@ -42,8 +48,12 @@ export class TransactionInfoComponent implements OnDestroy {
     private priceService: PriceService,
     private dialog: MatDialog,
     walletsAndAddressesService: WalletsAndAddressesService,
+    coinService: CoinService,
   ) {
     this.subscription = this.priceService.price.subscribe(price => this.price = price);
+
+    this.coinHasHours = coinService.currentCoinInmediate.coinType === CoinTypes.Fiber;
+    this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
 
     // Get the list of internal addresses, to be able to identify them on the UI.
     walletsAndAddressesService.currentWallets.pipe(first()).subscribe(wallets => {

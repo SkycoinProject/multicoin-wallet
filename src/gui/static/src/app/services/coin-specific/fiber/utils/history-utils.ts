@@ -5,7 +5,7 @@ import { BigNumber } from 'bignumber.js';
 import { WalletBase, AddressBase } from '../../../wallet-operations/wallet-objects';
 import { OldTransaction, OldTransactionTypes } from '../../../wallet-operations/transaction-objects';
 import { StorageService, StorageType } from '../../../storage.service';
-import { setTransactionType } from '../../../../utils/history-utils';
+import { calculateGeneralData } from '../../../../utils/history-utils';
 import { FiberApiService } from '../../../api/fiber-api.service';
 import { Coin } from '../../../../coins/coin';
 
@@ -43,9 +43,9 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
       relevantAddresses: [],
       balance: new BigNumber(0),
       hoursBalance: new BigNumber(0),
-      hoursBurned: new BigNumber(0),
-      block: transaction.status.block_seq,
+      fee: new BigNumber(0),
       confirmed: transaction.status.confirmed,
+      confirmations: transaction.status.confirmed ? 1 : 0,
       timestamp: transaction.txn.timestamp,
       id: transaction.txn.txid,
       inputs: (transaction.txn.inputs as any[]).map(input => {
@@ -85,87 +85,16 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
       // Sort the transactions by date.
       .sort((a, b) =>  b.timestamp - a.timestamp)
       .map(transaction => {
-        // Add to the transaction object the type and the names of the involved wallets.
-        setTransactionType(transaction, addressesMap);
-
-        // Saves list of relevant local addresses involved on the transaction.
-        const involvedLocalAddresses: Map<string, boolean> = new Map<string, boolean>();
-
-        if (transaction.type === OldTransactionTypes.Incoming) {
-          transaction.outputs.map(output => {
-            // If the transactions is an incoming one, all coins and hours on outputs
-            // pointing to local addresses are considered received.
-            if (addressesMap.has(output.address)) {
-              involvedLocalAddresses.set(output.address, true);
-              transaction.balance = transaction.balance.plus(output.coins);
-              transaction.hoursBalance = transaction.hoursBalance.plus(output.hours);
-            }
-          });
-        } else if (transaction.type === OldTransactionTypes.Outgoing) {
-          // If the transaction is an outgoing one, all addresses of all wallets used for inputs
-          // are considered potential return addresses, so all coins sent to those addresses
-          // will be excluded when counting how many coins and hours were sent.
-          const possibleReturnAddressesMap: Map<string, boolean> = new Map<string, boolean>();
-          transaction.inputs.map(input => {
-            if (addressesMap.has(input.address)) {
-              involvedLocalAddresses.set(input.address, true);
-              addressesMap.get(input.address).addresses.map(add => possibleReturnAddressesMap.set(add.address, true));
-            }
-          });
-
-          // Sum all coins and hours that were sent.
-          transaction.outputs.map(output => {
-            if (!possibleReturnAddressesMap.has(output.address)) {
-              transaction.balance = transaction.balance.minus(output.coins);
-              transaction.hoursBalance = transaction.hoursBalance.plus(output.hours);
-            }
-          });
-        } else if (
-          transaction.type === OldTransactionTypes.MovedBetweenAddresses ||
-          transaction.type === OldTransactionTypes.MovedBetweenWallets
-        ) {
-          const inputAddressesMap: Map<string, boolean> = new Map<string, boolean>();
-
-          transaction.inputs.map(input => {
-            inputAddressesMap.set(input.address, true);
-            involvedLocalAddresses.set(input.address, true);
-          });
-
-          // Sum how many coins and hours were moved to addresses different to the ones which
-          // own the inputs.
-          transaction.outputs.map(output => {
-            if (!inputAddressesMap.has(output.address)) {
-              involvedLocalAddresses.set(output.address, true);
-              transaction.balance = transaction.balance.plus(output.coins);
-              transaction.hoursBalance = transaction.hoursBalance.plus(output.hours);
-            }
-          });
-        }  else {
-          // If the transaction type is unknown, all local addresses are considered relevant
-          // and no balance data is calculated.
-          transaction.inputs.map(input => {
-            if (addressesMap.has(input.address)) {
-              involvedLocalAddresses.set(input.address, true);
-            }
-          });
-          transaction.outputs.map(output => {
-            if (addressesMap.has(output.address)) {
-              involvedLocalAddresses.set(output.address, true);
-            }
-          });
-        }
-
-        // Create the list of relevant local addresses involved on the transaction.
-        involvedLocalAddresses.forEach((value, key) => {
-          transaction.relevantAddresses.push(key);
-        });
+        // Add to the transaction object the type, the balance and the involved wallets
+        // and addresses.
+        calculateGeneralData(transaction, addressesMap, true);
 
         // Calculate how many hours were burned.
         let inputsHours = new BigNumber('0');
         transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.hours)));
         let outputsHours = new BigNumber('0');
         transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
-        transaction.hoursBurned = inputsHours.minus(outputsHours);
+        transaction.fee = inputsHours.minus(outputsHours);
 
         const txNote = notesMap.get(transaction.id);
         if (txNote) {

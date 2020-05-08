@@ -32,7 +32,7 @@
               [ngClass]="{'green-text': output.confirmations >= confirmationsNeeded, 'red-text': output.confirmations < confirmationsNeeded}"
               class="-width-150 text-right"
             >
-              {{ output.confirmations }}
+              {{ output.confirmations }} / {{ confirmationsNeeded }}
             </div>
           </div>
         </ng-container>

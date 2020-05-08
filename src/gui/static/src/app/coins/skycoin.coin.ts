@@ -15,4 +15,5 @@ export class SkycoinCoin extends Coin {
   priceTickerId = 'sky-skycoin';
   explorerUrl = 'https://explorer.skycoin.com';
   assetsFolderName = 'skycoin';
+  confirmationsNeeded = 1;
 }

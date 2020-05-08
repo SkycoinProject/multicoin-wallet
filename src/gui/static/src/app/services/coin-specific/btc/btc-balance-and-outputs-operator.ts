@@ -1,6 +1,6 @@
-import { of, Observable, ReplaySubject, Subscription, BehaviorSubject, throwError, forkJoin, Subject } from 'rxjs';
+import { of, Observable, ReplaySubject, Subscription, BehaviorSubject, forkJoin, Subject } from 'rxjs';
 import { NgZone, Injector } from '@angular/core';
-import { mergeMap, map, switchMap, catchError, delay, tap, first, filter } from 'rxjs/operators';
+import { mergeMap, map, switchMap, delay, tap, first, filter } from 'rxjs/operators';
 import BigNumber from 'bignumber.js';
 
 import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, WalletWithOutputs, walletWithOutputsFromBase } from '../../wallet-operations/wallet-objects';
@@ -10,9 +10,8 @@ import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { BtcApiService } from '../../api/btc-api.service';
-import { OperationError } from '../../../utils/operation-error';
-import { processServiceError } from '../../../utils/errors';
 import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { recursivelyGetTransactions, getOutputId } from './utils/history-utils';
 
 /**
  * Balance and outputs of a wallet, for internal use.
@@ -430,7 +429,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
           if (addresses.has(output.address)) {
             addresses.get(output.address).push(output);
 
-            if (output.confirmations < (this.currentCoin.config as BtcCoinConfig).confirmationsNeeded) {
+            if (output.confirmations < this.currentCoin.confirmationsNeeded) {
               hasUnconfirmedTxs = true;
             }
           }
@@ -507,7 +506,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       });
 
       // Get the transaction history of each address and process the response.
-      return this.recursivelyGetTransactions(addressesArray, []).pipe(map(response => {
+      return recursivelyGetTransactions(this.currentCoin, this.btcApiService, addressesArray).pipe(map(response => {
         const outputs = new Map<string, Output>();
         // Check each transaction.
         response.forEach(tx => {
@@ -524,7 +523,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
                       const processedOutput: Output = {
                         address: (output.scriptPubKey.addresses as any[])[0],
                         coins: new BigNumber(output.value),
-                        hash: this.getOutputId(tx.txid, output.n),
+                        hash: getOutputId(tx.txid, output.n),
                         hours: new BigNumber(0),
                         confirmations: tx.confirmations ? tx.confirmations : 0,
                       };
@@ -543,7 +542,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
             // already been used.
             (tx.vin as any[]).forEach(input => {
               if (input.txid && input.vout !== null && input.vout !== undefined) {
-                outputs.delete(this.getOutputId(input.txid, input.vout));
+                outputs.delete(getOutputId(input.txid, input.vout));
               }
             });
           }
@@ -558,47 +557,6 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         return finalResponse;
       }));
     }
-  }
-
-  /**
-   * Gets the transaction history of the address in the provided address list.
-   * @param addresses Addresses to check.
-   * @param currentElements Already obtained transactions. For internal use.
-   * @returns Array with all the transactions related to the provided address list, in the
-   * format returned by the node.
-   */
-  private recursivelyGetTransactions(addresses: string[], currentElements: any[]): Observable<any[]> {
-    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'searchrawtransactions', [addresses[addresses.length - 1], 1, 0, 1000000, 1])
-      .pipe(catchError((err: OperationError) => {
-        err = processServiceError(err);
-
-        // If the node returns -5, it means there are no transactions for the address.
-        if (
-          (err.originalError && err.originalError.code && err.originalError.code === -5) ||
-          (err.originalServerErrorMsg && err.originalServerErrorMsg.toLowerCase().includes('No information available about address'.toLowerCase()))
-        ) {
-          return of ([]);
-        }
-
-        return throwError(err);
-      }), mergeMap((response) => {
-        currentElements = currentElements.concat(response);
-        addresses.pop();
-
-        if (addresses.length === 0) {
-          return of(currentElements);
-        }
-
-        // Continue to the next step.
-        return this.recursivelyGetTransactions(addresses, currentElements);
-      }));
-  }
-
-  /**
-   * Returns the ID of an output. It is just txId + '/' + outputIndex;
-   */
-  private getOutputId(txId: string, outputIndex: number): string {
-    return (txId + '') + '/' + (outputIndex + '');
   }
 
   /**

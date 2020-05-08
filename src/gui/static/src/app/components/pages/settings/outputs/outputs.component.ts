@@ -42,10 +42,7 @@ export class OutputsComponent implements OnDestroy {
     });
 
     this.showConfirmations = coinService.currentCoinInmediate.coinType !== CoinTypes.Fiber;
-
-    if (coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
-      this.confirmationsNeeded = (coinService.currentCoinInmediate.config as BtcCoinConfig).confirmationsNeeded;
-    }
+    this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
   }
 
   ngOnDestroy() {

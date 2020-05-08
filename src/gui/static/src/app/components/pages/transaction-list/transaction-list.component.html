@@ -130,9 +130,29 @@
         </div>
         <div class="-balance">
           <div class="-top-line" *ngIf="transaction.confirmed">{{ transaction.timestamp | dateTime }}</div>
+          <div class="-top-line yellow-text" *ngIf="!transaction.confirmed">
+            {{ 'history.pending-indication' | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded} }}
+            <mat-icon
+              [matTooltip]="'history.confirmations-help' | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded}"
+              [inline]="true"
+            >
+              help
+            </mat-icon>
+          </div>
           <ng-container *ngIf="transaction.type !== oldTransactionTypes.MixedOrUnknown">
-            <div class="-top-line yellow-text" *ngIf="!transaction.confirmed">{{ 'history.pending-indication' | translate }}</div>
-            <h4>{{ transaction.balance.toString() | amount }}</h4>
+            <h4>
+              {{ transaction.balance.toString() | amount }}
+              <mat-icon
+                *ngIf="!feePaidInHours &&
+                       (transaction.type === oldTransactionTypes.Outgoing ||
+                       transaction.type === oldTransactionTypes.MovedBetweenAddresses ||
+                       transaction.type === oldTransactionTypes.MovedBetweenWallets)"
+                [matTooltip]="'history.balance-help' | translate:{amount: (transaction.fee | amount)}"
+                [inline]="true"
+              >
+                help
+              </mat-icon>
+            </h4>
             <p *ngIf="price" [matTooltip]="'tx.current-rate-help' | translate">
               {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
             </p>
