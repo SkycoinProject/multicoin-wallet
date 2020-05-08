@@ -191,6 +191,7 @@ export class FiberHistoryOperator implements HistoryOperator {
       hours: hours.toString(),
       timestamp: moment(transaction.received).unix(),
       id: transaction.transaction.txid,
+      confirmations: 0,
     };
   }
 }

@@ -12,15 +12,17 @@
       <div class="-headers">
         <div class="-flex-fill">{{ 'pending-txs.txid-table-label' | translate }}</div>
         <div class="-width-150 text-right">{{ 'coinSymbol' | commonText }}</div>
-        <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
+        <div *ngIf="!showConfirmations" class="-width-150 text-right">{{ 'hours' | commonText }}</div>
+        <div *ngIf="showConfirmations" class="-width-150 text-right">{{ 'common.confirmations' | translate }}</div>
         <div class="-width-150">{{ 'pending-txs.timestamp-table-label' | translate }}</div>
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let tx of transactions">
           <div class="-flex-fill break-all">{{ tx.id }}</div>
           <div class="-width-150 text-right">{{ tx.coins | amount:true:'first' }}</div>
-          <div class="-width-150 text-right">{{ tx.hours | amount:false:'first' }}</div>
-          <div class="-width-150 grey-text">{{ tx.timestamp | dateTime }}</div>
+          <div *ngIf="!showConfirmations" class="-width-150 text-right">{{ tx.hours | amount:false:'first' }}</div>
+          <div *ngIf="showConfirmations" class="-width-150 text-right">{{ tx.confirmations }} / {{ confirmationsNeeded }}</div>
+          <div class="-width-150 grey-text">{{ tx.timestamp ? (tx.timestamp | dateTime) : ('pending-txs.unknown-date' | translate)  }}</div>
         </div>
       </div>
     </div>

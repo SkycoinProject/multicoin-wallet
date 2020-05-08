@@ -453,7 +453,8 @@
     "txid-table-label": "Transaction ID",
     "none": "No pending transactions",
     "my-transactions-button": "Mine",
-    "all-transactions-button": "All"
+    "all-transactions-button": "All",
+    "unknown-date": "Unknown"
   },
 
   "outputs": {

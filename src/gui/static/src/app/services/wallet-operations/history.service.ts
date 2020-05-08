@@ -35,6 +35,10 @@ export interface PendingTransactionData {
    * Transaction timestamp, in Unix format.
    */
   timestamp: number;
+  /**
+   * How many confirmations the transaction currently has.
+   */
+  confirmations: number;
 }
 
 export interface AddressesHistoryResponse {
@@ -99,7 +103,8 @@ export class HistoryService {
   }
 
   /**
-   * Gets the list of pending transactions currently on the node.
+   * Gets the list of pending transactions currently on the node. The data is not
+   * automatically updated.
    */
   getPendingTransactions(): Observable<PendingTransactionsResponse> {
     return this.operator.getPendingTransactions();
