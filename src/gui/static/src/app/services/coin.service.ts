@@ -4,6 +4,7 @@ import { ReplaySubject, Observable } from 'rxjs';
 import { Coin } from '../coins/coin';
 import { environment } from '../../environments/environment';
 import { AppConfig } from '../app.config';
+import { CoinTypes } from '../coins/coin-types';
 
 /**
  * Allows to know which coins the wallet can work with and to change the currently selected coin.
@@ -26,6 +27,13 @@ export class CoinService {
     return this.currentCoinInmediateInternal;
   }
   private currentCoinInmediateInternal: Coin = null;
+
+  /**
+   * Allows to know if the currently selected coin has coin hours, as a synchronous value.
+   */
+  get currentCoinHasHoursInmediate(): boolean {
+    return this.currentCoinInmediateInternal.coinType === CoinTypes.Fiber;
+  }
 
   /**
    * List with the coins the wallet can work with. Values must not be overwritten.

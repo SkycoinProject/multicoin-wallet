@@ -23,7 +23,7 @@ class Wallet {
   type: WalletTypes;
   label: string;
   coins: string;
-  hours: string;
+  hours?: string;
   addresses: Address[];
   /**
    * If true, the user selected the option for showing all transactions affecting the wallet,
@@ -39,7 +39,7 @@ class Address {
   walletID: string;
   address: string;
   coins: string;
-  hours: string;
+  hours?: string;
   /**
    * If true, the user selected the option for showing all transactions affecting the wallet,
    * which means this address must be considered selected, even if the user did not select
@@ -80,8 +80,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   // Contains the addresses which were specifically selected as filters via URL params, but are
   // part of wallets which are not suposed to show its addresses on the filter list.
   addresses: Address[];
-  // If true, the currently selected coin uses coin hours to pay the tx fees.
-  feePaidInHours = false;
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   // How many confirmations a transaction must have to be considered fully confirmed.
   confirmationsNeeded = 0;
   transactionsLoaded = false;
@@ -123,7 +123,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       filter: [[]],
     });
 
-    this.feePaidInHours = coinService.currentCoinInmediate.coinType === CoinTypes.Fiber;
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
 
     // Get the filters requested in the URL.
@@ -180,8 +180,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
           id: wallet.id,
           type: wallet.walletType,
           label: wallet.label,
-          coins: wallet.coins.decimalPlaces(6).toString(),
-          hours: wallet.hours.decimalPlaces(0).toString(),
+          coins: wallet.coins.toString(),
+          hours: wallet.hours ? wallet.hours.toString() : undefined,
           addresses: [],
           allAddressesSelected: selectedWallets.has(wallet.id),
         };
@@ -196,8 +196,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
           const newAddress: Address = {
             walletID: wallet.id,
             address: address.address,
-            coins: address.coins.decimalPlaces(6).toString(),
-            hours: address.hours.decimalPlaces(0).toString(),
+            coins: address.coins.toString(),
+            hours: address.hours ? address.hours.toString() : undefined,
             showingWholeWallet: selectedWallets.has(wallet.id),
           };
           this.wallets[this.wallets.length - 1].addresses.push(newAddress);

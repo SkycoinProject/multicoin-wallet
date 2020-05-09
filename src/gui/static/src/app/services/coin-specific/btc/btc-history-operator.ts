@@ -110,7 +110,6 @@ export class BtcHistoryOperator implements HistoryOperator {
 
     return {
       coins: coins.toString(),
-      hours: '0',
       timestamp: transaction.time ? transaction.time : null,
       id: transaction.txid,
       confirmations: transaction.confirmations ? transaction.confirmations : 0,

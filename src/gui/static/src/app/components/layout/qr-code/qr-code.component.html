@@ -70,7 +70,7 @@
         </label>
         <input maxlength="20" formControlName="coins" id="coins">
       </div>
-      <div class="form-field">
+      <div class="form-field" *ngIf="coinHasHours">
         <label for="hours">
           {{ 'qr.hours-label' | translate }} <span class="red-text" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
         </label>

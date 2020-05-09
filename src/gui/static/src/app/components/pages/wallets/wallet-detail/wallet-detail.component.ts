@@ -9,6 +9,8 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { WalletWithBalance, AddressWithBalance } from '../../../../services/wallet-operations/wallet-objects';
 import { WalletsComponent } from '../wallets.component';
 import { WalletOptionsComponent } from '../wallet-options/wallet-options.component';
+import { CoinService } from '../../../../services/coin.service';
+import { CoinTypes } from '../../../../coins/coin-types';
 
 /**
  * Shows the option buttons and address list of a wallet on the wallet list.
@@ -21,6 +23,8 @@ import { WalletOptionsComponent } from '../wallet-options/wallet-options.compone
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: WalletWithBalance;
 
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   // Index of the address currently being confirmed. Used for showing the loading animation
   // on the UI.
   confirmingIndex = null;
@@ -35,7 +39,10 @@ export class WalletDetailComponent implements OnDestroy {
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private hwWalletService: HwWalletService,
-  ) { }
+    coinService: CoinService,
+  ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+  }
 
   ngOnDestroy() {
     this.msgBarService.hide();

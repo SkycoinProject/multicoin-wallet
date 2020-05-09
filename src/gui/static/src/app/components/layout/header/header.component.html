@@ -25,11 +25,17 @@
           </p>
         </div>
       </div>
-      <div class="hour-balance">
+      <!-- Hours area. -->
+      <div *ngIf="coinHasHours" class="hour-balance">
         <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)">{{ 'common.loading' | translate }}</p>
         <p *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
         <p *ngIf="synchronized && balanceObtained">{{ hours | amount:false }}</p>
       </div>
+      <!-- Elements for coins without hours. -->
+      <div *ngIf="!coinHasHours && synchronizationInfoObtained && !synchronized" class="hour-balance">
+        <p *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
+      </div>
+      <div *ngIf="!coinHasHours && (!synchronizationInfoObtained || synchronized)" class="empty-hour-balance"></div>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>

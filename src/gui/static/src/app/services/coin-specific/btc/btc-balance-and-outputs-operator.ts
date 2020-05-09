@@ -361,9 +361,8 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         } else {
           // Update only the balances with changes.
           this.walletsWithBalanceList.forEach((currentWallet, i) => {
-            if (!currentWallet.coins.isEqualTo(temporalWallets[i].coins) || !currentWallet.hours.isEqualTo(temporalWallets[i].hours)) {
+            if (!currentWallet.coins.isEqualTo(temporalWallets[i].coins)) {
               currentWallet.coins = temporalWallets[i].coins;
-              currentWallet.hours = temporalWallets[i].hours;
               changeDetected = true;
             }
 
@@ -372,9 +371,8 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
               changeDetected = true;
             } else {
               currentWallet.addresses.forEach((currentAddress, j) => {
-                if (!currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins) || !currentAddress.hours.isEqualTo(temporalWallets[i].addresses[j].hours)) {
+                if (!currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins)) {
                   currentAddress.coins = temporalWallets[i].addresses[j].coins;
-                  currentAddress.hours = temporalWallets[i].addresses[j].hours;
                   changeDetected = true;
                 }
               });
@@ -467,15 +465,12 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
       wallet.coins = balance.balance;
-      wallet.hours = new BigNumber(0);
 
       wallet.addresses.forEach(address => {
         if (balance.addresses.has(address.address)) {
           address.coins = balance.addresses.get(address.address).balance;
-          address.hours = new BigNumber(0);
         } else {
           address.coins = new BigNumber(0);
-          address.hours = new BigNumber(0);
         }
       });
 
@@ -524,7 +519,6 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
                         address: (output.scriptPubKey.addresses as any[])[0],
                         coins: new BigNumber(output.value),
                         hash: getOutputId(tx.txid, output.n),
-                        hours: new BigNumber(0),
                         confirmations: tx.confirmations ? tx.confirmations : 0,
                       };
 

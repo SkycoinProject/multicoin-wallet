@@ -13,6 +13,8 @@ import { BalanceAndOutputsService } from '../../../services/wallet-operations/ba
 import { WalletWithBalance, WalletTypes } from '../../../services/wallet-operations/wallet-objects';
 import { QrDialogConfig, QrCodeComponent } from '../../layout/qr-code/qr-code.component';
 import { WalletOptionsComponent } from './wallet-options/wallet-options.component';
+import { CoinService } from '../../../services/coin.service';
+import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Shows the wallet list and options related to it.
@@ -32,6 +34,8 @@ export class WalletsComponent implements OnInit, OnDestroy {
   // If the hw wallet options must be shown.
   hwCompatibilityActivated = false;
 
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   // Software wallets to show on the list.
   wallets: WalletWithBalance[] = [];
   // Hardware wallets to show on the list.
@@ -51,7 +55,10 @@ export class WalletsComponent implements OnInit, OnDestroy {
     private router: Router,
     private walletsAndAddressesService: WalletsAndAddressesService,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    coinService: CoinService,
   ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+
     this.hwCompatibilityActivated = this.hwWalletService.hwWalletCompatibilityActivated;
 
     // Keep the wallet list updated.

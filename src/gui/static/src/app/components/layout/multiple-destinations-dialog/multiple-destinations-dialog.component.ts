@@ -5,11 +5,14 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angu
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { AppConfig } from '../../../app.config';
 import { Destination } from '../../pages/send-skycoin/form-parts/form-destination/form-destination.component';
+import { CoinService } from '../../../services/coin.service';
+import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Modal window which allows the user to enter multiple destinations with just a text
  * string, when creating a transaction. The format of the string is just each destination
- * in a new line, each one with the address, coins and hours (optional), separated by commas,
+ * in a new line, each one with the address, coins and hours (optional and only if the
+ * currently selected coin includes coin hours), separated by commas,
  * in that order. If a destination has hours, all destinations must have hours. Destinations
  * can have invalid addresses, coins and hours, the only thing this component checks is if
  * there is a string value for each property of the destinations. In the "afterClosed" event
@@ -23,6 +26,9 @@ import { Destination } from '../../pages/send-skycoin/form-parts/form-destinatio
 })
 export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
   form: FormGroup;
+
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
@@ -41,7 +47,10 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
     @Inject(MAT_DIALOG_DATA) private data: string,
     private formBuilder: FormBuilder,
     private msgBarService: MsgBarService,
-  ) { }
+    coinService: CoinService,
+  ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+  }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
@@ -79,7 +88,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
 
       // Destination must have 2 or 3 (if including hours) parts.
       const firstElementParts = entries[0].split(',').length;
-      if (firstElementParts !== 2 && firstElementParts !== 3) {
+      if (firstElementParts !== 2 && (firstElementParts !== 3 || !this.coinHasHours)) {
         this.msgBarService.showError('send.bulk-send.invalid-data-error');
 
         return;
@@ -88,21 +97,35 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
       // Separate all the parts each destination.
       const processedEntries: Destination[] = [];
       let consistentNumberOfParts = true;
+      let invalidDataFound = false;
       entries.forEach(entry => {
         const entryDataParts = entry.split(',');
-        const data: Destination = {
-          address: entryDataParts[0].trim(),
-          coins: entryDataParts[1].trim(),
-          originalAmount: null,
-        };
-        data.hours = entryDataParts.length === 3 ? entryDataParts[2].trim() : undefined;
-        processedEntries.push(data);
+        if (entryDataParts.length !== 2 && (entryDataParts.length !== 3 || !this.coinHasHours)) {
+          invalidDataFound = true;
+        }
 
-        // Check if this has the same number of parts as the first one.
-        if (entryDataParts.length !== firstElementParts) {
-          consistentNumberOfParts = false;
+        if (!invalidDataFound) {
+          const data: Destination = {
+            address: entryDataParts[0].trim(),
+            coins: entryDataParts[1].trim(),
+            originalAmount: null,
+          };
+          data.hours = entryDataParts.length === 3 ? entryDataParts[2].trim() : undefined;
+          processedEntries.push(data);
+
+          // Check if this has the same number of parts as the first one.
+          if (entryDataParts.length !== firstElementParts) {
+            consistentNumberOfParts = false;
+          }
         }
       });
+
+      // Do not allow a mix of some destinations with hours and others without them.
+      if (invalidDataFound) {
+        this.msgBarService.showError('send.bulk-send.invalid-data-error');
+
+        return;
+      }
 
       // Do not allow a mix of some destinations with hours and others without them.
       if (!consistentNumberOfParts) {

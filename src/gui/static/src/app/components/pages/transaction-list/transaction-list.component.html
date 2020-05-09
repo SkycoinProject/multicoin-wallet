@@ -7,7 +7,6 @@
     [noDataText]="'history.no-txs'"
   ></app-loading-content>
 </div>
-
 <div class="container" *ngIf="userHasWallets">
   <!-- Filtering options. -->
   <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="transactionsLoaded">
@@ -20,14 +19,14 @@
       <!-- Filter groups for the wallets showing all addresses. -->
       <mat-optgroup *ngFor="let wallet of walletsShowingAllAddresses" label="
         {{ wallet.label }} - {{ wallet.coins | amount }}
-        ({{ wallet.hours | amount:false }})
+        {{ !coinHasHours ? '' : ' (' + (wallet.hours | amount:false) + ')' }}
       ">
         <mat-option *ngIf="wallet.addresses.length > 1" [value]="wallet">
           {{ 'history.all-addresses' | translate }}
         </mat-option>
         <mat-option *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
           {{ address.address }} - {{ address.coins | amount }}
-          ({{ address.hours | amount:false }})
+          {{ !coinHasHours ? '' : ' (' + (address.hours | amount:false) + ')' }}
         </mat-option>
       </mat-optgroup>
       <!-- Filter group for all wallets not showing addresses. -->
@@ -37,14 +36,16 @@
       >
         <ng-container *ngFor="let wallet of walletsNotShowingAddresses">
           <mat-option [value]="wallet">
-            {{ wallet.label }} - {{ wallet.coins | amount }} ({{ wallet.hours | amount:false }})
+            {{ wallet.label }} - {{ wallet.coins | amount }}
+            {{ !coinHasHours ? '' : ' (' + (wallet.hours | amount:false) + ')' }}
           </mat-option>
         </ng-container>
       </mat-optgroup>
       <!-- Filter group for all the addresses shown independently. -->
       <mat-optgroup *ngIf="addresses.length > 0" [label]="'history.addresses' | translate">
         <mat-option *ngFor="let address of addresses" [value]="address" [disabled]="address.showingWholeWallet">
-          {{ address.walletName }} - {{ address.address }} - {{ address.coins | amount }} ({{ address.hours | amount:false }})
+          {{ address.walletName }} - {{ address.address }} - {{ address.coins | amount }}
+          {{ !coinHasHours ? '' : ' (' + (address.hours | amount:false) + ')' }}
         </mat-option>
       </mat-optgroup>
       <!-- Content for showing the selected filters. -->
@@ -57,7 +58,7 @@
             <span *ngIf="filter.walletName">{{ filter.walletName }} - </span>
             <span *ngIf="filter.address">{{ filter.address }}</span>
             - {{ filter.coins | amount }}
-            ({{ filter.hours | amount:false }})
+            {{ !coinHasHours ? '' : ' (' + (filter.hours | amount:false) + ')' }}
           </div>
         </ng-container>
       </mat-select-trigger>
@@ -143,7 +144,7 @@
             <h4>
               {{ transaction.balance.toString() | amount }}
               <mat-icon
-                *ngIf="!feePaidInHours &&
+                *ngIf="!coinHasHours &&
                        (transaction.type === oldTransactionTypes.Outgoing ||
                        transaction.type === oldTransactionTypes.MovedBetweenAddresses ||
                        transaction.type === oldTransactionTypes.MovedBetweenWallets)"

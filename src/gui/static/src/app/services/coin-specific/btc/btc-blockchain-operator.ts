@@ -114,8 +114,6 @@ export class BtcBlockchainOperator implements BlockchainOperator {
         coinSupply: {
           currentSupply: currentSupply.toString(),
           totalSupply: '21000000',
-          currentCoinhourSupply: '0',
-          totalCoinhourSupply: '0',
         },
       };
     }));

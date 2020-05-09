@@ -48,9 +48,9 @@ export class AmountPipe implements PipeTransform {
       if (showingCoins) {
         response += this.coinService.currentCoinInmediate.coinSymbol;
       } else {
-        if (convertedVal.absoluteValue().isEqualTo(1)) {
+        if (this.coinService.currentCoinInmediate.hoursNameSingular && convertedVal.absoluteValue().isEqualTo(1)) {
           response += this.coinService.currentCoinInmediate.hoursNameSingular;
-        } else {
+        } else if (this.coinService.currentCoinInmediate.hoursName) {
           response += this.coinService.currentCoinInmediate.hoursName;
         }
       }

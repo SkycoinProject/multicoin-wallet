@@ -36,7 +36,7 @@
                 <div class="break-all">{{ coinSupply.totalSupply | amount:true:'first' }}</div>
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" *ngIf="coinHasHours">
               <div class="-item">
                 <div class="-key">{{ 'blockchain.current-coinhour-supply-label' | translate:{coinHoursName: ('hours' | commonText)} }}</div>
                 <div class="break-all">{{ coinSupply.currentCoinhourSupply | amount:false:'first' }}</div>

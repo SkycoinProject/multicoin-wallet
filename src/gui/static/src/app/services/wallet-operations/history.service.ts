@@ -30,7 +30,7 @@ export interface PendingTransactionData {
   /**
    * How many hours are on the outputs.
    */
-  hours: string;
+  hours?: string;
   /**
    * Transaction timestamp, in Unix format.
    */

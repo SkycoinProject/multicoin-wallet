@@ -91,16 +91,14 @@
 
       <div class="-item" *ngFor="let input of transaction.inputs; let i = index">
         <div class="-number">{{ i + 1 }}</div>
-        <div class="-info">
+        <!-- Content if the coins are old. -->
+        <div class="-info" *ngIf="input.address">
           <div class="-address">
-            <ng-container *ngIf="input.address">
+            <ng-container>
               {{ input.address }}
             </ng-container>
-            <ng-container *ngIf="!input.address">
-              {{ 'tx.coinbase' | translate }}
-            </ng-container>
             <!-- Label shown if the user owns the address. -->
-            <div class="-internal-label" *ngIf="input.address && internalAddressesMap.has(input.address)">
+            <div class="-internal-label" *ngIf="internalAddressesMap.has(input.address)">
               <span *ngIf="!userHasMultipleWallets">
                 {{ 'tx.internal' | translate }}
               </span>
@@ -109,11 +107,17 @@
               </span>
             </div>
           </div>
-          <div class="-data" *ngIf="input.address">
+          <div class="-data">
             <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins | amount:true:'first' }}
           </div>
-          <div class="-data" *ngIf="input.address">
+          <div class="-data" *ngIf="coinHasHours">
             <span>{{ 'tx.hours-small-label' | translate }}</span> {{ input.hours | amount:false:'first' }}
+          </div>
+        </div>
+        <!-- Content if the coins are new. -->
+        <div class="-info" *ngIf="!input.address">
+          <div class="-address">
+            {{ 'tx.coinbase' | translate }}
           </div>
         </div>
       </div>
@@ -140,7 +144,7 @@
           <div class="-data">
             <span>{{ 'tx.coins-small-label' | translate }}</span> {{ output.coins | amount:true:'first' }}
           </div>
-          <div class="-data">
+          <div class="-data" *ngIf="coinHasHours">
             <span>{{ 'tx.hours-small-label' | translate }}</span> {{ output.hours | amount:false:'first' }}
           </div>
         </div>

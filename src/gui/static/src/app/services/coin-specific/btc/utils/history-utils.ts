@@ -46,7 +46,6 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
       const processedTx: OldTransaction = {
         relevantAddresses: [],
         balance: new BigNumber(0),
-        hoursBalance: new BigNumber(0),
         fee: new BigNumber(0),
         confirmed: transaction.confirmations ? (transaction.confirmations >= currentCoin.confirmationsNeeded) : false,
         confirmations: transaction.confirmations ? transaction.confirmations : 0,
@@ -57,7 +56,6 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
             hash: input.coinbase ? input.coinbase : getOutputId(input.txid, input.vout),
             address: input.coinbase ? null : (input.prevOut.addresses as string[]).join(', '),
             coins: input.coinbase ? new BigNumber(0) : new BigNumber(input.prevOut.value),
-            hours: new BigNumber(0),
           };
         }),
         outputs: (transaction.vout as any[]).map(output => {
@@ -65,7 +63,6 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
             hash: getOutputId(transaction.txid, output.n),
             address: (output.scriptPubKey.addresses as string[]).join(', '),
             coins: new BigNumber(output.value),
-            hours: new BigNumber(0),
           };
         }),
         involvedLocalWallets: '',

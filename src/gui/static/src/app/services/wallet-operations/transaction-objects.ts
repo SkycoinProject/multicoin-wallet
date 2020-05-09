@@ -12,7 +12,7 @@ export interface Input {
   hash: string;
   address: string;
   coins: BigNumber;
-  hours: BigNumber;
+  hours?: BigNumber;
 }
 
 /**
@@ -22,7 +22,7 @@ export interface Output {
   hash: string;
   address: string;
   coins: BigNumber;
-  hours: BigNumber;
+  hours?: BigNumber;
   confirmations?: number;
 }
 
@@ -39,7 +39,7 @@ export interface TransactionBase {
    */
   outputs: Output[];
   /**
-   * Transaction fee.
+   * Transaction fee, in coins or hours.
    */
   fee: BigNumber;
   /**
@@ -79,7 +79,7 @@ export interface GeneratedTransaction extends TransactionBase {
   /**
    * How many hours the transaction is going to send.
    */
-  hoursToSend: BigNumber;
+  hoursToSend?: BigNumber;
 }
 
 /**
@@ -121,7 +121,7 @@ export interface OldTransaction extends TransactionBase {
   /**
    * How many hours were received or sent (if the number is negative).
    */
-  hoursBalance: BigNumber;
+  hoursBalance?: BigNumber;
   /**
    * The addresses which sent the coins o the ones which received them, depending on
    * whether the transaction was for sending or receiving coins.

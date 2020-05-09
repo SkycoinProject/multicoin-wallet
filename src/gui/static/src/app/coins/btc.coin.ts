@@ -9,8 +9,6 @@ export class BtcCoin extends Coin {
   nodeUrl = '/local-btcd';
   coinName = 'Bitcoin';
   coinSymbol = 'BTC';
-  hoursName = '';
-  hoursNameSingular = '';
   uriSpecificatioPrefix = 'bitcoin';
   priceTickerId = 'btc-bitcoin';
   explorerUrl = 'https://explorer.testcoin.net';

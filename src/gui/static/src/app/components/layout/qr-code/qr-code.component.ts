@@ -17,6 +17,7 @@ import { processServiceError } from '../../../utils/errors';
 import { NodeService } from '../../../services/node.service';
 import { CoinService } from '../../../services/coin.service';
 import { LastAddress } from '../../../services/coin-specific/wallets-and-addresses-operator';
+import { CoinTypes } from '../../../coins/coin-types';
 
 // Gives access to qrcode.js, imported from the resources folder.
 declare const QRCode: any;
@@ -91,6 +92,8 @@ export class QrCodeComponent implements OnInit, OnDestroy {
   // If showing the last address of a wallet, this var allow to know if that address has
   // been already used (meaning if it has already received any coins).
   lastAdderessIsUnused = true;
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
 
   private loadAddressSubscription: SubscriptionLike;
   private subscriptionsGroup: SubscriptionLike[] = [];
@@ -120,7 +123,9 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private router: Router,
     private coinService: CoinService,
-  ) { }
+  ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+  }
 
   ngOnInit() {
     if (this.data.showSpecificAddress) {

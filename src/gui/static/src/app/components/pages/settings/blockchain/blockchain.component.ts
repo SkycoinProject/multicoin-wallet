@@ -4,6 +4,7 @@ import { SubscriptionLike, of } from 'rxjs';
 
 import { BlockchainService, BasicBlockInfo, CoinSupply } from '../../../../services/blockchain.service';
 import { CoinService } from '../../../../services/coin.service';
+import { CoinTypes } from '../../../../coins/coin-types';
 
 /**
  * Shows the state of the the blockchain on the node.
@@ -14,6 +15,8 @@ import { CoinService } from '../../../../services/coin.service';
   styleUrls: ['./blockchain.component.scss'],
 })
 export class BlockchainComponent implements OnInit, OnDestroy {
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   block: BasicBlockInfo;
   coinSupply: CoinSupply;
 
@@ -28,6 +31,8 @@ export class BlockchainComponent implements OnInit, OnDestroy {
     private blockchainService: BlockchainService,
     coinService: CoinService,
   ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+
     // Intervals for updating the data must be longer if connecting to a remote node.
     if (!coinService.currentCoinInmediate.isLocal) {
       this.updatePeriod = 60 * 1000;

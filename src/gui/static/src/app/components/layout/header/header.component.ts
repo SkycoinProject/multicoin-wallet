@@ -13,6 +13,7 @@ import { Coin } from '../../../coins/coin';
 import { CoinService } from '../../../services/coin.service';
 import { AppUpdateService } from '../../../services/app-update.service';
 import { NodeService } from '../../../services/node.service';
+import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Header shown at the top of most pages.
@@ -27,6 +28,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   currentCoin: Coin;
 
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   // Data about the synchronization status of the node.
   synchronizationInfoObtained = false;
   synchronizationPercentage: number;
@@ -57,7 +60,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private coinService: CoinService,
-  ) { }
+  ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+  }
 
   ngOnInit() {
     // Get the currently selected coin.
@@ -102,7 +107,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
       let hours = new BigNumber(0);
       addresses.forEach(addr => {
         coins = coins.plus(addr.coins);
-        hours = hours.plus(addr.hours);
+        if (addr.hours) {
+          hours = hours.plus(addr.hours);
+        }
       });
       this.coins = coins.toString();
       this.hours = hours.toString();

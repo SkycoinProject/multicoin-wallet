@@ -20,7 +20,7 @@ export class CommonTextPipe implements PipeTransform {
   ) { }
 
   transform(value: string) {
-    if (value === 'hours') {
+    if (value === 'hours' && this.coinService.currentCoinInmediate.hoursName) {
       return this.coinService.currentCoinInmediate.hoursName;
     } else if (value === 'coinSymbol') {
       return this.coinService.currentCoinInmediate.coinSymbol;

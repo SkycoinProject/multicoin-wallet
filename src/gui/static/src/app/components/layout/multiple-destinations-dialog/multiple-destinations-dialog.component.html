@@ -1,5 +1,10 @@
 <app-modal [headline]="'send.bulk-send.title' | translate" [dialog]="dialogRef">
-  {{ 'send.bulk-send.indications' | translate }}
+  <ng-container *ngIf="coinHasHours">
+    {{ 'send.bulk-send.indications' | translate }}
+  </ng-container>
+  <ng-container *ngIf="!coinHasHours">
+    {{ 'send.bulk-send.indications-without-hours' | translate }}
+  </ng-container>
   <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
       <textarea formControlName="data" id="data" rows="5"></textarea>

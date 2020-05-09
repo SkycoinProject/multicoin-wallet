@@ -7,6 +7,8 @@ import BigNumber from 'bignumber.js';
 import { AppConfig } from '../../../app.config';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 import { WalletTypes, WalletBase } from '../../../services/wallet-operations/wallet-objects';
+import { CoinService } from '../../../services/coin.service';
+import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Represents a wallet shown on the list. The wallet object is not used directly to be able to
@@ -40,6 +42,8 @@ class ElementAddress {
   styleUrls: ['./select-address.component.scss'],
 })
 export class SelectAddressComponent {
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   // True if the wallets shown by the component don't have the same value on the walletType param.
   hasVariousWalletTypes = false;
   walletTypes = WalletTypes;
@@ -61,7 +65,10 @@ export class SelectAddressComponent {
     public dialogRef: MatDialogRef<SelectAddressComponent>,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private router: Router,
+    coinService: CoinService,
   ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+
     // Get the wallet list.
     this.balanceAndOutputsService.walletsWithBalance.pipe(first()).subscribe(wallets => {
       const typeOfTheFirstWallet = wallets.length > 0 ? wallets[0].walletType : null;

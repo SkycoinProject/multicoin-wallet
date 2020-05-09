@@ -26,8 +26,8 @@ export interface BasicBlockInfo {
 export interface CoinSupply {
   currentSupply: string;
   totalSupply: string;
-  currentCoinhourSupply: string;
-  totalCoinhourSupply: string;
+  currentCoinhourSupply?: string;
+  totalCoinhourSupply?: string;
 }
 
 /**

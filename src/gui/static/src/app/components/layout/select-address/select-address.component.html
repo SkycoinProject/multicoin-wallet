@@ -31,9 +31,12 @@
         <button mat-button color="primary" (click)="select(address.address)">
           <div class="address">{{ address.address }}</div>
           <div class="balance">{{ address.coins | amount:true:'first' }}
-            <span class="grey-text">{{ address.coins | amount:true:'last' }} | </span>
-            {{ address.hours | amount:false:'first' }}
-            <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
+            <span class="grey-text">{{ address.coins | amount:true:'last' }}</span>
+            <ng-container *ngIf="coinHasHours">
+              <span class="grey-text"> | </span>
+              {{ address.hours | amount:false:'first' }}
+              <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
+            </ng-container>
           </div>
         </button>
       </ng-container>
