@@ -4,9 +4,8 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angu
 
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { AppConfig } from '../../../app.config';
-import { Destination } from '../../pages/send-skycoin/form-parts/form-destination/form-destination.component';
+import { Destination } from '../../pages/send-coins/form-parts/form-destination/form-destination.component';
 import { CoinService } from '../../../services/coin.service';
-import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Modal window which allows the user to enter multiple destinations with just a text

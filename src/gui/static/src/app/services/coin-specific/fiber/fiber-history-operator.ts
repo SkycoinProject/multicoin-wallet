@@ -9,7 +9,7 @@ import { StorageService } from '../../storage.service';
 import { WalletBase, WalletWithBalance, WalletTypes } from '../../wallet-operations/wallet-objects';
 import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
-import { getTransactionsHistory } from './utils/history-utils';
+import { getTransactionsHistory } from './utils/fiber-history-utils';
 import { PendingTransactionsResponse, AddressesHistoryResponse, AddressesState, PendingTransactionData } from '../../wallet-operations/history.service';
 import { HistoryOperator } from '../history-operator';
 import { FiberApiService } from '../../api/fiber-api.service';

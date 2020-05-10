@@ -7,7 +7,6 @@ import { BalanceAndOutputsService } from '../../../../services/wallet-operations
 import { WalletWithOutputs } from '../../../../services/wallet-operations/wallet-objects';
 import { CoinService } from '../../../../services/coin.service';
 import { CoinTypes } from '../../../../coins/coin-types';
-import { BtcCoinConfig } from '../../../../coins/config/btc.coin-config';
 
 /**
  * Allows to see the list of unspent outputs of the registered wallets. The list can be

@@ -8,7 +8,6 @@ import { AppConfig } from '../../../app.config';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 import { WalletTypes, WalletBase } from '../../../services/wallet-operations/wallet-objects';
 import { CoinService } from '../../../services/coin.service';
-import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Represents a wallet shown on the list. The wallet object is not used directly to be able to

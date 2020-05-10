@@ -4,7 +4,7 @@ import { AppComponent } from './app.component';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
 import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
+import { SendCoinsComponent } from './components/pages/send-coins/send-coins.component';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { BlockchainService } from './services/blockchain.service';
 import { DateTimePipe } from './pipes/date-time.pipe';
@@ -57,9 +57,9 @@ import { DoubleButtonComponent } from './components/layout/double-button/double-
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
-import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
-import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
-import { SendCoinsFormComponent } from './components/pages/send-skycoin/send-coins-form/send-coins-form.component';
+import { SendVerifyComponent } from './components/pages/send-coins/send-preview/send-preview.component';
+import { TransactionInfoComponent } from './components/pages/send-coins/send-preview/transaction-info/transaction-info.component';
+import { SendCoinsFormComponent } from './components/pages/send-coins/send-coins-form/send-coins-form.component';
 import { NavBarSwitchService } from './services/nav-bar-switch.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
@@ -99,17 +99,17 @@ import { DecimalPipe } from '@angular/common';
 import { HwRemovePinDialogComponent } from './components/layout/hardware-wallet/hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 import { HwUpdateFirmwareDialogComponent } from './components/layout/hardware-wallet/hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from './components/layout/hardware-wallet/hw-update-alert-dialog/hw-update-alert-dialog.component';
-import { ChangeNoteComponent } from './components/pages/send-skycoin/send-preview/transaction-info/change-note/change-note.component';
+import { ChangeNoteComponent } from './components/pages/send-coins/send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
 import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
 import { MultipleDestinationsDialogComponent } from './components/layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
-import { FormSourceSelectionComponent } from './components/pages/send-skycoin/form-parts/form-source-selection/form-source-selection.component';
-import { FormDestinationComponent } from './components/pages/send-skycoin/form-parts/form-destination/form-destination.component';
-import { CopyRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/copy-raw-tx.component';
-import { SignRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/sign-raw-tx.component';
-import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/broadcast-raw-tx.component';
-import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/offline-dialogs/offline-dialogs-base.component';
+import { FormSourceSelectionComponent } from './components/pages/send-coins/form-parts/form-source-selection/form-source-selection.component';
+import { FormDestinationComponent } from './components/pages/send-coins/form-parts/form-destination/form-destination.component';
+import { CopyRawTxComponent } from './components/pages/send-coins/offline-dialogs/implementations/copy-raw-tx.component';
+import { SignRawTxComponent } from './components/pages/send-coins/offline-dialogs/implementations/sign-raw-tx.component';
+import { BroadcastRawTxComponent } from './components/pages/send-coins/offline-dialogs/implementations/broadcast-raw-tx.component';
+import { OfflineDialogsBaseComponent } from './components/pages/send-coins/offline-dialogs/offline-dialogs-base.component';
 import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.component';
 import { QrCodeButtonComponent } from './components/layout/qr-code-button/qr-code-button.component';
 import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
@@ -149,7 +149,7 @@ import { BtcApiService } from './services/api/btc-api.service';
     OutputsComponent,
     PendingTransactionsComponent,
     QrCodeComponent,
-    SendSkycoinComponent,
+    SendCoinsComponent,
     TellerStatusPipe,
     TopBarComponent,
     TransactionDetailComponent,
@@ -219,7 +219,7 @@ import { BtcApiService } from './services/api/btc-api.service';
     CreateWalletComponent,
     ChangeNameComponent,
     QrCodeComponent,
-    SendSkycoinComponent,
+    SendCoinsComponent,
     TransactionDetailComponent,
     PasswordDialogComponent,
     SeedModalComponent,

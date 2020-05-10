@@ -1,12 +1,12 @@
 import BigNumber from 'bignumber.js';
 import * as Base58 from 'base-x';
 
-import { HwInput, HwOutput } from '../services/hw-wallet.service';
+import { HwInput, HwOutput } from '../../../hw-wallet.service';
 
 /**
  * Allows to encode transactions, to be able to send them to the network.
  */
-export class TxEncoder {
+export class FiberTxEncoder {
   /**
    * Creates an encoded transaction using the Skycoin format. Check the encoded Skycoin
    * transaction reference for more info.

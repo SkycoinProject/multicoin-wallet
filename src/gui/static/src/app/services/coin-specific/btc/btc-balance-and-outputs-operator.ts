@@ -10,8 +10,7 @@ import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { BtcApiService } from '../../api/btc-api.service';
-import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
-import { recursivelyGetTransactions, getOutputId } from './utils/history-utils';
+import { recursivelyGetTransactions, getOutputId } from './utils/btc-history-utils';
 
 /**
  * Balance and outputs of a wallet, for internal use.

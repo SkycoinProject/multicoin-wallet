@@ -10,7 +10,6 @@ import { PriceService } from '../../../../../services/price.service';
 import { WalletsAndAddressesService } from '../../../../../services/wallet-operations/wallets-and-addresses.service';
 import { getTransactionIconName } from '../../../../../utils/history-utils';
 import { WalletBase } from '../../../../../services/wallet-operations/wallet-objects';
-import { CoinTypes } from '../../../../../coins/coin-types';
 import { CoinService } from '../../../../../services/coin.service';
 
 /**

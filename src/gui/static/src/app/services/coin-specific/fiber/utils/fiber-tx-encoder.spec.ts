@@ -1,8 +1,8 @@
 import { readJSON } from 'karma-read-json';
-import { TxEncoder } from './tx-encoder';
+import { FiberTxEncoder } from './fiber-tx-encoder';
 import BigNumber from 'bignumber.js';
 
-describe('TxEncoder', () => {
+describe('FiberTxEncoder', () => {
 
   describe('check encoding', () => {
     const txs = readJSON('test-fixtures/encoded-txs.json').txs;
@@ -14,7 +14,7 @@ describe('TxEncoder', () => {
           output.hours = new BigNumber(output.hours).toString();
         });
 
-        expect(TxEncoder.encode(txs[i].inputs, txs[i].outputs, txs[i].signatures, txs[i].innerHash)).toBe(txs[i].raw);
+        expect(FiberTxEncoder.encode(txs[i].inputs, txs[i].outputs, txs[i].signatures, txs[i].innerHash)).toBe(txs[i].raw);
       });
     }
   });

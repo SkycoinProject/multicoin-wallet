@@ -7,7 +7,7 @@ import { StorageService } from '../../storage.service';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
 import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
-import { getTransactionsHistory, recursivelyGetTransactions } from './utils/history-utils';
+import { getTransactionsHistory, recursivelyGetTransactions } from './utils/btc-history-utils';
 import { PendingTransactionsResponse, AddressesHistoryResponse, PendingTransactionData } from '../../wallet-operations/history.service';
 import { HistoryOperator } from '../history-operator';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';

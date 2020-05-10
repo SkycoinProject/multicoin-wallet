@@ -13,11 +13,11 @@ import { NodeService } from '../../../services/node.service';
  * Shows the form which allows the user to send coins.
  */
 @Component({
-  selector: 'app-send-skycoin',
-  templateUrl: './send-skycoin.component.html',
-  styleUrls: ['./send-skycoin.component.scss'],
+  selector: 'app-send-coins',
+  templateUrl: './send-coins.component.html',
+  styleUrls: ['./send-coins.component.scss'],
 })
-export class SendSkycoinComponent implements OnDestroy {
+export class SendCoinsComponent implements OnDestroy {
   // If the node service already has updated info about the remote node.
   nodeDataUpdated = false;
   // If true, the form for sending coins is shown. If false, the tx preview is shown.

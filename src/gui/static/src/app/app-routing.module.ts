@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
-import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
+import { SendCoinsComponent } from './components/pages/send-coins/send-coins.component';
 import { RouterModule } from '@angular/router';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
@@ -29,7 +29,7 @@ const ROUTES = [
   },
   {
     path: 'send',
-    component: SendSkycoinComponent,
+    component: SendCoinsComponent,
     canActivate: [WizardGuardService],
   },
   {

@@ -10,7 +10,6 @@ import { WalletWithBalance, AddressWithBalance } from '../../../../services/wall
 import { WalletsComponent } from '../wallets.component';
 import { WalletOptionsComponent } from '../wallet-options/wallet-options.component';
 import { CoinService } from '../../../../services/coin.service';
-import { CoinTypes } from '../../../../coins/coin-types';
 
 /**
  * Shows the option buttons and address list of a wallet on the wallet list.

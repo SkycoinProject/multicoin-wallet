@@ -17,7 +17,6 @@ import { processServiceError } from '../../../utils/errors';
 import { NodeService } from '../../../services/node.service';
 import { CoinService } from '../../../services/coin.service';
 import { LastAddress } from '../../../services/coin-specific/wallets-and-addresses-operator';
-import { CoinTypes } from '../../../coins/coin-types';
 
 // Gives access to qrcode.js, imported from the resources folder.
 declare const QRCode: any;

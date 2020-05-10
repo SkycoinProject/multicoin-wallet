@@ -13,7 +13,6 @@ import { OldTransaction, OldTransactionTypes } from '../../../services/wallet-op
 import { WalletTypes } from '../../../services/wallet-operations/wallet-objects';
 import { getTransactionIconName } from '../../../utils/history-utils';
 import { CoinService } from '../../../services/coin.service';
-import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Represents a wallet, to be used as filter.

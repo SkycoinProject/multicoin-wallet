@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { HwWalletService, HwOutput, HwInput } from '../../hw-wallet.service';
 import { StorageService, StorageType } from '../../storage.service';
-import { TxEncoder } from '../../../utils/tx-encoder';
+import { FiberTxEncoder } from './utils/fiber-tx-encoder';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
 import { GeneratedTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
@@ -249,7 +249,7 @@ export class FiberSpendingOperator implements SpendingOperator {
 
       // Make the device sign the transaction.
       return this.hwWalletService.signTransaction(hwInputs, hwOutputs).pipe(map(signatures => {
-        const rawTransaction = TxEncoder.encode(
+        const rawTransaction = FiberTxEncoder.encode(
           hwInputs,
           hwOutputs,
           signatures.rawResponse,

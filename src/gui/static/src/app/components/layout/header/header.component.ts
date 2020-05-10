@@ -13,7 +13,6 @@ import { Coin } from '../../../coins/coin';
 import { CoinService } from '../../../services/coin.service';
 import { AppUpdateService } from '../../../services/app-update.service';
 import { NodeService } from '../../../services/node.service';
-import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Header shown at the top of most pages.

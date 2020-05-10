@@ -11,7 +11,7 @@ import { StorageService, StorageType } from '../../storage.service';
 import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { WalletsAndAddressesOperator, LastAddress, CreateWalletArgs, CreateSoftwareWalletArgs } from '../wallets-and-addresses-operator';
-import { getTransactionsHistory } from './utils/history-utils';
+import { getTransactionsHistory } from './utils/fiber-history-utils';
 import { FiberApiService } from '../../api/fiber-api.service';
 
 /**

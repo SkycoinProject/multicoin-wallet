@@ -14,7 +14,6 @@ import { WalletWithBalance, WalletTypes } from '../../../services/wallet-operati
 import { QrDialogConfig, QrCodeComponent } from '../../layout/qr-code/qr-code.component';
 import { WalletOptionsComponent } from './wallet-options/wallet-options.component';
 import { CoinService } from '../../../services/coin.service';
-import { CoinTypes } from '../../../coins/coin-types';
 
 /**
  * Shows the wallet list and options related to it.

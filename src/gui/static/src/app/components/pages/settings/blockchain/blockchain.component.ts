@@ -4,7 +4,6 @@ import { SubscriptionLike, of } from 'rxjs';
 
 import { BlockchainService, BasicBlockInfo, CoinSupply } from '../../../../services/blockchain.service';
 import { CoinService } from '../../../../services/coin.service';
-import { CoinTypes } from '../../../../coins/coin-types';
 
 /**
  * Shows the state of the the blockchain on the node.
