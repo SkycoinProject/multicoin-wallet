@@ -2,7 +2,7 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 
 import { WalletBase } from './wallet-objects';
-import { GeneratedTransaction } from './transaction-objects';
+import { GeneratedTransaction, Output } from './transaction-objects';
 import { SpendingOperator } from '../coin-specific/spending-operator';
 import { OperatorService } from '../operators.service';
 
@@ -89,7 +89,8 @@ export class SpendingService {
    * be from the provided wallet (if any). If an unspent outputs list is provided, this param is ignored.
    * @param unspents Optional list of unspent outputs from were the coins will be sent. All outputs
    * should be from the provided wallet (if any).
-   * @param hoursDistributionOptions Object indicating how the hours will be distributed.
+   * @param hoursDistributionOptions Object indicating how the hours will be distributed, if the
+   * currently selected coin uses hours.
    * @param destinations Array with indications about hows many coins will be sent and where.
    * @param changeAddress Optional custom address where the remaining coins and hours will be sent. If not
    * provided, one will be selected automatically.
@@ -102,9 +103,9 @@ export class SpendingService {
   createTransaction(
     wallet: WalletBase|null,
     addresses: string[]|null,
-    unspents: string[]|null,
+    unspents: Output[]|null,
     destinations: TransactionDestination[],
-    hoursDistributionOptions: HoursDistributionOptions,
+    hoursDistributionOptions: HoursDistributionOptions|null,
     changeAddress: string|null,
     password: string|null,
     unsigned: boolean): Observable<GeneratedTransaction> {

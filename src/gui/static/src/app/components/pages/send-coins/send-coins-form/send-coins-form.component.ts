@@ -25,6 +25,7 @@ import { GeneratedTransaction, Output } from '../../../../services/wallet-operat
 import { WalletWithBalance, AddressWithBalance, WalletTypes, WalletBase } from '../../../../services/wallet-operations/wallet-objects';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 import { GetNextAddressComponent } from '../../../layout/get-next-address/get-next-address.component';
+import { CoinService } from '../../../../services/coin.service';
 
 /**
  * Data returned when SendCoinsFormComponent asks to show the preview of a transaction. Useful
@@ -120,7 +121,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // How many coins the user can send with the selected sources.
   availableBalance = new AvailableBalanceData();
   // If true, the hours are distributed automatically. If false, the user can manually
-  // enter how many hours to send to each destination.
+  // enter how many hours to send to each destination. Must be true if the coin does not have
+  // hours.
   autoHours = true;
   // If true, the options for selecting the auto hours distribution factor are shown.
   autoOptions = false;
@@ -130,6 +132,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   busy = false;
   // If true, the form is used for manually creating unsigned transactions.
   showForManualUnsigned = false;
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
+
   // Sources the user has selected.
   private selectedSources: SelectedSources;
 
@@ -146,7 +151,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     private changeDetector: ChangeDetectorRef,
     private spendingService: SpendingService,
     private walletsAndAddressesService: WalletsAndAddressesService,
-  ) { }
+    coinService: CoinService,
+  ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+  }
 
   ngOnInit() {
     this.form = new FormGroup({}, this.validateForm.bind(this));
@@ -264,7 +272,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       if (response) {
         if (response.length > 0) {
           // If the first destination does not have hours, no destination has hours.
-          this.autoHours = response[0].hours === undefined;
+          if (this.coinHasHours) {
+            this.autoHours = response[0].hours === undefined;
+          }
           setTimeout(() => this.formMultipleDestinations.setDestinations(response));
         } else {
           this.formMultipleDestinations.resetForm();
@@ -305,9 +315,14 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.form.get(name).setValue(this.formData.form[name]);
     });
 
-    if (this.formData.form.hoursSelection.type === HoursDistributionTypes.Auto) {
-      this.autoShareValue = this.formData.form.hoursSelection.share_factor;
+    if (!this.coinHasHours || this.formData.form.hoursSelection.type === HoursDistributionTypes.Auto) {
       this.autoHours = true;
+
+      if (this.formData.form.hoursSelection.share_factor) {
+        this.autoShareValue = this.formData.form.hoursSelection.share_factor;
+      } else {
+        this.autoShareValue = '0';
+      }
     } else {
       this.autoHours = false;
     }
@@ -405,7 +420,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
     // Process the source outputs.
     const selectedOutputs = this.selectedSources.unspentOutputs && this.selectedSources.unspentOutputs.length > 0 ?
-      this.selectedSources.unspentOutputs.map(addr => addr.hash) : null;
+      this.selectedSources.unspentOutputs : null;
 
     const destinations = this.formMultipleDestinations.getDestinations(true);
     let transaction: GeneratedTransaction;

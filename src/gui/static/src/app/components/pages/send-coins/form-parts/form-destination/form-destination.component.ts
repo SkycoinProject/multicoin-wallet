@@ -67,6 +67,12 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   // If the manual hours field must be shown.
   private showHourFieldsInternal: boolean;
   @Input() set showHourFields(val: boolean) {
+    if (!this.coinHasHours) {
+      this.showHourFieldsInternal = false;
+
+      return;
+    }
+
     if (val !== this.showHourFieldsInternal) {
       this.showHourFieldsInternal = val;
       if (this.form) {
@@ -102,6 +108,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   }
 
   form: FormGroup;
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   doubleButtonActive = DoubleButtonActive;
   // Allows to know if the user is entering the values in the coin (left) or usd (right).
   selectedCurrency = DoubleButtonActive.LeftButton;
@@ -134,7 +142,9 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private priceService: PriceService,
     private coinService: CoinService,
-  ) { }
+  ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+  }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
@@ -366,10 +376,12 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
 
       // Update the hour values.
-      stringValue = dest.get('hours').value;
-      value = this.getAmount(stringValue, false);
-      if (value) {
-        this.totalHours = this.totalHours.plus(value);
+      if (this.showHourFields) {
+        stringValue = dest.get('hours').value;
+        value = this.getAmount(stringValue, false);
+        if (value) {
+          this.totalHours = this.totalHours.plus(value);
+        }
       }
     });
 

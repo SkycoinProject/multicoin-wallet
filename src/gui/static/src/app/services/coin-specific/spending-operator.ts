@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 
 import { WalletBase } from '../wallet-operations/wallet-objects';
-import { GeneratedTransaction } from '../wallet-operations/transaction-objects';
+import { GeneratedTransaction, Output } from '../wallet-operations/transaction-objects';
 import { TransactionDestination, HoursDistributionOptions } from '../wallet-operations/spending.service';
 
 /**
@@ -19,7 +19,7 @@ export interface SpendingOperator {
   createTransaction(
     wallet: WalletBase|null,
     addresses: string[]|null,
-    unspents: string[]|null,
+    unspents: Output[]|null,
     destinations: TransactionDestination[],
     hoursDistributionOptions: HoursDistributionOptions,
     changeAddress: string|null,

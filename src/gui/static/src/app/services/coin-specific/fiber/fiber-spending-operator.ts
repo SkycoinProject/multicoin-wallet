@@ -8,7 +8,7 @@ import { HwWalletService, HwOutput, HwInput } from '../../hw-wallet.service';
 import { StorageService, StorageType } from '../../storage.service';
 import { FiberTxEncoder } from './utils/fiber-tx-encoder';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
-import { GeneratedTransaction } from '../../wallet-operations/transaction-objects';
+import { GeneratedTransaction, Output } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { TransactionDestination, HoursDistributionOptions } from '../../wallet-operations/spending.service';
 import { SpendingOperator } from '../spending-operator';
@@ -60,12 +60,17 @@ export class FiberSpendingOperator implements SpendingOperator {
   createTransaction(
     wallet: WalletBase|null,
     addresses: string[]|null,
-    unspents: string[]|null,
+    unspents: Output[]|null,
     destinations: TransactionDestination[],
     hoursDistributionOptions: HoursDistributionOptions,
     changeAddress: string|null,
     password: string|null,
     unsigned: boolean): Observable<GeneratedTransaction> {
+
+    let unspentOutputHashes: string[];
+    if (unspents) {
+      unspentOutputHashes = unspents.map(output => output.hash);
+    }
 
     // Create a string indicating where the coins come from.
     let senderString = '';
@@ -74,13 +79,13 @@ export class FiberSpendingOperator implements SpendingOperator {
     } else {
       if (addresses) {
         senderString = addresses.join(', ');
-      } else if (unspents) {
-        senderString = unspents.join(', ');
+      } else if (unspentOutputHashes) {
+        senderString = unspentOutputHashes.join(', ');
       }
     }
 
     // Ignore the source addresses if specific source outputs were provided.
-    if (unspents) {
+    if (unspentOutputHashes) {
       addresses = null;
     }
 
@@ -96,7 +101,7 @@ export class FiberSpendingOperator implements SpendingOperator {
       wallet_id: !useUnsignedTxEndpoint ? wallet.id : null,
       password: password,
       addresses: addresses,
-      unspents: unspents,
+      unspents: unspentOutputHashes,
       to: destinations,
       change_address: changeAddress,
     };

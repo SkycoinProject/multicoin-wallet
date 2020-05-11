@@ -24,19 +24,28 @@
   <!-- Available balance box. -->
   <div *ngIf="!showSimpleForm" class="form-field -available-msg">
     <ng-container *ngIf="!availableBalance.loading">
-      <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
-      <span class="value">
-        {{ availableBalance.availableCoins | amount }}
-      </span>
-      <span>{{ 'send.available-funds-msg-part2' | translate }}</span>
-      <span class="value">
-        {{ availableBalance.availableHours | amount:false }}
-      </span>
-      <span>{{ 'send.available-funds-msg-part3' | translate }}</span>
-      <span class="value">
-        {{ availableBalance.minimumFee | amount:false }}
-      </span>
-      <span>{{ 'send.available-funds-msg-part4' | translate }}</span>
+      <ng-container *ngIf="coinHasHours">
+        <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.availableCoins | amount }}
+        </span>
+        <span>{{ 'send.available-funds-msg-part2' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.availableHours | amount:false }}
+        </span>
+        <span>{{ 'send.available-funds-msg-part3' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.minimumFee | amount:false }}
+        </span>
+        <span>{{ 'send.available-funds-msg-part4' | translate }}</span>
+      </ng-container>
+      <ng-container *ngIf="!coinHasHours">
+        <span>{{ 'send.available-funds-without-hours-msg-part1' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.availableCoins | amount }}
+        </span>
+        <span>{{ 'send.available-funds-without-hours-msg-part2' | translate }}</span>
+      </ng-container>
     </ng-container>
     <ng-container *ngIf="availableBalance.loading">
       <span>{{ 'common.loading' | translate }}</span>
@@ -50,7 +59,7 @@
     (onBulkRequested)="openMultipleDestinationsPopup()"
     [availableBalance]="availableBalance"
     [busy]="busy"
-    [showHourFields]="!autoHours"
+    [showHourFields]="coinHasHours && !autoHours"
     [showSimpleForm]="showSimpleForm"
     >
   </app-form-destination>
@@ -79,7 +88,7 @@
   </div>
 
   <!-- Automatic hours distributions options. -->
-  <div *ngIf="!showSimpleForm" class="form-field">
+  <div *ngIf="coinHasHours && !showSimpleForm" class="form-field">
     <div class="row" [ngClass]="{'element-disabled' : busy}">
       <div class="col-12">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">

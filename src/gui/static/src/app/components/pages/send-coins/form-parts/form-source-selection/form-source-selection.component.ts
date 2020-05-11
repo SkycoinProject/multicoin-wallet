@@ -12,6 +12,7 @@ import { processServiceError } from '../../../../../utils/errors';
 import { OperationError } from '../../../../../utils/operation-error';
 import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
 import { NodeService } from '../../../../../services/node.service';
+import { CoinService } from '../../../../../services/coin.service';
 
 /**
  * Info about the balance which is available with the selections the user has
@@ -130,6 +131,8 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   loadingUnspentOutputs = false;
   // If there was an error downloading the list of unspent outputs from the node.
   errorLoadingManualOutputs = false;
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
 
   walletTypes = WalletTypes;
 
@@ -140,7 +143,10 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     private nodeService: NodeService,
     private formBuilder: FormBuilder,
     private balanceAndOutputsService: BalanceAndOutputsService,
-  ) { }
+    coinService: CoinService,
+  ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+  }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
@@ -381,12 +387,16 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       if (selectedOutputs && selectedOutputs.length > 0) {
         selectedOutputs.map(output => {
           response.availableCoins = response.availableCoins.plus(output.coins);
-          response.availableHours = response.availableHours.plus(output.hours);
+          if (this.coinHasHours) {
+            response.availableHours = response.availableHours.plus(output.hours);
+          }
         });
       } else {
         this.unspentOutputs.forEach(output => {
           response.availableCoins = response.availableCoins.plus(output.coins);
-          response.availableHours = response.availableHours.plus(output.hours);
+          if (this.coinHasHours) {
+            response.availableHours = response.availableHours.plus(output.hours);
+          }
         });
       }
     }
@@ -405,22 +415,28 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       if (outputs && outputs.length > 0) {
         outputs.map(control => {
           response.availableCoins = response.availableCoins.plus(control.coins);
-          response.availableHours = response.availableHours.plus(control.hours);
+          if (this.coinHasHours) {
+            response.availableHours = response.availableHours.plus(control.hours);
+          }
         });
       } else if (addresses && addresses.length > 0) {
         addresses.map(control => {
           response.availableCoins = response.availableCoins.plus(control.coins);
-          response.availableHours = response.availableHours.plus(control.hours);
+          if (this.coinHasHours) {
+            response.availableHours = response.availableHours.plus(control.hours);
+          }
         });
       } else if (this.form.get('wallet').value) {
         const wallet: WalletWithBalance = this.form.get('wallet').value;
         response.availableCoins = wallet.coins;
-        response.availableHours = wallet.hours;
+        if (this.coinHasHours) {
+          response.availableHours = wallet.hours;
+        }
       }
     }
 
     // Calculate the max number of hours that can be sent.
-    if (response.availableCoins.isGreaterThan(0)) {
+    if (this.coinHasHours && response.availableCoins.isGreaterThan(0)) {
       const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.nodeService.burnRate));
       const sendableHours = response.availableHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
       response.minimumFee = response.availableHours.minus(sendableHours);
