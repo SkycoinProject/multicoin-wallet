@@ -2,7 +2,7 @@ import { Observable } from 'rxjs';
 
 import { WalletBase } from '../wallet-operations/wallet-objects';
 import { GeneratedTransaction, Output } from '../wallet-operations/transaction-objects';
-import { TransactionDestination, HoursDistributionOptions } from '../wallet-operations/spending.service';
+import { TransactionDestination, HoursDistributionOptions, RecommendedFees } from '../wallet-operations/spending.service';
 
 /**
  * Interface with the elements the operators for SpendingService must have.
@@ -24,7 +24,8 @@ export interface SpendingOperator {
     hoursDistributionOptions: HoursDistributionOptions,
     changeAddress: string|null,
     password: string|null,
-    unsigned: boolean): Observable<GeneratedTransaction>;
+    unsigned: boolean,
+    fee: string): Observable<GeneratedTransaction>;
 
   signTransaction(
     wallet: WalletBase,
@@ -33,4 +34,6 @@ export interface SpendingOperator {
     rawTransactionString?): Observable<string>;
 
   injectTransaction(encodedTx: string, note: string|null): Observable<boolean>;
+
+  getCurrentRecommendedFees(): Observable<RecommendedFees>;
 }

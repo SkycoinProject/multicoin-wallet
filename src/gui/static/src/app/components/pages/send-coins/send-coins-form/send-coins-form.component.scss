@@ -39,3 +39,21 @@
     font-size: $font-size-standard;
   }
 }
+
+.fee-spinner {
+  height: 0px;
+  position: relative;
+  top: 5px;
+  left: 5px;
+
+  mat-spinner {
+    position: absolute;
+    height: 10px !important;
+    width: 10px !important;
+
+    ::ng-deep svg {
+      height: 10px !important;
+      width: 10px !important;
+    }
+  }
+}

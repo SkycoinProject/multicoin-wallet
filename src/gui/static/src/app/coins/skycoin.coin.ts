@@ -10,6 +10,8 @@ export class SkycoinCoin extends Coin {
   coinName = 'Skycoin';
   coinSymbol = 'SKY';
   hoursName = 'Coin Hours';
+  minimumPartsName = 'Droplets';
+  minimumPartsSmallName = 'Drops';
   hoursNameSingular = 'Coin Hour';
   uriSpecificatioPrefix = 'skycoin';
   priceTickerId = 'sky-skycoin';

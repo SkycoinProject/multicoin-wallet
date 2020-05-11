@@ -20,7 +20,7 @@ import { FormDestinationComponent, Destination } from '../form-parts/form-destin
 import { CopyRawTxComponent, CopyRawTxData } from '../offline-dialogs/implementations/copy-raw-tx.component';
 import { DoubleButtonActive } from '../../../../components/layout/double-button/double-button.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../../components/layout/confirmation/confirmation.component';
-import { SpendingService, HoursDistributionOptions, HoursDistributionTypes } from '../../../../services/wallet-operations/spending.service';
+import { SpendingService, HoursDistributionOptions, HoursDistributionTypes, RecommendedFees } from '../../../../services/wallet-operations/spending.service';
 import { GeneratedTransaction, Output } from '../../../../services/wallet-operations/transaction-objects';
 import { WalletWithBalance, AddressWithBalance, WalletTypes, WalletBase } from '../../../../services/wallet-operations/wallet-objects';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
@@ -85,6 +85,18 @@ export interface FormData {
    */
   currency: DoubleButtonActive;
   note: string;
+  /**
+   * Recommended fees obtained from the node.
+   */
+  recommendedFees: RecommendedFees;
+  /**
+   * Fee type selected from the list.
+   */
+  feeType: number;
+  /**
+   * Fee entered by the user.
+   */
+  fee: string;
 }
 
 /**
@@ -98,6 +110,8 @@ export interface FormData {
 export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Default factor used for automatically distributing the coins.
   private readonly defaultAutoShareValue = '0.5';
+  // Max number of decimals that can be entered for the fee.
+  private readonly maxFeeDecimals = 5;
 
   // Subform for selecting the sources.
   @ViewChild('formSourceSelection', { static: false }) formSourceSelection: FormSourceSelectionComponent;
@@ -120,6 +134,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   form: FormGroup;
   // How many coins the user can send with the selected sources.
   availableBalance = new AvailableBalanceData();
+  // Recommended fees obtained from the node, if the current coin uses them.
+  recommendedFees: RecommendedFees;
+  // Map for getting the recommended for each option of the fee types control.
+  recommendedFeesMap: Map<number, string>;
+  // If true, the node returned that it is valid to send a transaction without fees.
+  zeroFeeAllowed = true;
   // If true, the hours are distributed automatically. If false, the user can manually
   // enter how many hours to send to each destination. Must be true if the coin does not have
   // hours.
@@ -134,12 +154,16 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   showForManualUnsigned = false;
   // If true, the currently selected coin includes coin hours.
   coinHasHours = false;
+  // Abbreviated name for the minimal part in which a coin can be divided.
+  coinMinimumPartsSmallName = '';
 
   // Sources the user has selected.
   private selectedSources: SelectedSources;
 
   private syncCheckSubscription: SubscriptionLike;
   private processingSubscription: SubscriptionLike;
+  private getRecommendedFeesSubscription: SubscriptionLike;
+  private fieldsSubscriptions: SubscriptionLike[] = [];
 
   constructor(
     private blockchainService: BlockchainService,
@@ -154,15 +178,32 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinMinimumPartsSmallName = coinService.currentCoinInmediate.minimumPartsSmallName;
   }
 
   ngOnInit() {
     this.form = new FormGroup({}, this.validateForm.bind(this));
     this.form.addControl('changeAddress', new FormControl(''));
     this.form.addControl('note', new FormControl(''));
+    this.form.addControl('fee', new FormControl(''));
+    // Custom fee is selected by default.
+    this.form.addControl('feeType', new FormControl(5));
+
+    // If the user changes the fee, select the custom fee type.
+    this.fieldsSubscriptions.push(this.form.get('fee').valueChanges.subscribe(() => {
+      this.form.get('feeType').setValue(5);
+    }));
+
+    // If the user changes the fee type, change the value of the fee field.
+    this.fieldsSubscriptions.push(this.form.get('feeType').valueChanges.subscribe(() => {
+      this.useSelectedFee();
+    }));
 
     if (this.formData) {
       setTimeout(() => this.fillForm());
+    } else {
+      // Get the recommended fees, as fillForm will not call it.
+      setTimeout(() => this.getRecommendedFees());
     }
   }
 
@@ -170,8 +211,19 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     if (this.processingSubscription && !this.processingSubscription.closed) {
       this.processingSubscription.unsubscribe();
     }
+    this.closeGetRecommendedFeesSubscription();
     this.closeSyncCheckSubscription();
+    this.fieldsSubscriptions.forEach(sub => sub.unsubscribe());
     this.msgBarService.hide();
+  }
+
+  // If true, the animation indicating that the recommended fees are being loaded must be shown.
+  get showFeesLoading(): boolean {
+    if (!this.recommendedFeesMap) {
+      return true;
+    }
+
+    return false;
   }
 
   // Called when there are changes in the source selection form.
@@ -191,13 +243,13 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   // Starts the process for creating a transaction for previewing it.
   preview() {
-    this.checkBeforeCreatingTx(true);
+    this.checkFeeBeforeCreatingTx(true);
     this.changeDetector.detectChanges();
   }
 
   // Starts the process for creating a transaction for sending it without preview.
   send() {
-    this.checkBeforeCreatingTx(false);
+    this.checkFeeBeforeCreatingTx(false);
   }
 
   // Chages the mode of the advanced form. The form can be in normal mode and a special
@@ -304,6 +356,65 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Populates the fee field with the value corresponding to the current value of the
+  // feeType field.
+  private useSelectedFee() {
+    const value = this.form.get('feeType').value;
+    if (this.recommendedFeesMap && this.recommendedFeesMap.has(value)) {
+      this.form.get('fee').setValue(this.recommendedFeesMap.get(value), { emitEvent: false });
+    }
+  }
+
+  // Connects to the node to get the recommended fees. If the current coin uses coin hours,
+  // it does nothing.
+  private getRecommendedFees() {
+    if (!this.coinHasHours) {
+      this.closeGetRecommendedFeesSubscription();
+      // Get the data.
+      this.getRecommendedFeesSubscription = this.spendingService.getCurrentRecommendedFees().subscribe(fees => {
+        // Update the vars.
+        this.populateRecommendedFees(fees);
+
+        // If the user has not entered a fee, the normal fee type is selected and the fee
+        // field is populated with the corresponding value. However, if a faster type has an
+        // a lower or equal cost, the faster method is used.
+        if (this.form.get('fee').value === '') {
+          if (fees.high.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.normal.decimalPlaces(this.maxFeeDecimals))) {
+            if (fees.veryHigh.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.high.decimalPlaces(this.maxFeeDecimals))) {
+              this.form.get('feeType').setValue(0, { emitEvent: false });
+            } else {
+              this.form.get('feeType').setValue(1, { emitEvent: false });
+            }
+          } else {
+            this.form.get('feeType').setValue(2, { emitEvent: false });
+          }
+        }
+
+        // Update the fee field.
+        this.useSelectedFee();
+      });
+    }
+  }
+
+  // Populates the vars with the recommended fees and zeroFeeAllowed.
+  private populateRecommendedFees(recommendedFees: RecommendedFees) {
+    this.recommendedFees = recommendedFees;
+
+    this.recommendedFeesMap = new Map<number, string>();
+    this.recommendedFeesMap.set(0, recommendedFees.veryHigh.decimalPlaces(this.maxFeeDecimals).toString(10));
+    this.recommendedFeesMap.set(1, recommendedFees.high.decimalPlaces(this.maxFeeDecimals).toString(10));
+    this.recommendedFeesMap.set(2, recommendedFees.normal.decimalPlaces(this.maxFeeDecimals).toString(10));
+    this.recommendedFeesMap.set(3, recommendedFees.low.decimalPlaces(this.maxFeeDecimals).toString(10));
+    this.recommendedFeesMap.set(4, recommendedFees.veryLow.decimalPlaces(this.maxFeeDecimals).toString(10));
+
+    this.zeroFeeAllowed = false;
+    this.recommendedFeesMap.forEach(fee => {
+      if (fee === '0') {
+        this.zeroFeeAllowed = true;
+      }
+    });
+  }
+
   // Fills the form with the provided values.
   private fillForm() {
     this.showForManualUnsigned = this.formData.showForManualUnsigned,
@@ -328,6 +439,17 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
 
     this.autoOptions = this.formData.form.autoOptions;
+
+    if (this.formData.form.recommendedFees) {
+      // If the data already includes recommended fees, use them and update the fee type.
+      this.populateRecommendedFees(this.formData.form.recommendedFees);
+      this.form.get('feeType').setValue(this.formData.form.feeType);
+    } else {
+      // If not, get them from the node.
+      this.getRecommendedFees();
+    }
+
+    this.form.get('fee').setValue(this.formData.form.fee, { emitEvent: false });
   }
 
   // Validates the form.
@@ -341,7 +463,66 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       return { Invalid: true };
     }
 
+    // Validate the fee, if appropiate.
+    if (!this.coinHasHours) {
+      const fee = new BigNumber(this.form.get('fee').value);
+      // The fee must be a valid number with a limit in its decimals.
+      if (fee.isNaN() || fee.isGreaterThan(fee.decimalPlaces(this.maxFeeDecimals))) {
+        return { Invalid: true };
+      }
+
+      // Only accept zero if allowed.
+      if (!this.zeroFeeAllowed && fee.isLessThanOrEqualTo(0)) {
+        return { Invalid: true };
+      }
+    }
+
     return null;
+  }
+
+  // Checks if the fee the user entered is not potentially incorrect and shows a warning
+  // before continuing creating the transaction, if appropiate. It does nothing if the
+  // form is not valid or busy.
+  private checkFeeBeforeCreatingTx(creatingPreviewTx: boolean) {
+    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
+      return;
+    }
+
+    if (this.coinHasHours) {
+      // Ignore this step if it is not needed.
+      this.checkBeforeCreatingTx(creatingPreviewTx);
+    } else {
+      let warningMsg: string;
+
+      // Check if the fee is too high, too low or unknown.
+      if (!this.recommendedFeesMap) {
+        warningMsg = 'send.fee-unknown-warning';
+      } else if (new BigNumber(this.form.get('fee').value).isLessThan(this.recommendedFeesMap.get(4))) {
+        warningMsg = 'send.fee-low-warning';
+      } else if (new BigNumber(this.form.get('fee').value).isGreaterThan(this.recommendedFeesMap.get(0))) {
+        warningMsg = 'send.fee-high-warning';
+      }
+
+      if (!warningMsg) {
+        // If no problem was found, continue.
+        this.checkBeforeCreatingTx(creatingPreviewTx);
+      } else {
+        // Ask for confirmation before continuing.
+        const confirmationParams: ConfirmationParams = {
+          redTitle: true,
+          headerText: 'common.warning-title',
+          text: warningMsg,
+          checkboxText: 'common.generic-confirmation-check',
+          defaultButtons: DefaultConfirmationButtons.ContinueCancel,
+        };
+
+        ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+          if (confirmationResult) {
+            this.checkBeforeCreatingTx(creatingPreviewTx);
+          }
+        });
+      }
+    }
   }
 
   // Checks if the blockchain is synchronized. It continues normally creating the tx if the
@@ -436,6 +617,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
       passwordDialog ? passwordDialog.password : null,
       this.showForManualUnsigned || (this.selectedSources.wallet.walletType !== WalletTypes.Bip44 && creatingPreviewTx),
+      this.form.get('fee').value,
     ).pipe(mergeMap(response => {
       transaction = response;
 
@@ -510,6 +692,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             outputs: this.selectedSources.unspentOutputs,
             currency: this.formMultipleDestinations.currentlySelectedCurrency,
             note: note,
+            recommendedFees: this.recommendedFees,
+            feeType: this.form.get('feeType').value,
+            fee: this.form.get('fee').value,
           },
           amount: amount,
           to: destinations.map(d => d.address),
@@ -608,5 +793,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.navBarSwitchService.enableSwitch();
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();
+  }
+
+  private closeGetRecommendedFeesSubscription() {
+    if (this.getRecommendedFeesSubscription) {
+      this.getRecommendedFeesSubscription.unsubscribe();
+    }
   }
 }

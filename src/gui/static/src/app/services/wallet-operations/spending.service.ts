@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
+import BigNumber from 'bignumber.js';
 
 import { WalletBase } from './wallet-objects';
 import { GeneratedTransaction, Output } from './transaction-objects';
@@ -59,6 +60,33 @@ export interface HoursDistributionOptions {
 }
 
 /**
+ * Recommended fees for getting a transaction approved after a relatively predictable
+ * amount of time.
+ */
+export interface RecommendedFees {
+  /**
+   * Sats per byte for getting a BTC operation approved in the next block.
+   */
+  veryHigh: BigNumber;
+  /**
+   * Sats per byte for getting a BTC operation approved in 1 or 2 blocks.
+   */
+  high: BigNumber;
+  /**
+   * Sats per byte for getting a BTC operation approved in 5+ blocks.
+   */
+  normal: BigNumber;
+  /**
+   * Sats per byte for getting a BTC operation approved in 10+ blocks.
+   */
+  low: BigNumber;
+  /**
+   * Sats per byte for getting a BTC operation approved in 20+ blocks.
+   */
+  veryLow: BigNumber;
+}
+
+/**
  * Allows to create, prepare and send transactions.
  */
 @Injectable()
@@ -96,6 +124,8 @@ export class SpendingService {
    * provided, one will be selected automatically.
    * @param password Wallet password, if the wallet is encrypted.
    * @param unsigned If the transaction must be signed or not. When using a hw wallet the transaction will
+   * @param fee Fee (number of the minimun divisions of the coin per byte, like sats per byte for Bitcoin).
+   * Not needed for all coins.
    * have to be signed by the device, so it will have to be connected. If no wallet param was provided, this
    * param is ignored and the transaction will be unsigned.
    * @returns The generated transaction, without the note.
@@ -108,7 +138,8 @@ export class SpendingService {
     hoursDistributionOptions: HoursDistributionOptions|null,
     changeAddress: string|null,
     password: string|null,
-    unsigned: boolean): Observable<GeneratedTransaction> {
+    unsigned: boolean,
+    fee: string): Observable<GeneratedTransaction> {
 
     return this.operator.createTransaction(
       wallet,
@@ -118,7 +149,8 @@ export class SpendingService {
       hoursDistributionOptions,
       changeAddress,
       password,
-      unsigned);
+      unsigned,
+      fee);
   }
 
   /**
@@ -147,5 +179,13 @@ export class SpendingService {
    */
   injectTransaction(encodedTx: string, note: string|null): Observable<boolean> {
     return this.operator.injectTransaction(encodedTx, note);
+  }
+
+  /**
+   * Gets a collection of recommended fees for getting a transaction approved after a relatively
+   * predictable amount of time.
+   */
+  getCurrentRecommendedFees(): Observable<RecommendedFees> {
+    return this.operator.getCurrentRecommendedFees();
   }
 }

@@ -248,6 +248,11 @@
     "to-label": "Send to",
     "amount-label": "Amount",
     "personal-note-label": "Personal note",
+    "fee-label": "Fee",
+    "fee-measure": "{{ measure }} per byte",
+    "fee-low-warning": "The fee you entered is lower than recommended, the transaction could take a very long time to be confirmed.",
+    "fee-high-warning": "The fee you entered is higher than recommended, the cost could be higher than desired.",
+    "fee-unknown-warning": "The system is still obtaining the information about the recommended fees, so it is not possible to determine if the fee you entered is convenient.",
     "personal-note-help": "Use this field to add a text for allowing you to identify the transaction in the future. This text is saved locally, so it will only be visible from this computer.",
     "wallet-label": "Wallet",
     "invalid-amount": "Please enter a valid amount",
@@ -297,6 +302,15 @@
     "saving-note-error": "The transaction was successfully sent, but it was not possible to save the note.",
     "sent": "Transaction successfully sent.",
     "total-to-send": "Total:",
+
+    "fees": {
+      "very-high": "Very high (next block)",
+      "high": "High (1-2 blocks)",
+      "Normal": "Normal (5+ blocks)",
+      "Low": "Low (10+ blocks)",
+      "very-Low": "Very Low (20+ blocks)",
+      "custom": "Custom"
+    },
 
     "bulk-send": {
       "title": "Bulk Send",

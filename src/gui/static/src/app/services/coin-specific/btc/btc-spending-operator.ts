@@ -9,7 +9,7 @@ import { StorageService, StorageType } from '../../storage.service';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
 import { GeneratedTransaction, Output, Input } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
-import { TransactionDestination, HoursDistributionOptions } from '../../wallet-operations/spending.service';
+import { TransactionDestination, HoursDistributionOptions, RecommendedFees } from '../../wallet-operations/spending.service';
 import { SpendingOperator } from '../spending-operator';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
@@ -64,7 +64,8 @@ export class BtcSpendingOperator implements SpendingOperator {
     hoursDistributionOptions: HoursDistributionOptions,
     changeAddress: string|null,
     password: string|null,
-    unsigned: boolean): Observable<GeneratedTransaction> {
+    unsigned: boolean,
+    fee: string): Observable<GeneratedTransaction> {
 
     // TODO: more validations are needed.
 
@@ -118,7 +119,7 @@ export class BtcSpendingOperator implements SpendingOperator {
     // How many coin the inputs have.
     let coinsInInputs = new BigNumber(0);
     // Transaction fee.
-    let fee = new BigNumber(0);
+    let calculatedFee = new BigNumber(0);
 
     response = response.pipe(mergeMap((availableOutputs: Output[]) => {
       // Order the available outputs from highest to lowest according to the amount of coins.
@@ -154,20 +155,20 @@ export class BtcSpendingOperator implements SpendingOperator {
         });
       });
 
-      fee = coinsInInputs;
+      calculatedFee = coinsInInputs;
 
       // Convert the outputs to the formar needed by the API. The coins of each output is
       // removed from the fee.
       const outputsForNode = {};
       destinations.forEach(destination => {
         outputsForNode[destination.address] = new BigNumber(destination.coins).toNumber();
-        fee = fee.minus(destination.coins);
+        calculatedFee = calculatedFee.minus(destination.coins);
       });
 
       // Create an extra output for the remaining coins.
       if (coinsInInputs.minus(amountToSend).isGreaterThan(0)) {
         outputsForNode[changeAddress] = coinsInInputs.minus(amountToSend).toNumber();
-        fee = fee.minus(coinsInInputs.minus(amountToSend));
+        calculatedFee = calculatedFee.minus(coinsInInputs.minus(amountToSend));
       }
 
       // Create the raw transaction.
@@ -217,7 +218,7 @@ export class BtcSpendingOperator implements SpendingOperator {
           };
         }),
         coinsToSend: amountToSend,
-        fee: fee,
+        fee: calculatedFee,
         from: senderString,
         to: destinations.map(destination => destination.address).join(', '),
         wallet: wallet,
@@ -256,5 +257,38 @@ export class BtcSpendingOperator implements SpendingOperator {
             map(result => result === -1 ? false : true));
         }
       }));
+  }
+
+  getCurrentRecommendedFees(): Observable<RecommendedFees> {
+    let veryLow: BigNumber;
+    let low: BigNumber;
+    let normal: BigNumber;
+
+    // Get the recommended fee from the node.
+    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [20]).pipe(mergeMap(result => {
+      // The node returns the recommended sats per kb (using 1000 bytes instead of 1024 per kb).
+      veryLow = new BigNumber(result).dividedBy(1000);
+
+      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [10]);
+    }), mergeMap(result => {
+      low = new BigNumber(result).dividedBy(1000);
+
+      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [5]);
+    }), mergeMap(result => {
+      normal = new BigNumber(result).dividedBy(1000);
+
+      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [1]);
+    }), map(result => {
+      const high = new BigNumber(result).dividedBy(1000);
+      const veryHigh = high.multipliedBy(1.1);
+
+      return {
+        veryHigh: veryHigh,
+        high: high,
+        normal: normal,
+        low: low,
+        veryLow: veryLow,
+      };
+    }), retryWhen(errors => errors.pipe(delay(5000))));
   }
 }

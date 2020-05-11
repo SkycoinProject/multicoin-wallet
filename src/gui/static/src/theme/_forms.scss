@@ -207,3 +207,24 @@ textarea {
   vertical-align: text-bottom;
   padding-left: 5px;
 }
+
+// Container for inputs which show additional text at the right.
+.-input-addon {
+  display: flex;
+
+  input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  span {
+    border: $input-border-size;
+    border-radius: 0 $input-border-radius $input-border-radius 0;
+    background: $input-border-color;
+    padding: 0 10px;
+    line-height: 44px;
+    color: $grey;
+    font-size: $font-size-standard;
+    flex-shrink: 0;
+  }
+}

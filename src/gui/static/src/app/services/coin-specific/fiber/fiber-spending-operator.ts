@@ -10,7 +10,7 @@ import { FiberTxEncoder } from './utils/fiber-tx-encoder';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
 import { GeneratedTransaction, Output } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
-import { TransactionDestination, HoursDistributionOptions } from '../../wallet-operations/spending.service';
+import { TransactionDestination, HoursDistributionOptions, RecommendedFees } from '../../wallet-operations/spending.service';
 import { SpendingOperator } from '../spending-operator';
 import { FiberApiService } from '../../api/fiber-api.service';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
@@ -65,7 +65,8 @@ export class FiberSpendingOperator implements SpendingOperator {
     hoursDistributionOptions: HoursDistributionOptions,
     changeAddress: string|null,
     password: string|null,
-    unsigned: boolean): Observable<GeneratedTransaction> {
+    unsigned: boolean,
+    fee: string): Observable<GeneratedTransaction> {
 
     let unspentOutputHashes: string[];
     if (unspents) {
@@ -289,5 +290,10 @@ export class FiberSpendingOperator implements SpendingOperator {
             map(result => result === -1 ? false : true));
         }
       }));
+  }
+
+  // Not needed for Fiber coins.
+  getCurrentRecommendedFees(): Observable<RecommendedFees> {
+    return null;
   }
 }
