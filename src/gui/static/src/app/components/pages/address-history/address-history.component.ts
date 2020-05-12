@@ -9,6 +9,7 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
 import { WalletBase, WalletTypes } from '../../../services/wallet-operations/wallet-objects';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { WalletOptionsComponent } from '../wallets/wallet-options/wallet-options.component';
+import { CoinService } from '../../../services/coin.service';
 
 /**
  * Allows to see the address history of a wallet (not for deterministic wallets). The URL for
@@ -33,6 +34,8 @@ export class AddressHistoryComponent implements OnDestroy {
   externalAddressesTruncated = false;
   changeAddressesTruncated = false;
 
+  // If true, the currently selected coin includes coin hours.
+  coinHasHours = false;
   // If the page is loading the data.
   loading = true;
   // If the id on the URL does not correspond to a valid wallet.
@@ -48,7 +51,10 @@ export class AddressHistoryComponent implements OnDestroy {
     private route: ActivatedRoute,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
+    coinService: CoinService,
   ) {
+    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+
     // Get the wallets and route params.
     this.basicDataSubscription = combineLatest(this.route.params, this.walletsAndAddressesService.currentWallets.pipe(first()), (params, wallets) => {
       this.loading = true;

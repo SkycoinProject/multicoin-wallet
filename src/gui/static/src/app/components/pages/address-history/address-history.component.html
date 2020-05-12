@@ -27,7 +27,7 @@
             <mat-icon class="help-icon" [matTooltip]="('address-history.' + (i === 0 ? 'normal-address-info' : 'change-address-info')) | translate">help</mat-icon>
           </div>
           <div class="-width-150 text-right">{{ 'coinSymbol' | commonText }}</div>
-          <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
+          <div class="-width-150 text-right" *ngIf="coinHasHours">{{ 'hours' | commonText }}</div>
           <div class="-width-150 text-right">{{ 'address-history.unused-table-label' | translate }}</div>
           <div class="options-cell"></div>
         </div>
@@ -40,7 +40,7 @@
               {{ address.address.address }}
             </div>
             <div class="-width-150 text-right">{{ address.address.coins | amount:true:'first' }}</div>
-            <div class="-width-150 text-right grey-text">{{ address.address.hours | amount:false:'first' }}</div>
+            <div class="-width-150 text-right grey-text" *ngIf="coinHasHours">{{ address.address.hours | amount:false:'first' }}</div>
             <div class="-width-150 text-right" [ngClass]="{'green-text': !address.alreadyUsed, 'red-text': address.alreadyUsed}">
               {{ ('address-history.' + (address.alreadyUsed ? 'used-no' : 'used-yes')) | translate }}
               <mat-icon class="help-icon" [matTooltip]="('address-history.' + (address.alreadyUsed ? 'used-no-info' : 'used-yes-info')) | translate">help</mat-icon>
