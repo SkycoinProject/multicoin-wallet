@@ -269,10 +269,15 @@ export class WalletOptionsComponent implements OnDestroy {
     const params: PasswordDialogParams = {
       confirm: !this.wallet.encrypted,
       title: this.wallet.encrypted ? 'wallet.wallet-options.decrypt' : 'wallet.wallet-options.encrypt',
-      description: this.wallet.encrypted ? 'wallet.wallet-options.decrypt-warning' : 'wallet.new.encrypt-warning',
       warning: this.wallet.encrypted,
       wallet: this.wallet.encrypted ? this.wallet : null,
     };
+
+    if (this.wallet.encrypted) {
+      params.description = 'wallet.wallet-options.decrypt-warning';
+    } else {
+      params.description = 'wallet.new.encrypt-warning' + (this.wallet.walletType !== WalletTypes.XPub ? '-non' : '') + '-xpub';
+    }
 
     // Ask for the current password or the new one.
     const dialogRef = PasswordDialogComponent.openDialog(this.dialog, params, false);

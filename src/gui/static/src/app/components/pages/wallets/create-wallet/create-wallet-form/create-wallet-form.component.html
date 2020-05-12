@@ -148,10 +148,7 @@
       <div class="col-md-12">
         <p class="-info">
           <span>
-            {{ 'wallet.new.encrypt-warning-p1' | translate }}
-          </span>
-          <span *ngIf="!activateXPubField">
-            {{ 'wallet.new.encrypt-warning-p2' | translate }}
+            {{ ('wallet.new.encrypt-warning' + (!activateXPubField ? '-non' : '') + '-xpub') | translate }}
           </span>
         </p>
       </div>
