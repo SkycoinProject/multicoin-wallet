@@ -1,24 +1,24 @@
 import { Subscription, of, Observable, ReplaySubject } from 'rxjs';
 import { delay, map, mergeMap, filter, first } from 'rxjs/operators';
 import { NgZone, Injector } from '@angular/core';
+import BigNumber from 'bignumber.js';
 
 import { Coin } from '../../../coins/coin';
 import { ProgressEvent, BlockchainState } from '../../blockchain.service';
 import { BlockchainOperator } from '../blockchain-operator';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
-import { BtcApiService } from '../../api/btc-api.service';
-import BigNumber from 'bignumber.js';
-import { environment } from '../../../../environments/environment';
-import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { EthApiService } from '../../api/eth-api.service';
 
 /**
- * Operator for BlockchainService to be used with btc-like coins..
+ * Operator for BlockchainService to be used with eth-like coins.
+ *
+ * NOTE: still under heavy development.
  *
  * You can find more information about the functions and properties this class implements by
  * checking BlockchainService and BlockchainOperator.
  */
-export class BtcBlockchainOperator implements BlockchainOperator {
+export class EthBlockchainOperator implements BlockchainOperator {
   private progressSubject: ReplaySubject<ProgressEvent> = new ReplaySubject<ProgressEvent>(1);
 
   private dataSubscription: Subscription;
@@ -41,13 +41,13 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   private currentCoin: Coin;
 
   // Services and operators used by this operator.
-  private btcApiService: BtcApiService;
+  private ethApiService: EthApiService;
   private ngZone: NgZone;
   private balanceAndOutputsOperator: BalanceAndOutputsOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.btcApiService = injector.get(BtcApiService);
+    this.ethApiService = injector.get(EthApiService);
     this.ngZone = injector.get(NgZone);
 
     // Intervals for updating the data must be longer if connecting to a remote node.
@@ -77,43 +77,8 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   }
 
   getBlockchainState(): Observable<BlockchainState> {
-    let lastBlockHash = '';
-
-    // Get the hash of the last block.
-    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getbestblockhash').pipe(mergeMap(result => {
-      lastBlockHash = result;
-
-      // Get the info of the last block.
-      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getblock', [lastBlockHash]);
-    }), map(result => {
-      let currentBlock = result.height + 1;
-      let currentSupply = new BigNumber(0);
-      let reward = new BigNumber((this.currentCoin.config as BtcCoinConfig).initialMiningReward);
-
-      // Calculate how many coins have been mined.
-      while (currentBlock > 0) {
-        if (currentBlock < (this.currentCoin.config as BtcCoinConfig).halvingBlocks) {
-          currentSupply = currentSupply.plus(reward.multipliedBy(currentBlock));
-          currentBlock = 0;
-        } else {
-          currentSupply = currentSupply.plus(reward.multipliedBy((this.currentCoin.config as BtcCoinConfig).halvingBlocks));
-          currentBlock -= (this.currentCoin.config as BtcCoinConfig).halvingBlocks;
-          reward = reward.dividedBy(2);
-        }
-      }
-
-      return {
-        lastBlock: {
-          seq: result.height,
-          timestamp: result.time,
-          hash: lastBlockHash,
-        },
-        coinSupply: {
-          currentSupply: currentSupply.toString(),
-          totalSupply: '21000000',
-        },
-      };
-    }));
+    // TODO: implement.
+    return null;
   }
 
   /**
@@ -130,20 +95,24 @@ export class BtcBlockchainOperator implements BlockchainOperator {
       this.dataSubscription = of(0).pipe(
         delay(delayMs),
         mergeMap(() => {
-          return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getbestblockhash');
-        }),
-        mergeMap(result => {
-          // Get the info of the last block.
-          return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getblock', [result]);
+          return this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_syncing');
         }),
       ).subscribe(result => {
         this.ngZone.run(() => {
-          // Consider the blockchain out of sync if the last block is more than 90 minutes old.
-          this.progressSubject.next({
-            currentBlock: 0,
-            highestBlock: 0,
-            synchronized: environment.ignoreNonFiberNetworIssues ? true : Date.now() - (result.time + 1000) < (this.currentCoin.config as BtcCoinConfig).outOfSyncMinutes * 60000,
-          });
+          if (result === false) {
+            // If the result is false, the blockchain is synchronized.
+            this.progressSubject.next({
+              currentBlock: 0,
+              highestBlock: 0,
+              synchronized: true,
+            });
+          } else {
+            this.progressSubject.next({
+              currentBlock: new BigNumber((result.currentBlock as string).substr(2), 16).toNumber(),
+              highestBlock: new BigNumber((result.highestBlock as string).substr(2), 16).toNumber(),
+              synchronized: false,
+            });
+          }
 
           this.startDataRefreshSubscription(this.updatePeriod);
         });

@@ -131,6 +131,7 @@ import { FiberApiService } from './services/api/fiber-api.service';
 import { WalletUtilsService } from './services/wallet-operations/wallet-utils.service';
 import { OperatorService } from './services/operators.service';
 import { BtcApiService } from './services/api/btc-api.service';
+import { EthApiService } from './services/api/eth-api.service';
 
 @NgModule({
   declarations: [
@@ -309,6 +310,7 @@ import { BtcApiService } from './services/api/btc-api.service';
     WalletUtilsService,
     OperatorService,
     BtcApiService,
+    EthApiService,
     {
       provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
       useValue: {

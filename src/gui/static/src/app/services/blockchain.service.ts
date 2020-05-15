@@ -31,7 +31,9 @@ export interface CoinSupply {
 }
 
 /**
- * Info about the current synchronization state of the blockchain.
+ * Info about the current synchronization state of the blockchain. Not all coins provide
+ * information about the current blocks, specially if the blockchain is
+ * already synchronized.
  */
 export interface ProgressEvent {
   currentBlock: number;

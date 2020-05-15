@@ -14,7 +14,7 @@ export class BtcCoin extends Coin {
   uriSpecificatioPrefix = 'bitcoin';
   priceTickerId = 'btc-bitcoin';
   explorerUrl = 'https://explorer.testcoin.net';
-  assetsFolderName = 'testcoin';
+  assetsFolderName = 'bitcoin';
   confirmationsNeeded = 3;
   config = new BtcCoinConfig();
 }

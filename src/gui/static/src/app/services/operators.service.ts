@@ -53,7 +53,7 @@ export class OperatorService {
     return this.currentOperatorsSubject.asObservable();
   }
 
-  initialize(fiberOperatorsGenerator: OperatorsGenerator, btcOperatorsGenerator: OperatorsGenerator) {
+  initialize(fiberOperatorsGenerator: OperatorsGenerator, btcOperatorsGenerator: OperatorsGenerator, ethOperatorsGenerator: OperatorsGenerator) {
     this.coinService.currentCoin.subscribe(coin => {
       // Wait 1 frame before removing the operators, to give time for the pages to
       // be removed.
@@ -75,8 +75,10 @@ export class OperatorService {
         // Replace the current operators.
         if (coin.coinType === CoinTypes.Fiber) {
           this.operators = fiberOperatorsGenerator.generate(coin, this.injector);
-        } else {
+        } else if (coin.coinType === CoinTypes.BTC) {
           this.operators = btcOperatorsGenerator.generate(coin, this.injector);
+        } else if (coin.coinType === CoinTypes.ETH) {
+          this.operators = ethOperatorsGenerator.generate(coin, this.injector);
         }
 
         this.currentOperatorsSubject.next(this.operators);

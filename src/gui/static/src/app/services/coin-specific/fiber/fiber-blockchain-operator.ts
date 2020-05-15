@@ -46,9 +46,6 @@ export class FiberBlockchainOperator implements BlockchainOperator {
    */
   private errorUpdatePeriod = 2 * 1000;
 
-  /**
-   * allows to know the current synchronization state of the blockchain.
-   */
   get progress(): Observable<ProgressEvent> {
     return this.progressSubject.asObservable();
   }
@@ -150,8 +147,6 @@ export class FiberBlockchainOperator implements BlockchainOperator {
           } else if (response.current !== response.highest && this.nodeSynchronized) {
             this.nodeSynchronized = false;
           }
-
-          this.nodeSynchronized = this.nodeSynchronized;
 
           // Refresh the balance the first time the info is retrieved.
           if (!this.refreshedBalance) {

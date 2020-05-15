@@ -10,6 +10,7 @@ import { redirectToErrorPage } from '../../utils/errors';
 import { OperatorService } from '../operators.service';
 import { CoinTypes } from '../../coins/coin-types';
 import { BtcWalletsAndAddressesOperator } from '../coin-specific/btc/btc-wallets-and-addresses-operator';
+import { EthWalletsAndAddressesOperator } from '../coin-specific/eth/eth-wallets-and-addresses-operator';
 
 /**
  * Manages the list with the wallets and its addresses. It works like a CRUD for the wallet list,
@@ -201,6 +202,8 @@ export class WalletsAndAddressesService {
         this.tempOperators.push(new FiberWalletsAndAddressesOperator(this.injector, coin));
       } else if (coin.coinType === CoinTypes.BTC) {
         this.tempOperators.push(new BtcWalletsAndAddressesOperator(this.injector, coin));
+      } else if (coin.coinType === CoinTypes.ETH) {
+        this.tempOperators.push(new EthWalletsAndAddressesOperator(this.injector, coin));
       }
     });
 

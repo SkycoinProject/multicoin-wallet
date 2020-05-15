@@ -10,4 +10,8 @@ export enum CoinTypes {
    * Bitcoin-like coins.
    */
   BTC = 'BTC',
+  /**
+   * Ethereum-like coins.
+   */
+  ETH = 'ETH',
 }

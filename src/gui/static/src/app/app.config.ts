@@ -1,6 +1,7 @@
 import { SkycoinCoin } from './coins/skycoin.coin';
 import { TestCoin } from './coins/test.coin';
 import { BtcCoin } from './coins/btc.coin';
+import { EthCoin } from './coins/eth.coin';
 
 export const AppConfig = {
 
@@ -73,6 +74,7 @@ export const AppConfig = {
     new SkycoinCoin(),
     new TestCoin(),
     new BtcCoin(),
+    new EthCoin(),
   ],
 
   /**
