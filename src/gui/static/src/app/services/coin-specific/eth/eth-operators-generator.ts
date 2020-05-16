@@ -5,13 +5,13 @@ import { Coin } from '../../../coins/coin';
 import { OperatorsGenerator } from '../operators-generator';
 import { FiberSoftwareWalletOperator } from '../fiber/fiber-software-wallet-operator';
 import { FiberWalletUtilsOperator } from '../fiber/fiber-wallet-utils-operator';
-import { BtcBalanceAndOutputsOperator } from '../btc/btc-balance-and-outputs-operator';
 import { BtcHistoryOperator } from '../btc/btc-history-operator';
 import { BtcSpendingOperator } from '../btc/btc-spending-operator';
 import { EthNetworkOperator } from './eth-network-operator';
 import { EthNodeOperator } from './eth-node-operator';
 import { EthWalletsAndAddressesOperator } from './eth-wallets-and-addresses-operator';
 import { EthBlockchainOperator } from './eth-blockchain-operator';
+import { EthBalanceAndOutputsOperator } from './eth-balance-and-outputs-operator';
 
 /**
  * Generates the complete set of operators for eth-like coins.
@@ -19,7 +19,7 @@ import { EthBlockchainOperator } from './eth-blockchain-operator';
 export class EthOperatorsGenerator implements OperatorsGenerator {
   generate(coin: Coin, injector: Injector): OperatorSet {
     return {
-      balanceAndOutputsOperator: new BtcBalanceAndOutputsOperator(injector, coin),
+      balanceAndOutputsOperator: new EthBalanceAndOutputsOperator(injector, coin),
       blockchainOperator: new EthBlockchainOperator(injector, coin),
       historyOperator: new BtcHistoryOperator(injector, coin),
       networkOperator: new EthNetworkOperator(injector, coin),
