@@ -13,8 +13,6 @@ import { EthApiService } from '../../api/eth-api.service';
 /**
  * Operator for BlockchainService to be used with eth-like coins.
  *
- * NOTE: still under heavy development.
- *
  * You can find more information about the functions and properties this class implements by
  * checking BlockchainService and BlockchainOperator.
  */
@@ -77,8 +75,17 @@ export class EthBlockchainOperator implements BlockchainOperator {
   }
 
   getBlockchainState(): Observable<BlockchainState> {
-    // TODO: implement.
-    return null;
+    // Get the last block info.
+    return this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_getBlockByNumber', ['latest', false]).pipe(map(result => {
+      return {
+        lastBlock: {
+          seq: new BigNumber((result.number as string).substr(2), 16).toNumber(),
+          timestamp: new BigNumber((result.timestamp as string).substr(2), 16).toNumber(),
+          hash: result.hash,
+        },
+        coinSupply: null,
+      };
+    }));
   }
 
   /**

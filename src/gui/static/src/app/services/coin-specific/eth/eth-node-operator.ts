@@ -69,7 +69,7 @@ export class EthNodeOperator implements NodeOperator {
 
     this.basicInfoSubscription = of(1).pipe(
       delay(delayMs),
-      mergeMap(() => this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getinfo')),
+      mergeMap(() => this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'web3_clientVersion')),
     ).subscribe(response => {
       // Get the version parts.
       const parts = (response as string).split('/');

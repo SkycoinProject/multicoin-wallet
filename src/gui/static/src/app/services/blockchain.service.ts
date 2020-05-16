@@ -9,6 +9,9 @@ import { OperatorService } from './operators.service';
  */
 export interface BlockchainState {
   lastBlock: BasicBlockInfo;
+  /**
+   * Null if there is no info available.
+   */
   coinSupply: CoinSupply;
 }
 /**

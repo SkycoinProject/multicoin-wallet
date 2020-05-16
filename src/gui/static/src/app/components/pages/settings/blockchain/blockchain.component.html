@@ -1,12 +1,12 @@
 <div>
   <app-header [headline]="'blockchain.title' | translate"></app-header>
 
-  <app-loading-content *ngIf="!(block && coinSupply)"></app-loading-content>
+  <app-loading-content *ngIf="!block"></app-loading-content>
 
-  <div class="container" *ngIf="block && coinSupply">
+  <div class="container" *ngIf="block">
     <div class="row -wrapper">
       <!-- Blocks info. -->
-      <div class="col-md-6 pl-0">
+      <div [ngClass]="{ 'col-md-6 pl-0': coinSupply, 'col-md-12 pl-0 pr-0': !coinSupply }">
         <div class="paper">
           <div class="-item">
             <div class="-key">{{ 'blockchain.blocks-label' | translate }}</div>
@@ -23,7 +23,7 @@
         </div>
       </div>
       <!-- Supply info. -->
-      <div class="col-md-6 pr-0">
+      <div class="col-md-6 pr-0" *ngIf="coinSupply">
         <div class="paper">
           <div class="row">
             <div class="col-md-6">
