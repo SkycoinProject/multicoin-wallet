@@ -248,6 +248,8 @@
     "to-label": "Send to",
     "amount-label": "Amount",
     "personal-note-label": "Personal note",
+    "gas-price-label": "Gas price",
+    "gas-limit-label": "Gas limit",
     "fee-label": "Fee",
     "fee-measure": "{{ measure }} per byte",
     "fee-low-warning": "The fee you entered is lower than recommended, the transaction could take a very long time to be confirmed.",
@@ -309,6 +311,11 @@
       "Normal": "Normal (5+ blocks)",
       "Low": "Low (10+ blocks)",
       "very-Low": "Very Low (20+ blocks)",
+      "custom": "Custom"
+    },
+
+    "eth-fees": {
+      "Normal": "Recommended",
       "custom": "Custom"
     },
 

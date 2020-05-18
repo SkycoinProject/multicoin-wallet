@@ -57,7 +57,7 @@
     </div>
   </div>
   <!-- Outputs. -->
-  <div *ngIf="selectionMode !== sourceSelectionModes.Wallet" class="form-field">
+  <div *ngIf="selectionMode !== sourceSelectionModes.Wallet && coinHasOutputs" class="form-field">
     <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
       {{ 'send.outputs-label' | translate }}
       <mat-icon class="help-icon" [matTooltip]="'send.outputs-help' | translate">help</mat-icon>

@@ -78,35 +78,68 @@
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <!-- Fee area. -->
-  <div class="form-field" *ngIf="!coinHasHours">
-      <label for="feeType" class="destinations-label">
-        {{ 'send.fee-label' | translate }}
+  <!-- BTC fee area. -->
+  <div class="form-field" *ngIf="coinFeeType === feeTypes.Btc">
+    <label for="feeType" class="destinations-label">
+      {{ 'send.fee-label' | translate }}
+    </label>
+    <div class="row">
+      <!-- Fee type. -->
+      <div class="col-6">
+        <div class="fee-spinner" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
+        <div class="-select">
+          <select formControlName="feeType" id="feeType" [attr.disabled]="busy || showFeesLoading ? 'true' : null">
+            <option [ngValue]="0">{{ 'send.fees.very-high' | translate }}</option>
+            <option [ngValue]="1">{{ 'send.fees.high' | translate }}</option>
+            <option [ngValue]="2">{{ 'send.fees.Normal' | translate }}</option>
+            <option [ngValue]="3">{{ 'send.fees.Low' | translate }}</option>
+            <option [ngValue]="4">{{ 'send.fees.very-Low' | translate }}</option>
+            <option [ngValue]="5">{{ 'send.fees.custom' | translate }}</option>
+          </select>
+        </div>
+      </div>
+      <!-- Fee. -->
+      <div class="col-6">
+        <div class="-input-addon">
+            <input formControlName="fee" [id]="fee" [attr.disabled]="busy ? 'true' : null">
+          <span>{{ 'send.fee-measure' | translate:{measure: coinMinimumPartsSmallName} }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ETH fee area. -->
+  <ng-container *ngIf="coinFeeType === feeTypes.Eth">
+    <div class="form-field">
+      <label for="gasPrice" class="destinations-label">
+        {{ 'send.gas-price-label' | translate }}
       </label>
       <div class="row">
         <!-- Fee type. -->
-        <div class="col-6">
+        <div class="col-6 pr-0">
           <div class="fee-spinner" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
           <div class="-select">
-            <select formControlName="feeType" id="feeType" [attr.disabled]="busy || showFeesLoading ? 'true' : null">
-              <option [ngValue]="0">{{ 'send.fees.very-high' | translate }}</option>
-              <option [ngValue]="1">{{ 'send.fees.high' | translate }}</option>
-              <option [ngValue]="2">{{ 'send.fees.Normal' | translate }}</option>
-              <option [ngValue]="3">{{ 'send.fees.Low' | translate }}</option>
-              <option [ngValue]="4">{{ 'send.fees.very-Low' | translate }}</option>
-              <option [ngValue]="5">{{ 'send.fees.custom' | translate }}</option>
+            <select formControlName="ethFeeType" id="ethFeeType" [attr.disabled]="busy || showFeesLoading ? 'true' : null" class="left-consecutive-field">
+              <option [ngValue]="0">{{ 'send.eth-fees.Normal' | translate }}</option>
+              <option [ngValue]="1">{{ 'send.eth-fees.custom' | translate }}</option>
             </select>
           </div>
         </div>
         <!-- Fee. -->
-        <div class="col-6">
-          <div class="-input-addon">
-              <input formControlName="fee" [id]="fee" [attr.disabled]="busy ? 'true' : null">
-            <span>{{ 'send.fee-measure' | translate:{measure: coinMinimumPartsSmallName} }}</span>
-          </div>
+        <div class="col-6 pl-0">
+          <input formControlName="gasPrice" [id]="gasPrice" [attr.disabled]="busy ? 'true' : null" class="right-consecutive-field">
         </div>
       </div>
     </div>
+
+    <!-- Gas limit. -->
+    <div class="form-field">
+      <label for="gasLimit">
+        {{ 'send.gas-limit-label' | translate }}
+      </label>
+      <input formControlName="gasLimit" id="gasLimit" [attr.disabled]="busy ? 'true' : null">
+    </div>
+  </ng-container>
 
   <!-- Note. -->
   <div *ngIf="!showForManualUnsigned" class="form-field">

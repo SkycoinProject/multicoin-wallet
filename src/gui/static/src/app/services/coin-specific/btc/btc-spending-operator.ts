@@ -283,11 +283,15 @@ export class BtcSpendingOperator implements SpendingOperator {
       const veryHigh = high.multipliedBy(1.1);
 
       return {
-        veryHigh: veryHigh,
-        high: high,
-        normal: normal,
-        low: low,
-        veryLow: veryLow,
+        recommendedBtcFees: {
+          veryHigh: veryHigh,
+          high: high,
+          normal: normal,
+          low: low,
+          veryLow: veryLow,
+          gasLimit: null,
+        },
+        recommendedEthFees: null,
       };
     }), retryWhen(errors => errors.pipe(delay(5000))));
   }

@@ -36,6 +36,13 @@ export class CoinService {
   }
 
   /**
+   * Allows to know if the currently selected coin uses outputs, as a synchronous value.
+   */
+  get currentCoinUsesOutputsInmediate(): boolean {
+    return this.currentCoinInmediateInternal.coinType !== CoinTypes.ETH;
+  }
+
+  /**
    * List with the coins the wallet can work with. Values must not be overwritten.
    */
   get coins(): Coin[] {

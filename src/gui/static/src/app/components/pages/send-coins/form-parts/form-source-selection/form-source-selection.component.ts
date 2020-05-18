@@ -133,6 +133,8 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   errorLoadingManualOutputs = false;
   // If true, the currently selected coin includes coin hours.
   coinHasHours = false;
+  // If true, the currently selected coin uses outputs.
+  coinHasOutputs = true;
 
   walletTypes = WalletTypes;
 
@@ -146,6 +148,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasOutputs = coinService.currentCoinUsesOutputsInmediate;
   }
 
   ngOnInit() {
@@ -245,7 +248,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.loadingUnspentOutputs = false;
 
       // Load the output list, if the form is showing a dropdown for selecting them.
-      if (wallet && this.selectionMode === SourceSelectionModes.All) {
+      if (wallet && this.selectionMode === SourceSelectionModes.All && this.coinHasOutputs) {
         this.loadingUnspentOutputs = true;
         this.getOutputsSubscription = this.balanceAndOutputsService.getWalletUnspentOutputs(wallet).pipe(
           retryWhen(errors => errors.pipe(delay(4000))))

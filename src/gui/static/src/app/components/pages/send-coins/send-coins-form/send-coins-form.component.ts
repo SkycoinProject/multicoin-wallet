@@ -26,6 +26,7 @@ import { WalletWithBalance, AddressWithBalance, WalletTypes, WalletBase } from '
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 import { GetNextAddressComponent } from '../../../layout/get-next-address/get-next-address.component';
 import { CoinService } from '../../../../services/coin.service';
+import { CoinTypes } from '../../../../coins/coin-types';
 
 /**
  * Data returned when SendCoinsFormComponent asks to show the preview of a transaction. Useful
@@ -90,13 +91,38 @@ export interface FormData {
    */
   recommendedFees: RecommendedFees;
   /**
-   * Fee type selected from the list.
+   * Fee type selected from the list, for btc-like coins.
    */
   feeType: number;
   /**
-   * Fee entered by the user.
+   * Fee entered by the user, for btc-like coins.
    */
   fee: string;
+  /**
+   * Fee type selected from the list, for eth-like coins.
+   */
+  ethFeeType: number;
+  gasPrice: string;
+  gasLimit: string;
+
+}
+
+/**
+ * Enums the modes for paying fess with coins (not hours).
+ */
+enum FeeTypes {
+  /**
+   * No fees must be paid with the currently selected coin.
+   */
+  None = 'None',
+  /**
+   * BTC fee mode (sats per byte).
+   */
+  Btc = 'Btc',
+  /**
+   * Eth fee mode (gas price and gas limit).
+   */
+  Eth = 'Eth',
 }
 
 /**
@@ -134,12 +160,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   form: FormGroup;
   // How many coins the user can send with the selected sources.
   availableBalance = new AvailableBalanceData();
-  // Recommended fees obtained from the node, if the current coin uses them.
+  // Recommended fees obtained from the node, if the current coin needs fees to be paid.
   recommendedFees: RecommendedFees;
-  // Map for getting the recommended for each option of the fee types control.
+  // Map for getting the recommended fee for each option of the fee types control.
   recommendedFeesMap: Map<number, string>;
   // If true, the node returned that it is valid to send a transaction without fees.
-  zeroFeeAllowed = true;
+  zeroFeeAllowed = false;
   // If true, the hours are distributed automatically. If false, the user can manually
   // enter how many hours to send to each destination. Must be true if the coin does not have
   // hours.
@@ -156,6 +182,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   coinHasHours = false;
   // Abbreviated name for the minimal part in which a coin can be divided.
   coinMinimumPartsSmallName = '';
+  // Type of the fees, in coins, that must be paid for sending transactions.
+  coinFeeType: FeeTypes;
+
+  feeTypes = FeeTypes;
 
   // Sources the user has selected.
   private selectedSources: SelectedSources;
@@ -179,6 +209,17 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   ) {
     this.coinHasHours = coinService.currentCoinHasHoursInmediate;
     this.coinMinimumPartsSmallName = coinService.currentCoinInmediate.minimumPartsSmallName;
+    if (!this.coinHasHours) {
+      if (coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
+        this.coinFeeType = FeeTypes.Btc;
+      } else if (coinService.currentCoinInmediate.coinType === CoinTypes.ETH) {
+        this.coinFeeType = FeeTypes.Eth;
+      } else {
+        this.coinFeeType = FeeTypes.None;
+      }
+    } else {
+      this.coinFeeType = FeeTypes.None;
+    }
   }
 
   ngOnInit() {
@@ -188,14 +229,24 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.addControl('fee', new FormControl(''));
     // Custom fee is selected by default.
     this.form.addControl('feeType', new FormControl(5));
+    // Custom gas price is selected by default.
+    this.form.addControl('ethFeeType', new FormControl(1));
+    this.form.addControl('gasPrice', new FormControl(''));
+    this.form.addControl('gasLimit', new FormControl(''));
 
     // If the user changes the fee, select the custom fee type.
     this.fieldsSubscriptions.push(this.form.get('fee').valueChanges.subscribe(() => {
       this.form.get('feeType').setValue(5);
     }));
+    this.fieldsSubscriptions.push(this.form.get('gasPrice').valueChanges.subscribe(() => {
+      this.form.get('ethFeeType').setValue(1);
+    }));
 
     // If the user changes the fee type, change the value of the fee field.
     this.fieldsSubscriptions.push(this.form.get('feeType').valueChanges.subscribe(() => {
+      this.useSelectedFee();
+    }));
+    this.fieldsSubscriptions.push(this.form.get('ethFeeType').valueChanges.subscribe(() => {
       this.useSelectedFee();
     }));
 
@@ -219,7 +270,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   // If true, the animation indicating that the recommended fees are being loaded must be shown.
   get showFeesLoading(): boolean {
-    if (!this.recommendedFeesMap) {
+    if (!this.recommendedFees) {
       return true;
     }
 
@@ -356,42 +407,64 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Populates the fee field with the value corresponding to the current value of the
-  // feeType field.
+  // Populates the fee or gas price field with the value corresponding to the current value of
+  // the feeType or ethFeeType field.
   private useSelectedFee() {
-    const value = this.form.get('feeType').value;
-    if (this.recommendedFeesMap && this.recommendedFeesMap.has(value)) {
-      this.form.get('fee').setValue(this.recommendedFeesMap.get(value), { emitEvent: false });
+    if (this.coinFeeType === FeeTypes.Btc) {
+      const value = this.form.get('feeType').value;
+      if (this.recommendedFeesMap && this.recommendedFeesMap.has(value)) {
+        this.form.get('fee').setValue(this.recommendedFeesMap.get(value), { emitEvent: false });
+      }
+    } else if (this.coinFeeType === FeeTypes.Eth) {
+      const value = this.form.get('ethFeeType').value;
+      if (value === 0) {
+        this.form.get('gasPrice').setValue(this.recommendedFees.recommendedEthFees.gasPrice.decimalPlaces(this.maxFeeDecimals).toString(10), { emitEvent: false });
+      }
     }
   }
 
   // Connects to the node to get the recommended fees. If the current coin uses coin hours,
   // it does nothing.
   private getRecommendedFees() {
-    if (!this.coinHasHours) {
+    if (this.coinFeeType !== FeeTypes.None) {
       this.closeGetRecommendedFeesSubscription();
       // Get the data.
       this.getRecommendedFeesSubscription = this.spendingService.getCurrentRecommendedFees().subscribe(fees => {
         // Update the vars.
         this.populateRecommendedFees(fees);
 
-        // If the user has not entered a fee, the normal fee type is selected and the fee
-        // field is populated with the corresponding value. However, if a faster type has an
-        // a lower or equal cost, the faster method is used.
-        if (this.form.get('fee').value === '') {
-          if (fees.high.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.normal.decimalPlaces(this.maxFeeDecimals))) {
-            if (fees.veryHigh.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.high.decimalPlaces(this.maxFeeDecimals))) {
-              this.form.get('feeType').setValue(0, { emitEvent: false });
+        if (this.coinFeeType === FeeTypes.Btc) {
+          // If the user has not entered a fee, the normal fee type is selected and the fee
+          // field is populated with the corresponding value. However, if a faster type has an
+          // a lower or equal cost, the faster method is used.
+          if (this.form.get('fee').value === '') {
+            if (fees.recommendedBtcFees.high.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.recommendedBtcFees.normal.decimalPlaces(this.maxFeeDecimals))) {
+              if (fees.recommendedBtcFees.veryHigh.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.recommendedBtcFees.high.decimalPlaces(this.maxFeeDecimals))) {
+                this.form.get('feeType').setValue(0, { emitEvent: false });
+              } else {
+                this.form.get('feeType').setValue(1, { emitEvent: false });
+              }
             } else {
-              this.form.get('feeType').setValue(1, { emitEvent: false });
+              this.form.get('feeType').setValue(2, { emitEvent: false });
             }
-          } else {
-            this.form.get('feeType').setValue(2, { emitEvent: false });
           }
-        }
 
-        // Update the fee field.
-        this.useSelectedFee();
+          // Update the fee field.
+          this.useSelectedFee();
+        } else if (this.coinFeeType === FeeTypes.Eth) {
+          // If the user has not entered a gas price, the one returned by the service is used.
+          if (this.form.get('gasPrice').value === '') {
+            this.form.get('ethFeeType').setValue(0, { emitEvent: false });
+          }
+
+          // If the user has not entered a gas limit, the one returned by the service is used.
+          if (this.form.get('gasLimit').value === '') {
+            this.form.get('gasLimit').setValue(fees.recommendedEthFees.gasLimit, { emitEvent: false });
+          }
+
+          // Update the fee field.
+          this.useSelectedFee();
+        }
       });
     }
   }
@@ -399,20 +472,22 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Populates the vars with the recommended fees and zeroFeeAllowed.
   private populateRecommendedFees(recommendedFees: RecommendedFees) {
     this.recommendedFees = recommendedFees;
-
-    this.recommendedFeesMap = new Map<number, string>();
-    this.recommendedFeesMap.set(0, recommendedFees.veryHigh.decimalPlaces(this.maxFeeDecimals).toString(10));
-    this.recommendedFeesMap.set(1, recommendedFees.high.decimalPlaces(this.maxFeeDecimals).toString(10));
-    this.recommendedFeesMap.set(2, recommendedFees.normal.decimalPlaces(this.maxFeeDecimals).toString(10));
-    this.recommendedFeesMap.set(3, recommendedFees.low.decimalPlaces(this.maxFeeDecimals).toString(10));
-    this.recommendedFeesMap.set(4, recommendedFees.veryLow.decimalPlaces(this.maxFeeDecimals).toString(10));
-
     this.zeroFeeAllowed = false;
-    this.recommendedFeesMap.forEach(fee => {
-      if (fee === '0') {
-        this.zeroFeeAllowed = true;
-      }
-    });
+
+    if (this.coinFeeType === FeeTypes.Btc) {
+      this.recommendedFeesMap = new Map<number, string>();
+      this.recommendedFeesMap.set(0, recommendedFees.recommendedBtcFees.veryHigh.decimalPlaces(this.maxFeeDecimals).toString(10));
+      this.recommendedFeesMap.set(1, recommendedFees.recommendedBtcFees.high.decimalPlaces(this.maxFeeDecimals).toString(10));
+      this.recommendedFeesMap.set(2, recommendedFees.recommendedBtcFees.normal.decimalPlaces(this.maxFeeDecimals).toString(10));
+      this.recommendedFeesMap.set(3, recommendedFees.recommendedBtcFees.low.decimalPlaces(this.maxFeeDecimals).toString(10));
+      this.recommendedFeesMap.set(4, recommendedFees.recommendedBtcFees.veryLow.decimalPlaces(this.maxFeeDecimals).toString(10));
+
+      this.recommendedFeesMap.forEach(fee => {
+        if (fee === '0') {
+          this.zeroFeeAllowed = true;
+        }
+      });
+    }
   }
 
   // Fills the form with the provided values.
@@ -444,12 +519,15 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       // If the data already includes recommended fees, use them and update the fee type.
       this.populateRecommendedFees(this.formData.form.recommendedFees);
       this.form.get('feeType').setValue(this.formData.form.feeType);
+      this.form.get('ethFeeType').setValue(this.formData.form.ethFeeType);
     } else {
       // If not, get them from the node.
       this.getRecommendedFees();
     }
 
     this.form.get('fee').setValue(this.formData.form.fee, { emitEvent: false });
+    this.form.get('gasPrice').setValue(this.formData.form.gasPrice, { emitEvent: false });
+    this.form.get('gasLimit').setValue(this.formData.form.gasLimit);
   }
 
   // Validates the form.
@@ -464,15 +542,32 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
 
     // Validate the fee, if appropiate.
-    if (!this.coinHasHours) {
-      const fee = new BigNumber(this.form.get('fee').value);
+    if (this.coinFeeType === FeeTypes.Btc) {
       // The fee must be a valid number with a limit in its decimals.
-      if (fee.isNaN() || fee.isGreaterThan(fee.decimalPlaces(this.maxFeeDecimals))) {
+      const fee = new BigNumber(this.form.get('fee').value);
+      if (fee.isNaN() || fee.isLessThan(0) || !fee.isEqualTo(fee.decimalPlaces(this.maxFeeDecimals))) {
         return { Invalid: true };
       }
 
       // Only accept zero if allowed.
       if (!this.zeroFeeAllowed && fee.isLessThanOrEqualTo(0)) {
+        return { Invalid: true };
+      }
+    } else if (this.coinFeeType === FeeTypes.Eth) {
+      // The gas price must be a valid number with a limit in its decimals.
+      const gasPrice = new BigNumber(this.form.get('gasPrice').value);
+      if (gasPrice.isNaN() || gasPrice.isLessThan(0) || !gasPrice.isEqualTo(gasPrice.decimalPlaces(this.maxFeeDecimals))) {
+        return { Invalid: true };
+      }
+
+      // Only accept zero if allowed.
+      if (!this.zeroFeeAllowed && gasPrice.isLessThanOrEqualTo(0)) {
+        return { Invalid: true };
+      }
+
+      // The gas limit must be a valid integer number.
+      const gasLimit = new BigNumber(this.form.get('gasLimit').value);
+      if (gasLimit.isNaN() || gasLimit.isLessThanOrEqualTo(0) || !gasLimit.isEqualTo(gasLimit.decimalPlaces(0))) {
         return { Invalid: true };
       }
     }
@@ -488,19 +583,29 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.coinHasHours) {
+    if (this.coinFeeType === FeeTypes.None) {
       // Ignore this step if it is not needed.
       this.checkBeforeCreatingTx(creatingPreviewTx);
     } else {
       let warningMsg: string;
 
       // Check if the fee is too high, too low or unknown.
-      if (!this.recommendedFeesMap) {
-        warningMsg = 'send.fee-unknown-warning';
-      } else if (new BigNumber(this.form.get('fee').value).isLessThan(this.recommendedFeesMap.get(4))) {
-        warningMsg = 'send.fee-low-warning';
-      } else if (new BigNumber(this.form.get('fee').value).isGreaterThan(this.recommendedFeesMap.get(0))) {
-        warningMsg = 'send.fee-high-warning';
+      if (this.coinFeeType === FeeTypes.Btc) {
+        if (!this.recommendedFeesMap) {
+          warningMsg = 'send.fee-unknown-warning';
+        } else if (new BigNumber(this.form.get('fee').value).isLessThan(this.recommendedFeesMap.get(4))) {
+          warningMsg = 'send.fee-low-warning';
+        } else if (new BigNumber(this.form.get('fee').value).isGreaterThan(this.recommendedFeesMap.get(0))) {
+          warningMsg = 'send.fee-high-warning';
+        }
+      } else if (this.coinFeeType === FeeTypes.Eth) {
+        if (!this.recommendedFees) {
+          warningMsg = 'send.fee-unknown-warning';
+        } else if (new BigNumber(this.form.get('gasPrice').value).isLessThan(this.recommendedFees.recommendedEthFees.gasPrice.dividedBy(2))) {
+          warningMsg = 'send.fee-low-warning';
+        } else if (new BigNumber(this.form.get('gasPrice').value).isGreaterThan(this.recommendedFees.recommendedEthFees.gasPrice.multipliedBy(2))) {
+          warningMsg = 'send.fee-high-warning';
+        }
       }
 
       if (!warningMsg) {
@@ -606,6 +711,13 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     const destinations = this.formMultipleDestinations.getDestinations(true);
     let transaction: GeneratedTransaction;
 
+    let fee = '';
+    if (this.coinFeeType === FeeTypes.Btc) {
+      fee = this.form.get('fee').value;
+    } else if (this.coinFeeType === FeeTypes.Eth) {
+      fee = this.form.get('gasPrice').value + '/' + this.form.get('gasLimit').value;
+    }
+
     // Create the transaction. The transaction is signed if the wallet is bip44 or the
     // user wants to send the transaction immediately, without preview.
     this.processingSubscription = this.spendingService.createTransaction(
@@ -617,7 +729,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
       passwordDialog ? passwordDialog.password : null,
       this.showForManualUnsigned || (this.selectedSources.wallet.walletType !== WalletTypes.Bip44 && creatingPreviewTx),
-      this.form.get('fee').value,
+      fee,
     ).pipe(mergeMap(response => {
       transaction = response;
 
@@ -695,6 +807,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             recommendedFees: this.recommendedFees,
             feeType: this.form.get('feeType').value,
             fee: this.form.get('fee').value,
+            ethFeeType: this.form.get('ethFeeType').value,
+            gasPrice: this.form.get('gasPrice').value,
+            gasLimit: this.form.get('gasLimit').value,
           },
           amount: amount,
           to: destinations.map(d => d.address),

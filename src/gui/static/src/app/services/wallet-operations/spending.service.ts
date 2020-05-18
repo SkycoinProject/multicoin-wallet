@@ -60,30 +60,53 @@ export interface HoursDistributionOptions {
 }
 
 /**
- * Recommended fees for getting a transaction approved after a relatively predictable
- * amount of time.
+ * Recommended fees for getting a transaction approved. The object will normally contain only the
+ * fees for the currently selected coin.
  */
 export interface RecommendedFees {
+  recommendedBtcFees: RecommendedBtcFees;
+  recommendedEthFees: RecommendedEthFees;
+}
+
+/**
+ * Recommended fees for getting a BTC transaction approved after a relatively predictable
+ * amount of time.
+ */
+export interface RecommendedBtcFees {
   /**
-   * Sats per byte for getting a BTC operation approved in the next block.
+   * Sats per byte for getting a transaction approved in the next block.
    */
   veryHigh: BigNumber;
   /**
-   * Sats per byte for getting a BTC operation approved in 1 or 2 blocks.
+   * Sats per byte for getting a transaction approved in 1 or 2 blocks.
    */
   high: BigNumber;
   /**
-   * Sats per byte for getting a BTC operation approved in 5+ blocks.
+   * Sats per byte for getting a transaction approved in 5+ blocks.
    */
   normal: BigNumber;
   /**
-   * Sats per byte for getting a BTC operation approved in 10+ blocks.
+   * Sats per byte for getting a transaction approved in 10+ blocks.
    */
   low: BigNumber;
   /**
-   * Sats per byte for getting a BTC operation approved in 20+ blocks.
+   * Sats per byte for getting a transaction approved in 20+ blocks.
    */
   veryLow: BigNumber;
+}
+
+/**
+ * Recommended fees for getting a ETH transaction approved.
+ */
+export interface RecommendedEthFees {
+  /**
+   * Rocommended gas price, in gwei.
+   */
+  gasPrice: BigNumber;
+  /**
+   * Recommended gas limit.
+   */
+  gasLimit: BigNumber;
 }
 
 /**
@@ -126,7 +149,8 @@ export class SpendingService {
    * @param unsigned If the transaction must be signed or not. When using a hw wallet the transaction will
    * have to be signed by the device, so it will have to be connected. If no wallet param was provided, this
    * param is ignored and the transaction will be unsigned.
-   * @param fee Fee (number of the minimun divisions of the coin per byte, like sats per byte for Bitcoin).
+   * @param fee Fee. For btc-like coins, the number of the minimun divisions of the coin per byte (like sats
+   * per byte for Bitcoin). For eth-like coins, gas price (in Gwei) and gas limit, separated by '/'.
    * Not needed for all coins.
    * @returns The generated transaction, without the note.
    */
