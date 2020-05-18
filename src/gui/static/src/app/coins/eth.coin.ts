@@ -9,8 +9,7 @@ export class EthCoin extends Coin {
   nodeUrl = 'http://localhost:8545';
   coinName = 'Ethereum';
   coinSymbol = 'ETH';
-  minimumPartsName = 'Wei';
-  minimumPartsSmallName = 'Wei';
+  feePaymentCoinUnit = 'Gwei';
   uriSpecificatioPrefix = 'ethereum';
   priceTickerId = 'eth-ethereum';
   explorerUrl = 'https://explorer.testcoin.net';

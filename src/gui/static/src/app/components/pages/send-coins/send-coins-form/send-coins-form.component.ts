@@ -180,8 +180,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   showForManualUnsigned = false;
   // If true, the currently selected coin includes coin hours.
   coinHasHours = false;
-  // Abbreviated name for the minimal part in which a coin can be divided.
-  coinMinimumPartsSmallName = '';
+  // Name of the coin unit in which the fee is measured.
+  feePaymentCoinUnit = '';
   // Type of the fees, in coins, that must be paid for sending transactions.
   coinFeeType: FeeTypes;
 
@@ -208,7 +208,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinHasHoursInmediate;
-    this.coinMinimumPartsSmallName = coinService.currentCoinInmediate.minimumPartsSmallName;
+    this.feePaymentCoinUnit = coinService.currentCoinInmediate.feePaymentCoinUnit;
     if (!this.coinHasHours) {
       if (coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
         this.coinFeeType = FeeTypes.Btc;

@@ -9,8 +9,7 @@ export class BtcCoin extends Coin {
   nodeUrl = '/local-btcd';
   coinName = 'Bitcoin';
   coinSymbol = 'BTC';
-  minimumPartsName = 'Satoshis';
-  minimumPartsSmallName = 'Sats';
+  feePaymentCoinUnit = 'Sats';
   uriSpecificatioPrefix = 'bitcoin';
   priceTickerId = 'btc-bitcoin';
   explorerUrl = 'https://explorer.testcoin.net';

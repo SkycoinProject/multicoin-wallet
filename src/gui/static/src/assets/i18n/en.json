@@ -412,7 +412,7 @@
     "confirmed-transaction": "Confirmed",
     "pending-transaction": "Pending ({{currentConfirmations}} / {{confirmationsNeeded}})",
     "current-rate-help": "Calculated at the current rate.",
-    "coinbase": "COINBASE (new coins)"
+    "coinbase": "COINBASE (new coins and fees)"
   },
 
   "edit-note": {

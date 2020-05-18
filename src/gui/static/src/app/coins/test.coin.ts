@@ -10,8 +10,6 @@ export class TestCoin extends Coin {
   coinName = 'Testcoin';
   coinSymbol = 'TST';
   hoursName = 'Test Hours';
-  minimumPartsName = 'Test Droplets';
-  minimumPartsSmallName = 'T Drops';
   hoursNameSingular = 'Test Hour';
   uriSpecificatioPrefix = 'testcoin';
   priceTickerId = 'btc-bitcoin';

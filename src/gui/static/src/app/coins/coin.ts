@@ -10,8 +10,7 @@ export abstract class Coin {
   nodeUrl: string;
   abstract coinName: string;
   abstract coinSymbol: string;
-  abstract minimumPartsName: string;
-  abstract minimumPartsSmallName: string;
+  feePaymentCoinUnit: string;
   hoursName: string;
   hoursNameSingular: string;
   /**
