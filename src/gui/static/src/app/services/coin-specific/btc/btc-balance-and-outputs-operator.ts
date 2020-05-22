@@ -9,24 +9,25 @@ import { Coin } from '../../../coins/coin';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
-import { BtcApiService } from '../../api/btc-api.service';
-import { recursivelyGetTransactions, getOutputId } from './utils/btc-history-utils';
+import { getOutputId } from './utils/btc-history-utils';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
+import { BtcCoinConfig } from 'src/app/coins/config/btc.coin-config';
 
 /**
- * Balance and outputs of a wallet, for internal use.
+ * Balance of a wallet, for internal use.
  */
 class WalletBalance {
-  balance = new BigNumber(0);
-  outputs: Output[] = [];
+  current = new BigNumber(0);
+  predicted = new BigNumber(0);
   addresses = new Map<string, AddressBalance>();
 }
 
 /**
- * Balance and outputs of an address, for internal use.
+ * Balance of an address, for internal use.
  */
 class AddressBalance {
-  balance = new BigNumber(0);
-  outputs: Output[] = [];
+  current = new BigNumber(0);
+  predicted = new BigNumber(0);
 }
 
 /**
@@ -62,7 +63,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
   /**
    * After the service retrieves the balance of each wallet, the balance and outputs returned
-   * by the node for each wallet is saved here, accessible via the wallet id.
+   * by the backend for each wallet is saved here, accessible via the wallet id.
    */
   private savedBalanceData = new Map<string, WalletBalance>();
   /**
@@ -83,16 +84,16 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   private currentCoin: Coin;
 
   // Services and operators used by this operator.
-  private btcApiService: BtcApiService;
+  private blockbookApiService: BlockbookApiService;
   private ngZone: NgZone;
   private walletsAndAddressesOperator: WalletsAndAddressesOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.btcApiService = injector.get(BtcApiService);
+    this.blockbookApiService = injector.get(BlockbookApiService);
     this.ngZone = injector.get(NgZone);
 
-    // Intervals for updating the data must be longer if connecting to a remote node.
+    // Intervals for updating the data must be longer if connecting to a remote backend.
     if (!currentCoin.isLocal) {
       this.updatePeriod = 600 * 1000;
       this.errorUpdatePeriod = 60 * 1000;
@@ -157,10 +158,11 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   get outputsWithWallets(): Observable<WalletWithOutputs[]> {
     // Run each time the wallet list changes.
     return this.walletsWithBalance.pipe(switchMap(wallets => {
-      const addresses = wallets.map(wallet => wallet.addresses.map(address => address.address).join(',')).join(',');
+      const addresses: string[] = [];
+      wallets.forEach(wallet => wallet.addresses.forEach(address => addresses.push(address.address)));
 
       // Get the unspent outputs of the list of addresses.
-      return this.getOutputs(addresses);
+      return this.recursivelyGetOutputs(addresses);
     }), map(outputs => {
       // Build the response.
       const walletsList: WalletWithOutputs[] = [];
@@ -178,67 +180,60 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   }
 
   getOutputs(addresses: string): Observable<Output[]> {
-    // Put the requested addresses in a map.
-    const requestedAddressesMap = new Map<string, boolean>();
-    addresses.split(',').forEach(address => requestedAddressesMap.set(address.trim(), true));
-
-    // Check if all requested addresses are part of the user wallets.
-    let addressesAreLocal = false;
-    if (this.savedWalletsList) {
-      const addressesFoundMap = new Map<string, boolean>();
-
-      this.savedWalletsList.forEach(wallet => {
-        wallet.addresses.forEach(address => {
-          if (requestedAddressesMap.has(address.address)) {
-            addressesFoundMap.set(address.address, true);
-          }
-        });
-      });
-
-      addressesAreLocal = addressesFoundMap.size === requestedAddressesMap.size;
+    const addressesArray = addresses.split(',');
+    for (let i = 0; i < addressesArray.length; i++) {
+      addressesArray[i] = addressesArray[i].trim();
     }
 
-    // If all the addresses are part of the user wallets, get the outputs from the data
-    // which is saved while updating the balance.
-    if (addressesAreLocal) {
-      // Refresh the user balance, to make savedBalanceData contain an updated list of all
-      // the ouputs in the user wallets.
-      this.refreshBalance();
+    return this.recursivelyGetOutputs(addressesArray);
+  }
 
-      // Wait for savedBalanceData to be updated.
-      return this.savedBalanceDataSubject.pipe(first(), map(() => {
-        let response: Output[] = [];
+  /**
+   * Gets the unspent outputs of the addresses in the provided address list.
+   * @param addresses Addresses to check. The list will be altered by the function.
+   * @param currentElements Already obtained outputs. For internal use.
+   * @returns Array with all the unspent outputs related to the provided address list.
+   */
+  private recursivelyGetOutputs(addresses: string[], currentElements: Output[] = []): Observable<Output[]> {
+    if (addresses.length === 0) {
+      return of(currentElements);
+    }
 
-        // Get the data of each wallet.
-        this.savedBalanceData.forEach(walletBalance => {
-          // If an address of the wallet is one of the requested addresses, add the outputs
-          // to the response and remove the address from the requested addresses list.
-          const addressesToRemove: string[] = [];
-          requestedAddressesMap.forEach((value, requestedAddress) => {
-            if (walletBalance.addresses.has(requestedAddress)) {
-              response = response.concat(walletBalance.addresses.get(requestedAddress).outputs);
-              addressesToRemove.push(requestedAddress);
-            }
-          });
+    // Value which will allow to get the value in coins, instead of sats.
+    const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
 
-          addressesToRemove.forEach(address => {
-            requestedAddressesMap.delete(address);
-          });
+    // Get the outputs of the address.
+    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'utxo/' + addresses[addresses.length - 1])
+      .pipe(mergeMap((response) => {
+
+        // Process the outputs.
+        (response as any[]).forEach(output => {
+          const processedOutput: Output = {
+            address: addresses[addresses.length - 1],
+            coins: new BigNumber(output.value).dividedBy(decimalsCorrector),
+            hash: getOutputId(output.txid, output.vout),
+            confirmations: output.confirmations ? output.confirmations : 0,
+          };
+
+          currentElements.push(processedOutput);
         });
 
-        return response;
+        addresses.pop();
+
+        if (addresses.length === 0) {
+          return of(currentElements);
+        }
+
+        // Continue to the next step.
+        return this.recursivelyGetOutputs(addresses, currentElements);
       }));
-    } else {
-      // If one or more addresses are not part of the user wallets, get all the outputs
-      // from the node.
-      return this.retrieveOutputs(addresses);
-    }
   }
 
   getWalletUnspentOutputs(wallet: WalletBase): Observable<Output[]> {
-    const addresses = wallet.addresses.map(a => a.address).join(',');
+    const addresses: string[] = [];
+    wallet.addresses.forEach(address => addresses.push(address.address));
 
-    return this.getOutputs(addresses);
+    return this.recursivelyGetOutputs(addresses);
   }
 
   refreshBalance() {
@@ -251,10 +246,10 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param delayMs Delay before starting to update the balance.
    * @param updateWalletsFirst If true, after the delay the function will inmediatelly update
    * the wallet list with the data on savedWalletsList and using the last balance data obtained
-   * from the node (or will set all the wallets to 0, if no data exists) and only after that will
-   * try to get the balance data from the node and update the wallet list again. This allows to
-   * inmediatelly reflect changes made to the wallet list, without having to wait for the node
-   * to respond.
+   * from the backend (or will set all the wallets to 0, if no data exists) and only after that
+   * will try to get the balance data from the backend and update the wallet list again. This
+   * allows to inmediatelly reflect changes made to the wallet list, without having to wait for
+   * the backend to respond.
    */
   private startDataRefreshSubscription(delayMs: number, updateWalletsFirst: boolean) {
     if (this.dataRefreshSubscription) {
@@ -307,7 +302,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param wallets The current wallet lists.
    * @param forceQuickCompleteArrayUpdate If true, the balance data saved on savedBalanceData
    * will be used to set the balance of the wallet list, instead of getting the data from
-   * the node. If false, the balance data is obtained from the node and savedBalanceData is
+   * the backend. If false, the balance data is obtained from the backend and savedBalanceData is
    * updated.
    */
   private refreshBalances(wallets: WalletBase[], forceQuickCompleteArrayUpdate: boolean): Observable<any> {
@@ -389,7 +384,8 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         this.savedBalanceData = this.temporalSavedBalanceData;
         this.ngZone.run(() => this.savedBalanceDataSubject.next());
         if (!this.firstFullUpdateMadeSubject.value) {
-          // Inform that the service already obtained the balance from the node for the first time.
+          // Inform that the service already obtained the balance from the backend for the
+          // first time.
           this.ngZone.run(() => {
             this.firstFullUpdateMadeSubject.next(true);
           });
@@ -399,11 +395,11 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   }
 
   /**
-   * Gets from the node the balance of a wallet and uses the retrieved data to update an instamce
-   * of WalletWithBalance. It also saves the retrieved data on temporalSavedBalanceData.
+   * Gets from the backend the balance of a wallet and uses the retrieved data to update an
+   * instamce of WalletWithBalance. It also saves the retrieved data on temporalSavedBalanceData.
    * @param wallet Wallet to update.
    * @param useSavedBalanceData If true, the balance data saved on savedBalanceData
-   * will be used instead of retrieving the data from the node.
+   * will be used instead of retrieving the data from the backend.
    * @returns True if there are one or more pending transactions that will affect the balance of
    * the provided walled, false otherwise. If useSavedBalanceData is true, the value of
    * hasPendingTransactionsSubject will be returned.
@@ -414,38 +410,20 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     let hasUnconfirmedTxs = false;
 
     if (!useSavedBalanceData) {
-      // Get all outputs.
-      const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
-      query = this.retrieveOutputs(formattedAddresses).pipe(mergeMap(result => {
-        // Build a map which will contain the outputs of each address of the wallet.
-        const addresses = new Map<string, Output[]>();
-        wallet.addresses.forEach(address => addresses.set(address.address, []));
-
-        // Add the outputs to the map.
-        result.forEach(output => {
-          if (addresses.has(output.address)) {
-            addresses.get(output.address).push(output);
-
-            if (output.confirmations < this.currentCoin.confirmationsNeeded) {
-              hasUnconfirmedTxs = true;
-            }
-          }
-        });
-
+      // Get the balance of all addresses.
+      const addresses = wallet.addresses.map(a => a.address);
+      query = this.recursivelyGetBalances(addresses).pipe(mergeMap(result => {
         const response = new WalletBalance();
 
-        addresses.forEach((addressOutputs, address) => {
-          // Calculate the balance of the address.
-          const addressBalance = new AddressBalance();
-          addressOutputs.forEach(output => {
-            addressBalance.outputs.push(output);
-            addressBalance.balance = addressBalance.balance.plus(output.coins);
-          });
-
+        result.forEach((addressBalance, address) => {
           // Add the values to the balance of the wallet.
           response.addresses.set(address, addressBalance);
-          response.balance = response.balance.plus(addressBalance.balance);
-          response.outputs = response.outputs.concat(addressBalance.outputs);
+          response.current = response.current.plus(addressBalance.current);
+          response.predicted = response.predicted.plus(addressBalance.predicted);
+
+          if (!addressBalance.current.isEqualTo(addressBalance.predicted)) {
+            hasUnconfirmedTxs = true;
+          }
         });
 
         return of(response);
@@ -463,11 +441,11 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     return query.pipe(map(balance => {
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
-      wallet.coins = balance.balance;
+      wallet.coins = balance.predicted;
 
       wallet.addresses.forEach(address => {
         if (balance.addresses.has(address.address)) {
-          address.coins = balance.addresses.get(address.address).balance;
+          address.coins = balance.addresses.get(address.address).predicted;
         } else {
           address.coins = new BigNumber(0);
         }
@@ -482,74 +460,40 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   }
 
   /**
-   * Gets the list of unspent outputs of a list of addresses. The data is not automatically
-   * updated.
-   * @param addresses List of addresses, comma separated.
-   * @returns Array with all the unspent outputs owned by any of the provide addresses.
+   * Gets the balance of the addresses in the provided address list.
+   * @param addresses Addresses to check. The list will be altered by the function.
+   * @param currentElements Already obtained balance. For internal use.
+   * @returns Array with all the balance of the provided address list.
    */
-  private retrieveOutputs(addresses: string): Observable<Output[]> {
-    if (!addresses) {
-      return of([]);
-    } else {
-      let addressesArray = addresses.split(',');
-      addressesArray = addressesArray.map(address => address.trim());
-
-      const addressesMap = new Map<string, boolean>();
-      addressesArray.forEach(address => {
-        addressesMap.set(address, true);
-      });
-
-      // Get the transaction history of each address and process the response.
-      return recursivelyGetTransactions(this.currentCoin, this.btcApiService, addressesArray).pipe(map(response => {
-        const outputs = new Map<string, Output>();
-        // Check each transaction.
-        response.forEach(tx => {
-          if (tx.vout) {
-            // Check each output.
-            (tx.vout as any[]).forEach(output => {
-              if (output.scriptPubKey && output.scriptPubKey.addresses) {
-                // Only consider outputs with known types and just one destination address.
-                if (output.scriptPubKey.type === 'pubkeyhash' || output.scriptPubKey.type === 'witness_v0_keyhash') {
-                  if ((output.scriptPubKey.addresses as any[]).length === 1) {
-                    // Ignore outputs for unwanted addresses.
-                    if (addressesMap.has((output.scriptPubKey.addresses as any[])[0])) {
-                      // Build the output instance and add it to the response.
-                      const processedOutput: Output = {
-                        address: (output.scriptPubKey.addresses as any[])[0],
-                        coins: new BigNumber(output.value),
-                        hash: getOutputId(tx.txid, output.n),
-                        confirmations: tx.confirmations ? tx.confirmations : 0,
-                      };
-
-                      outputs.set(processedOutput.hash, processedOutput);
-                    }
-                  }
-                }
-              }
-            });
-          }
-
-          // Check each input.
-          if (tx.vin) {
-            // If an input has been previously added to the response, remove it, as it has
-            // already been used.
-            (tx.vin as any[]).forEach(input => {
-              if (input.txid && input.vout !== null && input.vout !== undefined) {
-                outputs.delete(getOutputId(input.txid, input.vout));
-              }
-            });
-          }
-        });
-
-        // Convert the response to an array.
-        const finalResponse: Output[] = [];
-        outputs.forEach(output => {
-          finalResponse.push(output);
-        });
-
-        return finalResponse;
-      }));
+  private recursivelyGetBalances(addresses: string[], currentElements = new Map<string, AddressBalance>()): Observable<Map<string, AddressBalance>> {
+    if (addresses.length === 0) {
+      return of(currentElements);
     }
+
+    // Value which will allow to get the value in coins, instead of sats.
+    const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
+
+    // Get the balance of the address.
+    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'basic'})
+      .pipe(mergeMap((response) => {
+        // Calculate the balances and create the balance object.
+        const balance = response.balance ? new BigNumber(response.balance).dividedBy(decimalsCorrector) : new BigNumber(0);
+        const unconfirmed = response.unconfirmedBalance ? new BigNumber(response.unconfirmedBalance).dividedBy(decimalsCorrector) : new BigNumber(0);
+        const predicted = balance.plus(unconfirmed);
+        currentElements.set(addresses[addresses.length - 1], {
+          current: balance,
+          predicted: predicted,
+        });
+
+        addresses.pop();
+
+        if (addresses.length === 0) {
+          return of(currentElements);
+        }
+
+        // Continue to the next step.
+        return this.recursivelyGetBalances(addresses, currentElements);
+      }));
   }
 
   /**

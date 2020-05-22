@@ -8,6 +8,7 @@ export abstract class Coin {
   abstract devOnly: boolean;
   abstract isLocal: boolean;
   nodeUrl: string;
+  indexerUrl: string;
   abstract coinName: string;
   abstract coinSymbol: string;
   feePaymentCoinUnit: string;

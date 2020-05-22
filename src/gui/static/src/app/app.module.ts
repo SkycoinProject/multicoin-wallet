@@ -132,6 +132,7 @@ import { WalletUtilsService } from './services/wallet-operations/wallet-utils.se
 import { OperatorService } from './services/operators.service';
 import { BtcApiService } from './services/api/btc-api.service';
 import { EthApiService } from './services/api/eth-api.service';
+import { BlockbookApiService } from './services/api/blockbook-api.service';
 
 @NgModule({
   declarations: [
@@ -311,6 +312,7 @@ import { EthApiService } from './services/api/eth-api.service';
     OperatorService,
     BtcApiService,
     EthApiService,
+    BlockbookApiService,
     {
       provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
       useValue: {

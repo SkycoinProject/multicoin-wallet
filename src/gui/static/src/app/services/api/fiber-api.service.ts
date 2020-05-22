@@ -158,7 +158,6 @@ export class FiberApiService {
    * @param params Object with the key/value pairs to be sent to the node as part of
    * the querystring.
    * @param useV2 If the returned URL must point to the API v2 (true) or v1 (false).
-   * @param sendToLocalNode If the request will be sent to the local node.
    */
   private getUrl(nodeUrl: string, endpointUrl: string, params: any = null, useV2 = false): string {
     // Sanitize the node URLs.

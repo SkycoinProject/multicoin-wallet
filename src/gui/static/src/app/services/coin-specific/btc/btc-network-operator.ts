@@ -80,10 +80,10 @@ export class BtcNetworkOperator implements NetworkOperator {
 
     this.ngZone.runOutsideAngular(() => {
       this.dataRefreshSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
-        return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getinfo');
+        return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getconnectioncount');
       })).subscribe(result => {
         this.ngZone.run(() => {
-          this.noConnectionsInternal = environment.ignoreNonFiberNetworIssues ? false : result.connections < 1;
+          this.noConnectionsInternal = environment.ignoreNonFiberNetworIssues ? false : result < 1;
         });
 
         // Repeat the operation after an appropiate delay.

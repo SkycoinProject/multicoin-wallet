@@ -69,7 +69,7 @@ export class BtcNodeOperator implements NodeOperator {
 
     this.basicInfoSubscription = of(1).pipe(
       delay(delayMs),
-      mergeMap(() => this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getinfo')),
+      mergeMap(() => this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getnetworkinfo')),
     ).subscribe(response => {
       this.nodeVersionInternal = response.version;
 

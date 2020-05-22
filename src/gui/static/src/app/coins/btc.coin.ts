@@ -6,7 +6,8 @@ export class BtcCoin extends Coin {
   coinType = CoinTypes.BTC;
   devOnly = true;
   isLocal = false;
-  nodeUrl = '/local-btcd';
+  nodeUrl = '/local-btc';
+  indexerUrl = '/local-blockbook';
   coinName = 'Bitcoin';
   coinSymbol = 'BTC';
   feePaymentCoinUnit = 'Sats';
