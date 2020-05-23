@@ -114,7 +114,7 @@ export class WalletOptionsComponent implements OnDestroy {
 
       this.removeOperationSubscription();
       // Check if the correct device is connected.
-      this.operationSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
+      this.operationSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet)
         // Check if the device still has the label this app knows.
         .pipe(mergeMap(() => this.hardwareWalletService.getFeaturesAndUpdateData(this.wallet))).subscribe(
           response => {
@@ -124,7 +124,7 @@ export class WalletOptionsComponent implements OnDestroy {
 
             // Inform if a different label was detected while checking the device.
             if (response.walletNameUpdated) {
-              this.msgBarService.showWarning('hardware-wallet.general.name-updated');
+              setTimeout(() => this.msgBarService.showWarning('hardware-wallet.general.name-updated'));
             }
           },
           err => {
@@ -430,7 +430,7 @@ export class WalletOptionsComponent implements OnDestroy {
 
       if (this.wallet.isHardware) {
         // Continue after checking the device.
-        procedure = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).pipe(mergeMap(
+        procedure = this.hwWalletService.checkIfCorrectHwConnected(this.wallet).pipe(mergeMap(
           () => this.walletsAndAddressesService.addAddressesToWallet(this.wallet, howManyAddresses),
         ));
       } else {

@@ -11,6 +11,8 @@ import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getErrorMsg } from '../utils/errors';
 import { WalletUtilsService } from './wallet-operations/wallet-utils.service';
+import { WalletBase } from './wallet-operations/wallet-objects';
+import { isEqualOrSuperiorVersion } from '../utils/semver';
 
 /**
  * Data about a transaction recipient.
@@ -59,6 +61,14 @@ export interface HwOutput {
    * address really is is on the device at the indicated index.
    */
   address_index?: number;
+}
+
+/**
+ * Coins supported by the device.
+ */
+export enum SupportedCoins {
+  SKY = 'SKY',
+  BTC = 'BTC',
 }
 
 @Injectable()
@@ -141,6 +151,17 @@ export class HwWalletService {
   }
 
   /**
+   * Gets the version of the daemon.
+   */
+  private getDaemonVersion(): Observable<OperationResult> {
+    this.prepare();
+
+    return this.processDaemonResponse(
+      this.hwWalletDaemonService.get('/version'),
+    );
+  }
+
+  /**
    * Gets one or more of the addresses of the hw wallet.
    * @param addressN How many addresses to recover.
    * @param startIndex Starting index.
@@ -148,6 +169,8 @@ export class HwWalletService {
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
     // Cancel the current pending operation, if any.
     return this.cancelLastAction().pipe(mergeMap(() => {
+      return this.getDaemonVersion();
+    }), mergeMap(version => {
       this.prepare();
 
       const params = {
@@ -155,6 +178,11 @@ export class HwWalletService {
         start_index: startIndex,
         confirm_address: false,
       };
+
+      // Add the coin type param if needed.
+      if (isEqualOrSuperiorVersion(version.rawResponse.version, '0.2.0')) {
+        params['coin_type'] = SupportedCoins.SKY;
+      }
 
       // Recover the addresses.
       return this.processDaemonResponse(
@@ -208,6 +236,8 @@ export class HwWalletService {
    */
   confirmAddress(index: number): Observable<OperationResult> {
     return this.cancelLastAction().pipe(mergeMap(() => {
+      return this.getDaemonVersion();
+    }), mergeMap(version => {
       this.prepare();
 
       const params = {
@@ -215,6 +245,11 @@ export class HwWalletService {
         start_index: index,
         confirm_address: true,
       };
+
+      // Add the coin type param if needed.
+      if (isEqualOrSuperiorVersion(version.rawResponse.version, '0.2.0')) {
+        params['coin_type'] = SupportedCoins.SKY;
+      }
 
       return this.processDaemonResponse(
         this.hwWalletDaemonService.post(
@@ -417,7 +452,7 @@ export class HwWalletService {
 
       return this.processDaemonResponse(
         this.hwWalletDaemonService.delete('/wipe'),
-        ['Device wiped'],
+        ['Device wiped', 'User data was wiped from the device'],
       );
     }));
   }
@@ -493,10 +528,10 @@ export class HwWalletService {
    * @param firstAddress Address the device should have at index 0.
    * @returns An observable which will fail if the connected device is not the expected one.
    */
-  checkIfCorrectHwConnected(firstAddress: string): Observable<any> {
+  checkIfCorrectHwConnected(wallet: WalletBase): Observable<any> {
     return this.getAddresses(1, 0).pipe(mergeMap(
       response => {
-        if (response.rawResponse[0] !== firstAddress) {
+        if (!wallet.isHardware || response.rawResponse[0] !== wallet.addresses[0].address) {
           const resp = new OperationError();
           resp.originalError = response;
           resp.type = HWOperationResults.IncorrectHardwareWallet;

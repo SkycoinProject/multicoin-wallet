@@ -683,7 +683,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       } else {
         // If using a hw wallet, check the device first.
         this.showBusy(creatingPreviewTx);
-        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.selectedSources.wallet.addresses[0].address).subscribe(
+        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.selectedSources.wallet).subscribe(
           () => this.createTransaction(creatingPreviewTx),
           err => this.showError(err),
         );

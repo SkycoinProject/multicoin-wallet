@@ -94,7 +94,7 @@ export class WalletDetailComponent implements OnDestroy {
     }
 
     // Check if the correct device is connected.
-    this.confirmSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).subscribe(() => {
+    this.confirmSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet).subscribe(() => {
       const data = new AddressConfirmationParams();
       data.wallet = wallet;
       data.addressIndex = addressIndex;

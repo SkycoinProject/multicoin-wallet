@@ -109,7 +109,7 @@ export class SendVerifyComponent implements OnDestroy {
       } else {
         // If using a hw wallet, check the device first.
         this.showBusy();
-        this.sendSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.transaction.wallet.addresses[0].address).subscribe(
+        this.sendSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.transaction.wallet).subscribe(
           () => this.finishSending(),
           err => this.showError(err),
         );

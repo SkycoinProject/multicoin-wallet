@@ -184,7 +184,7 @@ export class HardwareWalletService {
    * @param addressIndex Index of the addresses on the provided wallet.
    */
   confirmAddress(wallet: WalletBase, addressIndex: number): Observable<void> {
-    return this.hwWalletService.checkIfCorrectHwConnected(wallet.id).pipe(
+    return this.hwWalletService.checkIfCorrectHwConnected(wallet).pipe(
       mergeMap(() => this.hwWalletService.confirmAddress(addressIndex)),
       map(() => {
         // If the user confirms the operation, update the local data.
@@ -201,7 +201,7 @@ export class HardwareWalletService {
    * @param newLabel New label or name.
    */
   changeLabel(wallet: WalletBase, newLabel: string): Observable<void> {
-    return this.hwWalletService.checkIfCorrectHwConnected(wallet.id).pipe(
+    return this.hwWalletService.checkIfCorrectHwConnected(wallet).pipe(
       mergeMap(() => this.hwWalletService.changeLabel(newLabel)),
       map(() => {
         // If the user confirms the operation, update the local data.
