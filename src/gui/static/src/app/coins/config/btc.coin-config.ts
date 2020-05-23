@@ -20,4 +20,8 @@ export class BtcCoinConfig {
    * considering the blockchain to be out of sync.
    */
   outOfSyncMinutes = 90;
+  /**
+   * Max amount of coins that will be created
+   */
+  totalSupply = 21000000;
 }

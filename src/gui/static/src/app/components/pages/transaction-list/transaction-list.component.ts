@@ -101,6 +101,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
   price: number;
 
+  /**
+   * Time interval in which the periodic data updates will be restarted after an error.
+   */
+  private errorUpdatePeriod = 2 * 1000;
   private requestedFilters: string[];
 
   private priceSubscription: SubscriptionLike;
@@ -121,6 +125,11 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.form = this.formBuilder.group({
       filter: [[]],
     });
+
+    // Intervals for updating the data must be longer if connecting to a remote backend.
+    if (!coinService.currentCoinInmediate.isLocal) {
+      this.errorUpdatePeriod = 60 * 1000;
+    }
 
     this.coinHasHours = coinService.currentCoinHasHoursInmediate;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
@@ -311,7 +320,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         this.filterTransactions();
       },
       // If there is an error, retry after a short delay.
-      () => this.loadTransactions(2000),
+      () => this.loadTransactions(this.errorUpdatePeriod),
     );
   }
 

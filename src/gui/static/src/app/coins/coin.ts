@@ -27,6 +27,11 @@ export abstract class Coin {
   explorerUrl: string;
   abstract assetsFolderName: string;
   headerHasGradient = true;
+  /**
+   * How many confirmations a transaction must have to be considered final. IMPORTANT: the
+   * backend may have its own number of required confirmations, if this value is different
+   * the UI could end showing inconsistent data.
+   */
   abstract confirmationsNeeded: number;
   config: any;
 }

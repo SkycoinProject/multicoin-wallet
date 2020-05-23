@@ -3,19 +3,18 @@ import { mergeMap, map, catchError } from 'rxjs/operators';
 import { BigNumber } from 'bignumber.js';
 
 import { WalletBase } from '../../../wallet-operations/wallet-objects';
-import { OldTransaction, OldTransactionTypes } from '../../../wallet-operations/transaction-objects';
+import { OldTransaction, OldTransactionTypes, Output } from '../../../wallet-operations/transaction-objects';
 import { StorageService, StorageType } from '../../../storage.service';
 import { calculateGeneralData } from '../../../../utils/history-utils';
 import { Coin } from '../../../../coins/coin';
-import { BtcApiService } from '../../../api/btc-api.service';
-import { OperationError } from '../../../../utils/operation-error';
-import { processServiceError } from '../../../../utils/errors';
+import { BlockbookApiService } from '../../../../services/api/blockbook-api.service';
+import { BtcCoinConfig } from '../../../../coins/config/btc.coin-config';
 
 /**
  * Gets the transaction history of a wallet list.
  * @param wallets Wallets to consult.
  */
-export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[], btcApiService: BtcApiService, storageService: StorageService): Observable<OldTransaction[]> {
+export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[], blockbookApiService: BlockbookApiService, storageService: StorageService): Observable<OldTransaction[]> {
   let transactions: OldTransaction[];
   /**
    * Allows to easily know which addresses are part of the wallets and also to know
@@ -39,32 +38,42 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
     });
   });
 
+  // Value which will allow to get the value in coins, instead of sats.
+  const decimalsCorrector = new BigNumber(10).exponentiatedBy((currentCoin.config as BtcCoinConfig).decimals);
+
   // Get the transactions of all addresses.
-  return recursivelyGetTransactions(currentCoin, btcApiService, addresses).pipe(mergeMap((response: any[]) => {
+  return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses).pipe(mergeMap((response: any[]) => {
     // Process the response and convert it into a known object type. Some values are temporal.
     transactions = response.map<OldTransaction>(transaction => {
+      // Build the output list, ignoring data outputs.
+      const outputs: Output[] = [];
+      (transaction.vout as any[]).forEach(output => {
+        if (output.value && output.value !== '0') {
+          outputs.push({
+            hash: getOutputId(transaction.txid, output.n),
+            address: (output.addresses as string[]).join(', '),
+            coins: new BigNumber(output.value).dividedBy(decimalsCorrector),
+          });
+        }
+      });
+
+      // Build the transaction object.
       const processedTx: OldTransaction = {
         relevantAddresses: [],
         balance: new BigNumber(0),
         fee: new BigNumber(0),
         confirmed: transaction.confirmations ? (transaction.confirmations >= currentCoin.confirmationsNeeded) : false,
         confirmations: transaction.confirmations ? transaction.confirmations : 0,
-        timestamp: transaction.time ? transaction.time : -1,
+        timestamp: transaction.blockTime ? transaction.blockTime : -1,
         id: transaction.txid,
         inputs: (transaction.vin as any[]).map(input => {
           return {
             hash: input.coinbase ? input.coinbase : getOutputId(input.txid, input.vout),
-            address: input.coinbase ? null : (input.prevOut.addresses as string[]).join(', '),
-            coins: input.coinbase ? new BigNumber(0) : new BigNumber(input.prevOut.value),
+            address: input.coinbase ? null : (input.addresses as string[]).join(', '),
+            coins: input.coinbase ? new BigNumber(0) : new BigNumber(input.value).dividedBy(decimalsCorrector),
           };
         }),
-        outputs: (transaction.vout as any[]).map(output => {
-          return {
-            hash: getOutputId(transaction.txid, output.n),
-            address: (output.scriptPubKey.addresses as string[]).join(', '),
-            coins: new BigNumber(output.value),
-          };
-        }),
+        outputs: outputs,
         involvedLocalWallets: '',
         numberOfInvolvedLocalWallets: 0,
         type: OldTransactionTypes.MixedOrUnknown,
@@ -73,8 +82,8 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
       // Calculate the fee.
       let inputsCoins = new BigNumber('0');
       (transaction.vin as any[]).forEach(input => {
-        if (input.prevOut && input.prevOut.value) {
-          inputsCoins = inputsCoins.plus(input.prevOut.value);
+        if (input.value) {
+          inputsCoins = inputsCoins.plus(input.value);
         }
       });
       let outputsCoins = new BigNumber('0');
@@ -83,7 +92,7 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
           outputsCoins = outputsCoins.plus(output.value);
         }
       });
-      processedTx.fee = inputsCoins.minus(outputsCoins);
+      processedTx.fee = inputsCoins.minus(outputsCoins).dividedBy(decimalsCorrector);
       if (processedTx.fee.isLessThan(0)) {
         processedTx.fee = new BigNumber(0);
       }
@@ -136,26 +145,17 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
  * @param addresses Addresses to check. The list will be altered by the function.
  * @param currentElements Already obtained transactions. For internal use.
  * @returns Array with all the transactions related to the provided address list, in the
- * format returned by the node.
+ * format returned by the backend.
  */
-export function recursivelyGetTransactions(currentCoin: Coin, btcApiService: BtcApiService, addresses: string[], currentElements = new Map<string, any>()): Observable<any[]> {
-  return btcApiService.callRpcMethod(currentCoin.nodeUrl, 'searchrawtransactions', [addresses[addresses.length - 1], 1, 0, 1000000, 1])
-    .pipe(catchError((err: OperationError) => {
-      err = processServiceError(err);
-
-      // If the node returns -5, it means there are no transactions for the address.
-      if (
-        (err.originalError && err.originalError.code && err.originalError.code === -5) ||
-        (err.originalServerErrorMsg && err.originalServerErrorMsg.toLowerCase().includes('No information available about address'.toLowerCase()))
-      ) {
-        return of([]);
+export function recursivelyGetTransactions(currentCoin: Coin, blockbookApiService: BlockbookApiService, addresses: string[], currentElements = new Map<string, any>()): Observable<any[]> {
+  return blockbookApiService.get(currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'txs'})
+    .pipe(mergeMap((response) => {
+      if (response.transactions) {
+        (response.transactions as any[]).forEach(transaction => {
+          currentElements.set(transaction.txid, transaction);
+        });
       }
 
-      return throwError(err);
-    }), mergeMap((response) => {
-      (response as any[]).forEach(transaction => {
-        currentElements.set(transaction.txid, transaction);
-      });
       addresses.pop();
 
       if (addresses.length === 0) {
@@ -168,7 +168,7 @@ export function recursivelyGetTransactions(currentCoin: Coin, btcApiService: Btc
       }
 
       // Continue to the next step.
-      return recursivelyGetTransactions(currentCoin, btcApiService, addresses, currentElements);
+      return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, currentElements);
     }));
 }
 

@@ -1,16 +1,16 @@
 import { Subscription, of, Observable, ReplaySubject } from 'rxjs';
-import { delay, map, mergeMap, filter, first } from 'rxjs/operators';
+import { delay, map, mergeMap } from 'rxjs/operators';
 import { NgZone, Injector } from '@angular/core';
+import BigNumber from 'bignumber.js';
+
+import * as moment from 'moment';
 
 import { Coin } from '../../../coins/coin';
 import { ProgressEvent, BlockchainState } from '../../blockchain.service';
 import { BlockchainOperator } from '../blockchain-operator';
-import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
-import { OperatorService } from '../../operators.service';
-import { BtcApiService } from '../../api/btc-api.service';
-import BigNumber from 'bignumber.js';
 import { environment } from '../../../../environments/environment';
 import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**
  * Operator for BlockchainService to be used with btc-like coins..
@@ -41,30 +41,24 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   private currentCoin: Coin;
 
   // Services and operators used by this operator.
-  private btcApiService: BtcApiService;
+  private blockbookApiService: BlockbookApiService;
   private ngZone: NgZone;
-  private balanceAndOutputsOperator: BalanceAndOutputsOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.btcApiService = injector.get(BtcApiService);
+    this.blockbookApiService = injector.get(BlockbookApiService);
     this.ngZone = injector.get(NgZone);
 
-    // Intervals for updating the data must be longer if connecting to a remote node.
+    // Intervals for updating the data must be longer if connecting to a remote backend.
     if (!currentCoin.isLocal) {
       this.updatePeriod = 120 * 1000;
       this.errorUpdatePeriod = 30 * 1000;
     }
 
-    // Get the operators and only then start using them.
-    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
-      this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
-
-      // Start checking the state of the blockchain.
-      this.startDataRefreshSubscription(0);
-    });
-
     this.currentCoin = currentCoin;
+
+    // Start checking the state of the blockchain.
+    this.startDataRefreshSubscription(0);
   }
 
   dispose() {
@@ -77,16 +71,9 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   }
 
   getBlockchainState(): Observable<BlockchainState> {
-    let lastBlockHash = '';
-
-    // Get the hash of the last block.
-    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getbestblockhash').pipe(mergeMap(result => {
-      lastBlockHash = result;
-
-      // Get the info of the last block.
-      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getblock', [lastBlockHash]);
-    }), map(result => {
-      let currentBlock = result.height + 1;
+    // Get the basic info from Blockbook.
+    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api').pipe(map(result => {
+      let currentBlock = result.blockbook.bestHeight;
       let currentSupply = new BigNumber(0);
       let reward = new BigNumber((this.currentCoin.config as BtcCoinConfig).initialMiningReward);
 
@@ -104,13 +91,13 @@ export class BtcBlockchainOperator implements BlockchainOperator {
 
       return {
         lastBlock: {
-          seq: result.height,
-          timestamp: result.time,
-          hash: lastBlockHash,
+          seq: result.blockbook.bestHeight,
+          timestamp: moment(result.blockbook.lastBlockTime).unix(),
+          hash: result.backend.bestBlockHash,
         },
         coinSupply: {
           currentSupply: currentSupply.toString(),
-          totalSupply: '21000000',
+          totalSupply: (this.currentCoin.config as BtcCoinConfig).totalSupply.toString(),
         },
       };
     }));
@@ -130,11 +117,7 @@ export class BtcBlockchainOperator implements BlockchainOperator {
       this.dataSubscription = of(0).pipe(
         delay(delayMs),
         mergeMap(() => {
-          return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getbestblockhash');
-        }),
-        mergeMap(result => {
-          // Get the info of the last block.
-          return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getblock', [result]);
+          return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api');
         }),
       ).subscribe(result => {
         this.ngZone.run(() => {
@@ -142,7 +125,8 @@ export class BtcBlockchainOperator implements BlockchainOperator {
           this.progressSubject.next({
             currentBlock: 0,
             highestBlock: 0,
-            synchronized: environment.ignoreNonFiberNetworIssues ? true : Date.now() - (result.time + 1000) < (this.currentCoin.config as BtcCoinConfig).outOfSyncMinutes * 60000,
+            synchronized: environment.ignoreNonFiberNetworIssues ? true :
+              Date.now() - (moment(result.blockbook.lastBlockTime).unix() * 1000) < (this.currentCoin.config as BtcCoinConfig).outOfSyncMinutes * 60000,
           });
 
           this.startDataRefreshSubscription(this.updatePeriod);

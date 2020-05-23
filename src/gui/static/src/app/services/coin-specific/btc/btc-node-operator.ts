@@ -5,8 +5,8 @@ import { Injector } from '@angular/core';
 
 import { NodeOperator } from '../node-operator';
 import { Coin } from '../../../coins/coin';
-import { BtcApiService } from '../../api/btc-api.service';
 import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**
  * Operator for NodeService to be used with btc-like coins.
@@ -38,13 +38,13 @@ export class BtcNodeOperator implements NodeOperator {
   private currentCoin: Coin;
 
   // Services used by this operator.
-  private btcApiService: BtcApiService;
+  private blockbookApiService: BlockbookApiService;
 
   private basicInfoSubscription: Subscription;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.btcApiService = injector.get(BtcApiService);
+    this.blockbookApiService = injector.get(BlockbookApiService);
 
     this.currentCoin = currentCoin;
 
@@ -69,9 +69,9 @@ export class BtcNodeOperator implements NodeOperator {
 
     this.basicInfoSubscription = of(1).pipe(
       delay(delayMs),
-      mergeMap(() => this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'getnetworkinfo')),
+      mergeMap(() => this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api')),
     ).subscribe(response => {
-      this.nodeVersionInternal = response.version;
+      this.nodeVersionInternal = response.backend.version;
 
       this.remoteNodeDataUpdatedInternal.next(true);
     }, () => {

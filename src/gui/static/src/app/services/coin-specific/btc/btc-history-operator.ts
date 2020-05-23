@@ -12,7 +12,8 @@ import { PendingTransactionsResponse, AddressesHistoryResponse, PendingTransacti
 import { HistoryOperator } from '../history-operator';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { OperatorService } from '../../operators.service';
-import { BtcApiService } from '../../api/btc-api.service';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
+import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
 
 /**
  * Operator for HistoryService to be used with btc-like coins.
@@ -29,14 +30,14 @@ export class BtcHistoryOperator implements HistoryOperator {
   private operatorsSubscription: Subscription;
 
   // Services and operators used by this operator.
-  private btcApiService: BtcApiService;
+  private blockbookApiService: BlockbookApiService;
   private storageService: StorageService;
   private walletsAndAddressesOperator: WalletsAndAddressesOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.btcApiService = injector.get(BtcApiService);
     this.storageService = injector.get(StorageService);
+    this.blockbookApiService = injector.get(BlockbookApiService);
 
     // Get the operators.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
@@ -61,7 +62,7 @@ export class BtcHistoryOperator implements HistoryOperator {
 
     // Get the history.
     return initialRequest.pipe(first(), mergeMap(wallets => {
-      return getTransactionsHistory(this.currentCoin, wallets, this.btcApiService, this.storageService);
+      return getTransactionsHistory(this.currentCoin, wallets, this.blockbookApiService, this.storageService);
     }));
   }
 
@@ -82,7 +83,7 @@ export class BtcHistoryOperator implements HistoryOperator {
       });
 
       // Get the full history.
-      return recursivelyGetTransactions(this.currentCoin, this.btcApiService, addresses);
+      return recursivelyGetTransactions(this.currentCoin, this.blockbookApiService, addresses);
     }), map(transactions => {
       // Get only the pending transactions.
       transactions = transactions.filter(tx => !tx.confirmations || tx.confirmations < this.currentCoin.confirmationsNeeded);
@@ -103,14 +104,17 @@ export class BtcHistoryOperator implements HistoryOperator {
    * @param transaction Transaction returned by the server.
    */
   private processTransactionData(transaction: any): PendingTransactionData {
+    // Value which will allow to get the value in coins, instead of sats.
+    const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
+
     let coins = new BigNumber('0');
     transaction.vout.map(output => {
-      coins = coins.plus(output.value);
+      coins = coins.plus(new BigNumber(output.value).dividedBy(decimalsCorrector));
     });
 
     return {
       coins: coins.toString(),
-      timestamp: transaction.time ? transaction.time : null,
+      timestamp: transaction.blockTime ? transaction.blockTime : null,
       id: transaction.txid,
       confirmations: transaction.confirmations ? transaction.confirmations : 0,
     };
