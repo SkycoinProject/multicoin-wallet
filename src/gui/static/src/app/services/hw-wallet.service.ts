@@ -13,6 +13,8 @@ import { getErrorMsg } from '../utils/errors';
 import { WalletUtilsService } from './wallet-operations/wallet-utils.service';
 import { WalletBase } from './wallet-operations/wallet-objects';
 import { isEqualOrSuperiorVersion } from '../utils/semver';
+import { SkywalletSupportedCoinTypes } from '../coins/skywallet-supported-coin-types';
+import { CoinService } from './coin.service';
 
 /**
  * Data about a transaction recipient.
@@ -63,14 +65,6 @@ export interface HwOutput {
   address_index?: number;
 }
 
-/**
- * Coins supported by the device.
- */
-export enum SupportedCoins {
-  SKY = 'SKY',
-  BTC = 'BTC',
-}
-
 @Injectable()
 export class HwWalletService {
   /**
@@ -107,7 +101,9 @@ export class HwWalletService {
     private hwWalletDaemonService: HwWalletDaemonService,
     private hwWalletPinService: HwWalletPinService,
     private walletUtilsService: WalletUtilsService,
-    private http: HttpClient) {
+    private http: HttpClient,
+    private coinService: CoinService,
+  ) {
 
     if (this.hwWalletCompatibilityActivated) {
       hwWalletDaemonService.connectionEvent.subscribe(connected => {
@@ -165,8 +161,9 @@ export class HwWalletService {
    * Gets one or more of the addresses of the hw wallet.
    * @param addressN How many addresses to recover.
    * @param startIndex Starting index.
+   * @param coin Coin of the addresses.
    */
-  getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
+  getAddresses(addressN: number, startIndex: number, coin: SkywalletSupportedCoinTypes): Observable<OperationResult> {
     // Cancel the current pending operation, if any.
     return this.cancelLastAction().pipe(mergeMap(() => {
       return this.getDaemonVersion();
@@ -181,7 +178,10 @@ export class HwWalletService {
 
       // Add the coin type param if needed.
       if (isEqualOrSuperiorVersion(version.rawResponse.version, '0.2.0')) {
-        params['coin_type'] = SupportedCoins.SKY;
+        params['coin_type'] = coin;
+      } else if (coin !== SkywalletSupportedCoinTypes.SKY) {
+        // Previous versions of the daemon only work with Skycoin.
+        return throwError(this.createOutdatedDaemonError());
       }
 
       // Recover the addresses.
@@ -233,8 +233,9 @@ export class HwWalletService {
    * Makes the device ask the user to confirm an address. This allows to check if the software and
    * hardware wallets are showing the same data.
    * @param index Index of the address to confirm.
+   * @param coin Coin of the addresses that is going to be confirmed.
    */
-  confirmAddress(index: number): Observable<OperationResult> {
+  confirmAddress(index: number, coin: SkywalletSupportedCoinTypes): Observable<OperationResult> {
     return this.cancelLastAction().pipe(mergeMap(() => {
       return this.getDaemonVersion();
     }), mergeMap(version => {
@@ -248,7 +249,10 @@ export class HwWalletService {
 
       // Add the coin type param if needed.
       if (isEqualOrSuperiorVersion(version.rawResponse.version, '0.2.0')) {
-        params['coin_type'] = SupportedCoins.SKY;
+        params['coin_type'] = coin;
+      } else if (coin !== SkywalletSupportedCoinTypes.SKY) {
+        // Previous versions of the daemon only work with Skycoin.
+        return throwError(this.createOutdatedDaemonError());
       }
 
       return this.processDaemonResponse(
@@ -529,7 +533,7 @@ export class HwWalletService {
    * @returns An observable which will fail if the connected device is not the expected one.
    */
   checkIfCorrectHwConnected(wallet: WalletBase): Observable<any> {
-    return this.getAddresses(1, 0).pipe(mergeMap(
+    return this.getAddresses(1, 0, this.coinService.currentCoinInmediate.skywalletCoinType).pipe(mergeMap(
       response => {
         if (!wallet.isHardware || response.rawResponse[0] !== wallet.addresses[0].address) {
           const resp = new OperationError();
@@ -557,6 +561,19 @@ export class HwWalletService {
 
       return observableThrowError(error);
     }));
+  }
+
+  /**
+   * Creates an error object to indicate that the daemon must be updated to be able to
+   * perform the operation.
+   */
+  private createOutdatedDaemonError(): OperationError {
+    const err = new OperationError();
+    err.type = HWOperationResults.DaemonOutdated;
+    err.originalError = {};
+    err.translatableErrorMsg = 'hardware-wallet.errors.outdated-daemon';
+
+    return err;
   }
 
   /**

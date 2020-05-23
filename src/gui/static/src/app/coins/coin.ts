@@ -1,4 +1,5 @@
 import { CoinTypes } from './coin-types';
+import { SkywalletSupportedCoinTypes } from './skywallet-supported-coin-types';
 
 /**
  * Base class with the properties of the coins this wallet can work with.
@@ -33,5 +34,6 @@ export abstract class Coin {
    * the UI could end showing inconsistent data.
    */
   abstract confirmationsNeeded: number;
+  skywalletCoinType: SkywalletSupportedCoinTypes;
   config: any;
 }

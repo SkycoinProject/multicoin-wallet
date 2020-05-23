@@ -175,7 +175,7 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
 
     } else {
       // Generate the new addresses on the device.
-      return this.hwWalletService.getAddresses(num, wallet.addresses.length).pipe(map(response => {
+      return this.hwWalletService.getAddresses(num, wallet.addresses.length, this.currentCoin.skywalletCoinType).pipe(map(response => {
         // Find the affected wallet on the local list and add the addresses to it.
         const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
         const newAddresses: AddressBase[] = [];
@@ -478,7 +478,7 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
     const addressesWithTxMap: Map<string, boolean> = new Map<string, boolean>();
 
     // Ask the device to return as many addresses as set on AppConfig.maxHardwareWalletAddresses.
-    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0).pipe(mergeMap(response => {
+    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0, this.currentCoin.skywalletCoinType).pipe(mergeMap(response => {
       // Save all addresses in a map.
       addresses = response.rawResponse;
       addresses.forEach(address => {

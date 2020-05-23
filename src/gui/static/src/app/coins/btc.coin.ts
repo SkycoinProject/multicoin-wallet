@@ -1,6 +1,7 @@
 import { Coin } from './coin';
 import { CoinTypes } from './coin-types';
 import { BtcCoinConfig } from './config/btc.coin-config';
+import { SkywalletSupportedCoinTypes } from './skywallet-supported-coin-types';
 
 export class BtcCoin extends Coin {
   coinType = CoinTypes.BTC;
@@ -16,5 +17,6 @@ export class BtcCoin extends Coin {
   explorerUrl = 'https://explorer.testcoin.net';
   assetsFolderName = 'bitcoin';
   confirmationsNeeded = 3;
+  skywalletCoinType = SkywalletSupportedCoinTypes.BTC;
   config = new BtcCoinConfig();
 }

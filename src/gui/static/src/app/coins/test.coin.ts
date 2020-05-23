@@ -1,6 +1,7 @@
 import { Coin } from './coin';
 import { environment } from '../../environments/environment';
 import { CoinTypes } from './coin-types';
+import { SkywalletSupportedCoinTypes } from './skywallet-supported-coin-types';
 
 export class TestCoin extends Coin {
   coinType = CoinTypes.Fiber;
@@ -16,4 +17,5 @@ export class TestCoin extends Coin {
   explorerUrl = 'https://explorer.testcoin.net';
   assetsFolderName = 'testcoin';
   confirmationsNeeded = 1;
+  skywalletCoinType = SkywalletSupportedCoinTypes.SKY;
 }

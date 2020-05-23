@@ -21,6 +21,7 @@ import { processServiceError } from '../../../../utils/errors';
 import { HardwareWalletService, HwFeaturesResponse, HwSecurityWarnings } from '../../../../services/wallet-operations/hardware-wallet.service';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
+import { CoinService } from '../../../../services/coin.service';
 
 /**
  * Params sent to the modal windows openned by HwOptionsDialogComponent.
@@ -122,6 +123,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     private msgBarService: MsgBarService,
     private hardwareWalletService: HardwareWalletService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private coinService: CoinService,
   ) {
     super(hwWalletService, dialogRef);
 
@@ -337,7 +339,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
    */
   private continueCheckingWallet(suggestToUpdate: boolean) {
     // Get the first address of the device, to use it for identification.
-    this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
+    this.operationSubscription = this.hwWalletService.getAddresses(1, 0, this.coinService.currentCoinInmediate.skywalletCoinType).subscribe(
       response => {
         // If the first address was obteined, get all the saved wallets of the current coin.
         this.operationSubscription = this.walletsAndAddressesService.currentWallets.pipe(first()).subscribe(wallets => {

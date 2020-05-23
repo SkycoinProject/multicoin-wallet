@@ -48,10 +48,13 @@ export class MsgBarService {
     config.icon = MsgBarIcons.Error;
     config.color = MsgBarColors.Red;
 
-    // If showing a msg indicating an error connecting with the hw daemon, the msg is modified
-    // to make sure it includes the download URL.
+    // If showing a msg indicating an error connecting with the hw daemon or its version, the
+    // msg is modified to make sure it includes the download URL.
     if ((body as OperationError).type && (body as OperationError).type === HWOperationResults.DaemonConnectionError) {
-      config.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
+      config.text = 'hardware-wallet.errors.daemon-connection';
+      config.link = AppConfig.hwWalletDaemonDownloadUrl;
+    } else if ((body as OperationError).type && (body as OperationError).type === HWOperationResults.DaemonOutdated) {
+      config.text = 'hardware-wallet.errors.outdated-daemon';
       config.link = AppConfig.hwWalletDaemonDownloadUrl;
     }
 

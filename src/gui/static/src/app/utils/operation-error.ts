@@ -79,6 +79,10 @@ export enum HWOperationResults {
    */
   DaemonConnectionError = 'DaemonConnectionError',
   /**
+   * The current version of the daemon is not capable of performing the operation.
+   */
+  DaemonOutdated = 'DaemonOutdated',
+  /**
    * An invalid address was sent to the device.
    */
   InvalidAddress = 'InvalidAddress',

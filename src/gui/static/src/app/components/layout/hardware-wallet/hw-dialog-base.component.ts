@@ -133,10 +133,13 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
    */
   protected showResult(result: ResultData, focusButton = true) {
     if (result) {
-      // If there was an error connecting with the daemon, the link to download the daemon is
-      // added to the elements which will be displayed.
+      // If there was an error connecting with the daemon or its version, the link to download
+      // the daemon is added to the elements which will be displayed.
       if (result.text === 'hardware-wallet.errors.daemon-connection' || result.text.indexOf('Problem connecting to the Skywallet Daemon') !== -1) {
-        result.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
+        result.text = 'hardware-wallet.errors.daemon-connection';
+        result.link = AppConfig.hwWalletDaemonDownloadUrl;
+      } else if (result.text === 'hardware-wallet.errors.outdated-daemon') {
+        result.text = 'hardware-wallet.errors.outdated-daemon';
         result.link = AppConfig.hwWalletDaemonDownloadUrl;
       }
 

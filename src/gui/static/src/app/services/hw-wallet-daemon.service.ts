@@ -390,6 +390,8 @@ export class HwWalletDaemonService {
         response = 'hardware-wallet.errors.incorrect-wallet';
       } else if (errorType === HWOperationResults.DaemonConnectionError) {
         response = 'hardware-wallet.errors.daemon-connection';
+      } else if (errorType === HWOperationResults.DaemonOutdated) {
+        response = 'hardware-wallet.errors.outdated-daemon';
       } else if (errorType === HWOperationResults.InvalidAddress) {
         response = 'hardware-wallet.errors.invalid-address';
       } else if (errorType === HWOperationResults.Timeout) {

@@ -7,6 +7,7 @@ import { WalletsAndAddressesService } from './wallets-and-addresses.service';
 import { WalletBase } from './wallet-objects';
 import { HwWalletService } from '../hw-wallet.service';
 import { AppConfig } from '../../app.config';
+import { CoinService } from '../coin.service';
 
 /**
  * List with the security problems that can be detected in a hw wallet.
@@ -58,6 +59,7 @@ export class HardwareWalletService {
     private walletsAndAddressesService: WalletsAndAddressesService,
     private hwWalletService: HwWalletService,
     private http: HttpClient,
+    private coinService: CoinService,
   ) { }
 
   /**
@@ -185,7 +187,7 @@ export class HardwareWalletService {
    */
   confirmAddress(wallet: WalletBase, addressIndex: number): Observable<void> {
     return this.hwWalletService.checkIfCorrectHwConnected(wallet).pipe(
-      mergeMap(() => this.hwWalletService.confirmAddress(addressIndex)),
+      mergeMap(() => this.hwWalletService.confirmAddress(addressIndex, this.coinService.currentCoinInmediate.skywalletCoinType)),
       map(() => {
         // If the user confirms the operation, update the local data.
         wallet.addresses[addressIndex].confirmed = true;
