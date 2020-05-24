@@ -7,6 +7,8 @@ import { HwWalletPinService } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getErrorMsg } from '../utils/errors';
+import { environment } from '../../environments/environment';
+import { getTestAddressesMap } from '../utils/hw-test-addresses';
 
 /**
  * Allows to make request to the hw wallet daemon with ease. If an API request needs the user
@@ -132,6 +134,21 @@ export class HwWalletDaemonService {
       // killing the connection at will in an unpredictable way.
       timeout(this.timeoutMs),
       mergeMap((finalResponse: any) => {
+        // If in dev mode, check if the response has addresses that must be replaced by test
+        // addresses. Only predefined addresses are replaced. This is for being able to
+        // change the mainnet addresses returned by the device with tesnet addresses.
+        if (!environment.production) {
+          const testAddressesMap = getTestAddressesMap();
+
+          if (finalResponse.data && testAddressesMap.has(finalResponse.data[0])) {
+            for (let i = 0; i < (finalResponse.data as any[]).length; i++) {
+              if (testAddressesMap.has(finalResponse.data[i])) {
+                finalResponse.data[i] = testAddressesMap.get(finalResponse.data[i]);
+              }
+            }
+          }
+        }
+
         // The daemon may return single value responses as single value arrays. This extracts
         // the response from the array.
         if (finalResponse.data && finalResponse.data.length) {

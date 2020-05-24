@@ -1,13 +1,17 @@
-import { of, Observable, Subscription, ReplaySubject } from 'rxjs';
+import { of, Observable, Subscription, ReplaySubject, throwError } from 'rxjs';
 import { mergeMap, map } from 'rxjs/operators';
 import { Injector } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
+import BigNumber from 'bignumber.js';
 
 import { HwWalletService } from '../../hw-wallet.service';
 import { WalletBase, AddressBase, duplicateWalletBase, WalletTypes } from '../../wallet-operations/wallet-objects';
-import { redirectToErrorPage } from '../../../utils/errors';
+import { redirectToErrorPage, processServiceError } from '../../../utils/errors';
 import { StorageService, StorageType } from '../../storage.service';
 import { Coin } from '../../../coins/coin';
 import { WalletsAndAddressesOperator, LastAddress, CreateWalletArgs } from '../wallets-and-addresses-operator';
+import { AppConfig } from '../../../app.config';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**
  * Operator for WalletsAndAddressesService to be used with btc-like coins.
@@ -46,11 +50,15 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
   // Services used by this operator.
   private hwWalletService: HwWalletService;
   private storageService: StorageService;
+  private blockbookApiService: BlockbookApiService;
+  private translate: TranslateService;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
     this.hwWalletService = injector.get(HwWalletService);
     this.storageService = injector.get(StorageService);
+    this.blockbookApiService = injector.get(BlockbookApiService);
+    this.translate = injector.get(TranslateService);
 
     // Save the coin which will be used by this operator and change the persistent storage vars
     // to correspond to the selected coin.
@@ -134,7 +142,103 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
   }
 
   createWallet(args: CreateWalletArgs): Observable<WalletBase> {
-    return of(null);
+    if (!args.isHardwareWallet) {
+      // Not implemented.
+      return of(null);
+    } else {
+      return this.createHardwareWallet();
+    }
+  }
+
+  /**
+   * Adds a new hardware wallet to the wallets list, with the data of the currently connected device.
+   * @returns The newly created wallet.
+   */
+  private createHardwareWallet(): Observable<WalletBase> {
+    let addresses: string[];
+    let id: string;
+
+    // Ask the device to return as many addresses as set on AppConfig.maxHardwareWalletAddresses.
+    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0, this.currentCoin.skywalletCoinType).pipe(mergeMap(response => {
+      addresses = response.rawResponse;
+      id = this.getHwWalletID(addresses[0]);
+
+      // Throw an error if any wallet has the same ID.
+      let walletAlreadyExists = false;
+      this.walletsList.forEach(wallet => {
+        if (wallet.id === id) {
+          walletAlreadyExists = true;
+        }
+      });
+      if (walletAlreadyExists) {
+        return throwError(processServiceError('The wallet already exists'));
+      }
+
+      // Create a copy of the address list and check if any of them already has transactions.
+      const addressesToCheck = addresses.map(a => a);
+
+      return this.recursivelyGetIfUsed(addressesToCheck);
+    }), map(response => {
+      // Get the index of the last address of the list with transaction.
+      let lastAddressWithTx = 0;
+      addresses.forEach((address, i) => {
+        if (response.get(address)) {
+          lastAddressWithTx = i;
+        }
+      });
+
+      const newWallet = this.createHardwareWalletData(
+        this.translate.instant('hardware-wallet.general.default-wallet-name'),
+        addresses.slice(0, lastAddressWithTx + 1).map(add => {
+          return { address: add, confirmed: false };
+        }), true, false,
+      );
+
+      newWallet.id = id;
+
+      // Add the wallet just after the last hw wallet of the wallet list.
+      let lastHardwareWalletIndex = this.walletsList.length - 1;
+      for (let i = 0; i < this.walletsList.length; i++) {
+        if (!this.walletsList[i].isHardware) {
+          lastHardwareWalletIndex = i - 1;
+          break;
+        }
+      }
+      this.walletsList.splice(lastHardwareWalletIndex + 1, 0, newWallet);
+      this.saveHardwareWalletsAndInformUpdate();
+
+      return newWallet;
+    }));
+  }
+
+  /**
+   * Checks if the provided addresses have been used (received coins).
+   * @param addresses Addresses to check. The list will be altered by the function.
+   * @param currentElements Already obtained data. For internal use.
+   * @returns A map with the addresses as key and a value indicating if the address has
+   * already been used.
+   */
+  private recursivelyGetIfUsed(addresses: string[], currentElements = new Map<string, boolean>()): Observable<Map<string, boolean>> {
+    if (addresses.length === 0) {
+      return of(currentElements);
+    }
+
+    // Get the basic state of the address.
+    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'basic'})
+      .pipe(mergeMap((response) => {
+        // Check if the addresses has received coins.
+        const received = response.totalReceived ? new BigNumber(response.totalReceived) : new BigNumber(0);
+        currentElements.set(addresses[addresses.length - 1], received.isGreaterThan(0));
+
+        addresses.pop();
+
+        if (addresses.length === 0) {
+          return of(currentElements);
+        }
+
+        // Continue to the next step.
+        return this.recursivelyGetIfUsed(addresses, currentElements);
+      }));
   }
 
   deleteWallet(walletId: string) {
@@ -154,8 +258,8 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
   private saveHardwareWalletsAndInformUpdate() {
     const hardwareWallets: WalletBase[] = [];
 
-    this.currentWalletsList.map(wallet => {
-      if (wallet.isHardware) {
+    this.walletsList.map(wallet => {
+      if (wallet.coin === this.currentCoin.coinName && wallet.isHardware) {
         hardwareWallets.push(this.createHardwareWalletData(
           wallet.label,
           wallet.addresses.map(address => {

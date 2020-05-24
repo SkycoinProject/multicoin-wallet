@@ -154,8 +154,8 @@ export class EthWalletsAndAddressesOperator implements WalletsAndAddressesOperat
   private saveHardwareWalletsAndInformUpdate() {
     const hardwareWallets: WalletBase[] = [];
 
-    this.currentWalletsList.map(wallet => {
-      if (wallet.isHardware) {
+    this.walletsList.map(wallet => {
+      if (wallet.coin === this.currentCoin.coinName && wallet.isHardware) {
         hardwareWallets.push(this.createHardwareWalletData(
           wallet.label,
           wallet.addresses.map(address => {
