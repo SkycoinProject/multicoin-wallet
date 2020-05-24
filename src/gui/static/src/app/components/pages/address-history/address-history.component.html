@@ -51,7 +51,7 @@
                 <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address.address }">
                   {{ 'address-history.history' | translate }}
                 </button>
-                <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address.address }">
+                <button *ngIf="showOutputsOption" mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address.address }">
                   {{ 'wallet.address.outputs' | translate }}
                 </button>
               </mat-menu>

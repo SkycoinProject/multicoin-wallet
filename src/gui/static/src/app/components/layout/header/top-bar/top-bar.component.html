@@ -44,11 +44,11 @@
 </div>
 <div class="buttons-right">
   <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
-    <button mat-menu-item [routerLink]="['/settings/network']">{{ 'network.title' | translate }}</button>
+    <button *ngIf="showNetworkOption" mat-menu-item [routerLink]="['/settings/network']">{{ 'network.title' | translate }}</button>
     <button mat-menu-item [routerLink]="['/settings/blockchain']">{{ 'blockchain.title' | translate }}</button>
-    <button mat-menu-item [routerLink]="['/settings/outputs']">{{ 'outputs.title' | translate }}</button>
+    <button *ngIf="showOutputsOption" mat-menu-item [routerLink]="['/settings/outputs']">{{ 'outputs.title' | translate }}</button>
     <button mat-menu-item [routerLink]="['/settings/pending-transactions']">{{ 'pending-txs.title' | translate }}</button>
-    <button mat-menu-item [routerLink]="['/settings/backup']">{{ 'backup.title' | translate }}</button>
+    <button *ngIf="showBackupOption" mat-menu-item [routerLink]="['/settings/backup']">{{ 'backup.title' | translate }}</button>
     <a
       mat-menu-item
       *ngIf="currentCoin.explorerUrl"

@@ -22,7 +22,6 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   private progressSubject: ReplaySubject<ProgressEvent> = new ReplaySubject<ProgressEvent>(1);
 
   private dataSubscription: Subscription;
-  private operatorsSubscription: Subscription;
 
   /**
    * Time interval in which periodic data updates will be made.
@@ -62,7 +61,6 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   }
 
   dispose() {
-    this.operatorsSubscription.unsubscribe();
     if (this.dataSubscription) {
       this.dataSubscription.unsubscribe();
     }

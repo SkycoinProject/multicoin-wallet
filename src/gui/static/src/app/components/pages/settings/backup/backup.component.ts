@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
 import { SeedModalComponent } from './seed-modal/seed-modal.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
@@ -9,6 +10,7 @@ import { SoftwareWalletService } from '../../../../services/wallet-operations/so
 import { WalletBase, WalletTypes } from '../../../../services/wallet-operations/wallet-objects';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { WalletUtilsService } from '../../../../services/wallet-operations/wallet-utils.service';
+import { CoinService } from '../../../../services/coin.service';
 
 /**
  * Allows to create a backup of the seed of an encrypted software wallet.
@@ -33,7 +35,9 @@ export class BackupComponent implements OnInit, OnDestroy {
     private walletUtilsService: WalletUtilsService,
     private softwareWalletService: SoftwareWalletService,
     private msgBarService: MsgBarService,
-  ) {}
+    private coinService: CoinService,
+    private router: Router,
+  ) { }
 
   ngOnInit() {
     this.folderSubscription = this.walletUtilsService.folder().subscribe(folder => {
@@ -46,6 +50,10 @@ export class BackupComponent implements OnInit, OnDestroy {
     this.walletSubscription = this.walletsAndAddressesService.currentWallets.subscribe(wallets => {
       this.wallets = wallets;
     });
+
+    if (!this.coinService.currentCoinInmediate.coinTypeFeatures.softwareWallets) {
+      this.router.navigate([''], {replaceUrl: true});
+    }
   }
 
   ngOnDestroy() {

@@ -66,7 +66,7 @@ export class SelectAddressComponent {
     private router: Router,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
 
     // Get the wallet list.
     this.balanceAndOutputsService.walletsWithBalance.pipe(first()).subscribe(wallets => {

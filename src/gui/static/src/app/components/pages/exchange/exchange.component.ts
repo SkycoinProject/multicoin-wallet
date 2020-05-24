@@ -69,7 +69,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
     // Currently the exchange option is only available for Skycoin.
     this.coinSubscription = this.coinService.currentCoin.subscribe(coin => {
       if (coin.coinName.toLowerCase() !== 'skycoin') {
-        this.router.navigate([''], {skipLocationChange: true});
+        this.router.navigate([''], {replaceUrl: true});
       }
     });
   }

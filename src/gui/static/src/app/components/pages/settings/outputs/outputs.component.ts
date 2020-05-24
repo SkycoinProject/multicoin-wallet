@@ -1,5 +1,5 @@
 import { Component, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
 import { retryWhen, delay } from 'rxjs/operators';
 
@@ -31,8 +31,9 @@ export class OutputsComponent implements OnDestroy {
 
   constructor(
     route: ActivatedRoute,
-    coinService: CoinService,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private coinService: CoinService,
+    private router: Router,
   ) {
     // Reload the data every time the url params change.
     this.navigationSubscription = route.queryParams.subscribe(params => {
@@ -42,6 +43,10 @@ export class OutputsComponent implements OnDestroy {
 
     this.showConfirmations = coinService.currentCoinInmediate.coinType !== CoinTypes.Fiber;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
+
+    if (!this.coinService.currentCoinInmediate.coinTypeFeatures.outputs) {
+      this.router.navigate([''], {replaceUrl: true});
+    }
   }
 
   ngOnDestroy() {

@@ -41,6 +41,9 @@ export class AddressHistoryComponent implements OnDestroy {
   // If the id on the URL does not correspond to a valid wallet.
   invalidWallet = false;
 
+  // Vars for showing only the options available for the current coin.
+  showOutputsOption: boolean;
+
   private wallet: WalletBase;
   private basicDataSubscription: SubscriptionLike;
   private addressesSubscription: SubscriptionLike;
@@ -53,7 +56,8 @@ export class AddressHistoryComponent implements OnDestroy {
     private dialog: MatDialog,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
+    this.showOutputsOption = coinService.currentCoinInmediate.coinTypeFeatures.outputs;
 
     // Get the wallets and route params.
     this.basicDataSubscription = combineLatest(this.route.params, this.walletsAndAddressesService.currentWallets.pipe(first()), (params, wallets) => {

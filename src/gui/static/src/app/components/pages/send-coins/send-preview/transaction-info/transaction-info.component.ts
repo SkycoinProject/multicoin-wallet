@@ -51,7 +51,7 @@ export class TransactionInfoComponent implements OnDestroy {
   ) {
     this.subscription = this.priceService.price.subscribe(price => this.price = price);
 
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
 
     // Get the list of internal addresses, to be able to identify them on the UI.

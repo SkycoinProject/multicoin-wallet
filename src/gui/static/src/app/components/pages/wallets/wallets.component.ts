@@ -30,9 +30,6 @@ export class WalletsComponent implements OnInit, OnDestroy {
    */
   static busy = false;
 
-  // If the hw wallet options must be shown.
-  hwCompatibilityActivated = false;
-
   // If true, the currently selected coin includes coin hours.
   coinHasHours = false;
   // Software wallets to show on the list.
@@ -46,6 +43,10 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   walletTypes = WalletTypes;
 
+  // Vars for showing only the options available for the current coin.
+  showHwWalletOptions: boolean;
+  showSwWalletOptions: boolean;
+
   private subscription: SubscriptionLike;
 
   constructor(
@@ -56,9 +57,9 @@ export class WalletsComponent implements OnInit, OnDestroy {
     private balanceAndOutputsService: BalanceAndOutputsService,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
-
-    this.hwCompatibilityActivated = this.hwWalletService.hwWalletCompatibilityActivated;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
+    this.showHwWalletOptions = this.hwWalletService.hwWalletCompatibilityActivated && !!coinService.currentCoinInmediate.skywalletCoinType;
+    this.showSwWalletOptions = coinService.currentCoinInmediate.coinTypeFeatures.softwareWallets;
 
     // Keep the wallet list updated.
     this.subscription = this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {

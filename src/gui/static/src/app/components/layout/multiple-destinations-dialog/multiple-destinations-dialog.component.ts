@@ -48,7 +48,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
     private msgBarService: MsgBarService,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
   }
 
   ngOnInit() {

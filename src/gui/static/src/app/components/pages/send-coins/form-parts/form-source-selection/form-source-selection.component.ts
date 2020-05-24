@@ -147,8 +147,8 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     private balanceAndOutputsService: BalanceAndOutputsService,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
-    this.coinHasOutputs = coinService.currentCoinUsesOutputsInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
+    this.coinHasOutputs = coinService.currentCoinInmediate.coinTypeFeatures.outputs;
   }
 
   ngOnInit() {

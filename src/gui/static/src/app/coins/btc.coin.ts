@@ -14,7 +14,6 @@ export class BtcCoin extends Coin {
   feePaymentCoinUnit = 'Sats';
   uriSpecificatioPrefix = 'bitcoin';
   priceTickerId = 'btc-bitcoin';
-  explorerUrl = 'https://explorer.testcoin.net';
   assetsFolderName = 'bitcoin';
   confirmationsNeeded = 3;
   skywalletCoinType = SkywalletSupportedCoinTypes.BTC;

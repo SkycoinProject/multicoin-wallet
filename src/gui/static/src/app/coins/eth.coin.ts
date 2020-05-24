@@ -12,7 +12,6 @@ export class EthCoin extends Coin {
   feePaymentCoinUnit = 'Gwei';
   uriSpecificatioPrefix = 'ethereum';
   priceTickerId = 'eth-ethereum';
-  explorerUrl = 'https://explorer.testcoin.net';
   assetsFolderName = 'ethereum';
   confirmationsNeeded = 30;
   config = new EthCoinConfig();

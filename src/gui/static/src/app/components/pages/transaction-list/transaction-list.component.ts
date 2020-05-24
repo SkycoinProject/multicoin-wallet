@@ -131,7 +131,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       this.errorUpdatePeriod = 60 * 1000;
     }
 
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
 
     // Get the filters requested in the URL.

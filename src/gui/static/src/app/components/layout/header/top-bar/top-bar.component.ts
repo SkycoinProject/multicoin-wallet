@@ -39,6 +39,11 @@ export class TopBarComponent implements OnInit, OnDestroy {
   // The last moment in which the balance was updated.
   lastBalancesUpdateTime = new Date(2000, 1);
 
+  // Vars for showing only the options available for the current coin.
+  showNetworkOption: boolean;
+  showBackupOption: boolean;
+  showOutputsOption: boolean;
+
   private subscriptionsGroup: Subscription[] = [];
 
   constructor(
@@ -50,7 +55,11 @@ export class TopBarComponent implements OnInit, OnDestroy {
     private coinService: CoinService,
     private overlay: Overlay,
     private renderer: Renderer2,
-  ) {}
+  ) {
+    this.showNetworkOption = this.coinService.currentCoinInmediate.coinTypeFeatures.networkingStats;
+    this.showBackupOption = this.coinService.currentCoinInmediate.coinTypeFeatures.softwareWallets;
+    this.showOutputsOption = this.coinService.currentCoinInmediate.coinTypeFeatures.outputs;
+  }
 
   ngOnInit() {
     this.subscriptionsGroup.push(this.languageService.currentLanguage.subscribe(lang => this.language = lang));

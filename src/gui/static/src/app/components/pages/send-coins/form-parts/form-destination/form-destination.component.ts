@@ -143,7 +143,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
   }
 
   ngOnInit() {

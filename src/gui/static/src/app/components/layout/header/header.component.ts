@@ -60,7 +60,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private balanceAndOutputsService: BalanceAndOutputsService,
     private coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
   }
 
   ngOnInit() {

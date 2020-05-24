@@ -123,7 +123,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     private router: Router,
     private coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
   }
 
   ngOnInit() {

@@ -30,7 +30,7 @@ export class BlockchainComponent implements OnInit, OnDestroy {
     private blockchainService: BlockchainService,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
 
     // Intervals for updating the data must be longer if connecting to a remote node.
     if (!coinService.currentCoinInmediate.isLocal) {

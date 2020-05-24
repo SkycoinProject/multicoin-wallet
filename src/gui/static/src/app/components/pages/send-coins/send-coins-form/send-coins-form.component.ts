@@ -207,7 +207,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     private walletsAndAddressesService: WalletsAndAddressesService,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.feePaymentCoinUnit = coinService.currentCoinInmediate.feePaymentCoinUnit;
     if (!this.coinHasHours) {
       if (coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {

@@ -32,6 +32,9 @@ export class WalletDetailComponent implements OnDestroy {
   // Allows to know which addresses are being copied, so the UI can show an indication.
   copying = new Map<string, boolean>();
 
+  // Vars for showing only the options available for the current coin.
+  showOutputsOption: boolean;
+
   private confirmSubscription: SubscriptionLike;
 
   constructor(
@@ -40,7 +43,8 @@ export class WalletDetailComponent implements OnDestroy {
     private hwWalletService: HwWalletService,
     coinService: CoinService,
   ) {
-    this.coinHasHours = coinService.currentCoinHasHoursInmediate;
+    this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
+    this.showOutputsOption = coinService.currentCoinInmediate.coinTypeFeatures.outputs;
   }
 
   ngOnDestroy() {

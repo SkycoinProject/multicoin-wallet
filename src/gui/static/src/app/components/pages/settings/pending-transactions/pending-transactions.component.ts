@@ -51,7 +51,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     this.showConfirmations = coinService.currentCoinInmediate.coinType !== CoinTypes.Fiber;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
 
-    if (this.coinService.currentCoinInmediate.coinType === CoinTypes.Fiber) {
+    if (this.coinService.currentCoinInmediate.coinTypeFeatures.showAllPendingTransactions) {
       this.navbarSubscription = this.navBarSwitchService.activeComponent.subscribe(value => {
         this.selectedNavbarOption = value;
         this.transactions = null;
@@ -65,7 +65,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    if (this.coinService.currentCoinInmediate.coinType === CoinTypes.Fiber) {
+    if (this.coinService.currentCoinInmediate.coinTypeFeatures.showAllPendingTransactions) {
       this.navBarSwitchService.showSwitch('pending-txs.my-transactions-button', 'pending-txs.all-transactions-button');
     }
   }
