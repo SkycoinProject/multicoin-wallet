@@ -15,6 +15,7 @@ import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { BtcApiService } from '../../api/btc-api.service';
 import { getOutputId } from './utils/btc-history-utils';
+import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
 
 /**
  * Operator for SpendingService to be used with btc-like coins.
@@ -232,6 +233,17 @@ export class BtcSpendingOperator implements SpendingOperator {
     return response;
   }
 
+  calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber {
+    // Maultiply the inputs and outputs by their aproximate size.
+    const inputsSize = new BigNumber(howManyInputs).multipliedBy(180);
+    const outputsSize = new BigNumber(howManyOutputs).multipliedBy(34);
+
+    // Needed for returning the value in coins and not satoshis.
+    const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
+
+    return inputsSize.plus(outputsSize).plus(10).multipliedBy(feePerUnit).dividedBy(decimalsCorrector);
+  }
+
   signTransaction(
     wallet: WalletBase,
     password: string|null,
@@ -265,22 +277,41 @@ export class BtcSpendingOperator implements SpendingOperator {
     let normal: BigNumber;
 
     // Get the recommended fee from the node.
-    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [20]).pipe(mergeMap(result => {
+    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [20]).pipe(mergeMap(result => {
       // The node returns the recommended sats per kb (using 1000 bytes instead of 1024 per kb).
-      veryLow = new BigNumber(result).dividedBy(1000);
+      if (!result.errors) {
+        veryLow = new BigNumber(result).dividedBy(1000);
+      } else {
+        veryLow = new BigNumber(1);
+      }
 
-      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [10]);
+      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [10]);
     }), mergeMap(result => {
-      low = new BigNumber(result).dividedBy(1000);
+      if (!result.errors) {
+        low = new BigNumber(result).dividedBy(1000);
+      } else {
+        low = new BigNumber(1);
+      }
 
-      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [5]);
+      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [5]);
     }), mergeMap(result => {
-      normal = new BigNumber(result).dividedBy(1000);
+      if (!result.errors) {
+        normal = new BigNumber(result).dividedBy(1000);
+      } else {
+        normal = new BigNumber(1);
+      }
 
-      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatefee', [1]);
+      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [1]);
     }), map(result => {
-      const high = new BigNumber(result).dividedBy(1000);
-      const veryHigh = high.multipliedBy(1.1);
+      let high: BigNumber;
+      let veryHigh: BigNumber;
+      if (!result.errors) {
+        high = new BigNumber(result).dividedBy(1000);
+        veryHigh = high.multipliedBy(1.1);
+      } else {
+        high = new BigNumber(1);
+        veryHigh = new BigNumber(1);
+      }
 
       return {
         recommendedBtcFees: {

@@ -120,6 +120,10 @@ export class EthSpendingOperator implements SpendingOperator {
     return of(tx);
   }
 
+  calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber {
+    return new BigNumber(0);
+  }
+
   signTransaction(
     wallet: WalletBase,
     password: string|null,

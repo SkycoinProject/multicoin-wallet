@@ -160,6 +160,15 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   form: FormGroup;
   // How many coins the user can send with the selected sources.
   availableBalance = new AvailableBalanceData();
+  // If true, the balance available to be sent will also be shown in the simple form.
+  alwaysShowAvailableBalance = false;
+  // If the available balance is still being loaded.
+  loadingAvailableBalance = true;
+  // The fee that must be paid for sending all the available balance, in coins, if applicable
+  // for the current coin.
+  feeForSendingAll: BigNumber;
+  // If the user must enter a valid fee before being able to calculate the available balance.
+  validFeeNeeded = false;
   // Recommended fees obtained from the node, if the current coin needs fees to be paid.
   recommendedFees: RecommendedFees;
   // Map for getting the recommended fee for each option of the fee types control.
@@ -220,6 +229,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     } else {
       this.coinFeeType = FeeTypes.None;
     }
+
+    // Always show the available balance if the fee must be paid in coins.
+    this.alwaysShowAvailableBalance = this.coinFeeType !== FeeTypes.None;
   }
 
   ngOnInit() {
@@ -234,20 +246,30 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.addControl('gasPrice', new FormControl(''));
     this.form.addControl('gasLimit', new FormControl(''));
 
-    // If the user changes the fee, select the custom fee type.
+    // If the user changes the fee, select the custom fee type and update the available balance.
     this.fieldsSubscriptions.push(this.form.get('fee').valueChanges.subscribe(() => {
       this.form.get('feeType').setValue(5);
+      this.updateAvailableBalance();
     }));
     this.fieldsSubscriptions.push(this.form.get('gasPrice').valueChanges.subscribe(() => {
       this.form.get('ethFeeType').setValue(1);
+      this.updateAvailableBalance();
     }));
 
-    // If the user changes the fee type, change the value of the fee field.
+    // If the user changes the fee type, change the value of the fee field and update the
+    // available balance.
     this.fieldsSubscriptions.push(this.form.get('feeType').valueChanges.subscribe(() => {
       this.useSelectedFee();
+      this.updateAvailableBalance();
     }));
     this.fieldsSubscriptions.push(this.form.get('ethFeeType').valueChanges.subscribe(() => {
       this.useSelectedFee();
+      this.updateAvailableBalance();
+    }));
+
+    // Update the available balance if the gas limit is changed.
+    this.fieldsSubscriptions.push(this.form.get('gasLimit').valueChanges.subscribe(() => {
+      this.updateAvailableBalance();
     }));
 
     if (this.formData) {
@@ -280,16 +302,57 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Called when there are changes in the source selection form.
   sourceSelectionChanged() {
     this.selectedSources = this.formSourceSelection.selectedSources;
-    this.availableBalance = this.formSourceSelection.availableBalance;
     this.formMultipleDestinations.updateValuesAndValidity();
-    this.form.updateValueAndValidity();
+    this.updateAvailableBalance();
+    setTimeout(() => {
+      this.form.updateValueAndValidity();
+    });
   }
 
   // Called when there are changes in the destinations form.
   destinationsChanged() {
+    this.updateAvailableBalance();
     setTimeout(() => {
       this.form.updateValueAndValidity();
     });
+  }
+
+  // Updates the available balance. It uses the balance in the sources and the fee that must be
+  // paid for sending all the coins.
+  private updateAvailableBalance() {
+    if (this.formSourceSelection) {
+      // Get the balance available in the sources.
+      const reportedAvailable = this.formSourceSelection.availableBalance;
+      this.loadingAvailableBalance = reportedAvailable.loading;
+
+      this.validFeeNeeded = !!this.validateFee();
+
+      if (!reportedAvailable.loading && !this.validFeeNeeded) {
+        const reportedDestinations = this.formMultipleDestinations.getDestinations(false);
+
+        // Get the appropiate fee per unit.
+        let selectedFee: BigNumber;
+        if (this.coinFeeType === FeeTypes.Btc) {
+          selectedFee = new BigNumber(this.form.get('fee').value);
+        } else if (this.coinFeeType === FeeTypes.Eth) {
+          selectedFee = new BigNumber(this.form.get('gasPrice').value);
+        } else {
+          selectedFee = new BigNumber(0);
+        }
+
+        // Calculate the aproximate fee for sending the transaction and subtract it from
+        // the balance.
+        this.feeForSendingAll = this.spendingService.calculateFinalFee(
+          reportedAvailable.outputs,
+          reportedDestinations.length,
+          selectedFee,
+          new BigNumber(this.form.get('gasLimit').value),
+        );
+        reportedAvailable.availableCoins = reportedAvailable.availableCoins.minus(this.feeForSendingAll);
+
+        this.availableBalance = reportedAvailable;
+      }
+    }
   }
 
   // Starts the process for creating a transaction for previewing it.
@@ -532,13 +595,27 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   // Validates the form.
   private validateForm() {
-    if (!this.form) {
+    if (!this.form || !this.formSourceSelection) {
       return { Required: true };
+    }
+
+    const feeValidationResult = this.validateFee();
+    if (feeValidationResult) {
+      return feeValidationResult;
     }
 
     // Check the validity of the subforms.
     if (!this.formSourceSelection || !this.formSourceSelection.valid || !this.formMultipleDestinations || !this.formMultipleDestinations.valid) {
       return { Invalid: true };
+    }
+
+    return null;
+  }
+
+  // Validates the fee entered in the form.
+  private validateFee() {
+    if (!this.form || !this.form.get('fee')) {
+      return { Required: true };
     }
 
     // Validate the fee, if appropiate.

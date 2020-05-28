@@ -45,11 +45,11 @@
           </div>
           <!-- Converted values. -->
           <div class="coins-value-label">
-            <span *ngIf="price && values[i].isLessThanOrEqualTo(0)">{{ 'send.invalid-amount' | translate }}</span>
-            <span *ngIf="price && values[i].isGreaterThan(0) && selectedCurrency === doubleButtonActive.LeftButton">
+            <span *ngIf="price && values[i].isLessThan(0)">{{ 'send.invalid-amount' | translate }}</span>
+            <span *ngIf="price && values[i].isGreaterThanOrEqualTo(0) && selectedCurrency === doubleButtonActive.LeftButton">
               &#x007e; {{ values[i].toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}
             </span>
-            <span *ngIf="price && values[i].isGreaterThan(0) && selectedCurrency === doubleButtonActive.RightButton">
+            <span *ngIf="price && values[i].isGreaterThanOrEqualTo(0) && selectedCurrency === doubleButtonActive.RightButton">
               &#x007e; {{ values[i] | amount }}
             </span>
             <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins-link' | translate }})</div>

@@ -191,6 +191,10 @@ export class FiberSpendingOperator implements SpendingOperator {
     return response;
   }
 
+  calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber {
+    return new BigNumber(0);
+  }
+
   signTransaction(
     wallet: WalletBase,
     password: string|null,

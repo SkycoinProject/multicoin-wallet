@@ -250,7 +250,7 @@
     "personal-note-label": "Personal note",
     "gas-price-label": "Gas price",
     "gas-limit-label": "Gas limit",
-    "fee-label": "Fee",
+    "fee-label": "Aproximate fee",
     "fee-measure": "{{ measure }} per byte",
     "fee-low-warning": "The fee you entered is lower than recommended, the transaction could take a very long time to be confirmed.",
     "fee-high-warning": "The fee you entered is higher than recommended, the cost could be higher than desired.",
@@ -279,8 +279,11 @@
     "enter-addresses-for-outputs": "Valid addresses must be entered first",
     "enter-wallet-for-outputs-and-addresses": "A valid wallet must be selected first",
     "invalid-addresses-for-outputs": "No outputs available",
+    "loading-available": "Loading available balance...",
+    "waiting-for-available": "Waiting for a valid fee to calculate the available balance...",
     "available-funds-without-hours-msg-part1": "You can send up to",
-    "available-funds-without-hours-msg-part2": "with your current selection.",
+    "available-funds-without-hours-msg-part2": "(at least", 
+    "available-funds-without-hours-msg-part3": "must be used as transaction fee for sending all the coins).",
     "available-funds-msg-part1": "With your current selection you can send up to",
     "available-funds-msg-part2": "and",
     "available-funds-msg-part3": "(at least",
@@ -306,11 +309,11 @@
     "total-to-send": "Total:",
 
     "fees": {
-      "very-high": "Very high (next block)",
-      "high": "High (1-2 blocks)",
-      "Normal": "Normal (5+ blocks)",
-      "Low": "Low (10+ blocks)",
-      "very-Low": "Very Low (20+ blocks)",
+      "very-high": "Very high",
+      "high": "High",
+      "Normal": "Normal",
+      "Low": "Low",
+      "very-Low": "Very Low",
       "custom": "Custom"
     },
 

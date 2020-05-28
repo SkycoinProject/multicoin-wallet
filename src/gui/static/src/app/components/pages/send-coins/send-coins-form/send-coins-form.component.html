@@ -22,8 +22,8 @@
   </app-form-source-selection>
 
   <!-- Available balance box. -->
-  <div *ngIf="!showSimpleForm" class="form-field -available-msg">
-    <ng-container *ngIf="!availableBalance.loading">
+  <div *ngIf="!showSimpleForm || alwaysShowAvailableBalance" class="form-field -available-msg">
+    <ng-container *ngIf="!loadingAvailableBalance && !validFeeNeeded">
       <ng-container *ngIf="coinHasHours">
         <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
         <span class="value">
@@ -45,10 +45,17 @@
           {{ availableBalance.availableCoins | amount }}
         </span>
         <span>{{ 'send.available-funds-without-hours-msg-part2' | translate }}</span>
+        <span class="value">
+          {{ feeForSendingAll | amount }}
+        </span>
+        <span>{{ 'send.available-funds-without-hours-msg-part3' | translate }}</span>
       </ng-container>
     </ng-container>
-    <ng-container *ngIf="availableBalance.loading">
-      <span>{{ 'common.loading' | translate }}</span>
+    <ng-container *ngIf="loadingAvailableBalance">
+      <span>{{ 'send.loading-available' | translate }}</span>
+    </ng-container>
+    <ng-container *ngIf="!loadingAvailableBalance && validFeeNeeded">
+      <span>{{ 'send.waiting-for-available' | translate }}</span>
     </ng-container>
   </div>
 

@@ -525,6 +525,10 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     // Check if there are invalid values.
     const invalidInput = this.destControls.find(control => {
+      if (!control.get('address').value && !this.showSimpleForm) {
+        return true;
+      }
+
       const controlsToCheck = ['coins'];
       if (this.showHourFields) {
         controlsToCheck.push('hours');

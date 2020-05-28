@@ -13,6 +13,7 @@ import { OperationError } from '../../../../../utils/operation-error';
 import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
 import { NodeService } from '../../../../../services/node.service';
 import { CoinService } from '../../../../../services/coin.service';
+import { CoinTypes } from '../../../../../coins/coin-types';
 
 /**
  * Info about the balance which is available with the selections the user has
@@ -34,7 +35,11 @@ export class AvailableBalanceData {
    */
   minimumFee = new BigNumber(0);
   /**
-   * If the balance is still being loded. Only for the manual mode.
+   * In how many outputs the available balance is divided. Only for btc-like coins.
+   */
+  outputs = 0;
+  /**
+   * If the data is still being loded. Only for the manual mode and btc-like coins.
    */
   loading = false;
 }
@@ -145,7 +150,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     private nodeService: NodeService,
     private formBuilder: FormBuilder,
     private balanceAndOutputsService: BalanceAndOutputsService,
-    coinService: CoinService,
+    private coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.coinHasOutputs = coinService.currentCoinInmediate.coinTypeFeatures.outputs;
@@ -247,8 +252,9 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.form.get('outputs').setValue(null);
       this.loadingUnspentOutputs = false;
 
-      // Load the output list, if the form is showing a dropdown for selecting them.
-      if (wallet && this.selectionMode === SourceSelectionModes.All && this.coinHasOutputs) {
+      // Load the output list, if the form is showing a dropdown for selecting them or if
+      // using a btc-like coin (needed for calculating the fee).
+      if (wallet && (this.selectionMode === SourceSelectionModes.All || this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) && this.coinHasOutputs) {
         this.loadingUnspentOutputs = true;
         this.getOutputsSubscription = this.balanceAndOutputsService.getWalletUnspentOutputs(wallet).pipe(
           retryWhen(errors => errors.pipe(delay(4000))))
@@ -257,6 +263,8 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
               this.loadingUnspentOutputs = false;
               this.allUnspentOutputs = result;
               this.unspentOutputs = this.filterUnspentOutputs();
+
+              this.onSelectionChanged.emit();
             },
             () => this.loadingUnspentOutputs = false,
           );
@@ -394,6 +402,10 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
             response.availableHours = response.availableHours.plus(output.hours);
           }
         });
+
+        if (this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
+          response.outputs = selectedOutputs.length;
+        }
       } else {
         this.unspentOutputs.forEach(output => {
           response.availableCoins = response.availableCoins.plus(output.coins);
@@ -401,10 +413,14 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
             response.availableHours = response.availableHours.plus(output.hours);
           }
         });
+
+        if (this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
+          response.outputs = this.unspentOutputs.length;
+        }
       }
     }
 
-    if (this.selectionMode === SourceSelectionModes.Manual) {
+    if (this.selectionMode === SourceSelectionModes.Manual || this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
       response.loading = this.loadingUnspentOutputs;
     }
 
@@ -422,6 +438,10 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
             response.availableHours = response.availableHours.plus(control.hours);
           }
         });
+
+        if (this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
+          response.outputs = outputs.length;
+        }
       } else if (addresses && addresses.length > 0) {
         addresses.map(control => {
           response.availableCoins = response.availableCoins.plus(control.coins);
@@ -429,11 +449,19 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
             response.availableHours = response.availableHours.plus(control.hours);
           }
         });
+
+        if (this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
+          response.outputs = this.unspentOutputs.length;
+        }
       } else if (this.form.get('wallet').value) {
         const wallet: WalletWithBalance = this.form.get('wallet').value;
         response.availableCoins = wallet.coins;
         if (this.coinHasHours) {
           response.availableHours = wallet.hours;
+        }
+
+        if (this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
+          response.outputs = this.allUnspentOutputs.length;
         }
       }
     }

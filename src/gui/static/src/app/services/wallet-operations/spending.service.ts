@@ -178,6 +178,21 @@ export class SpendingService {
   }
 
   /**
+   * Calculates the final fee in coins that will have to be paid for sending a transaction.
+   * @param howManyInputs How many inputs the transaction will have, if applicable for
+   * the currently selected coin.
+   * @param howManyOutputs How many outputs the transaction will have, if applicable for
+   * the currently selected coin.
+   * @param feePerUnit The fee that will have to be paid per unit. The unit would be sats for
+   * Bitcoin and Gas for Ethereum.
+   * @param maxUnits Max number of units that can be spent in the transaction, if applicable for
+   * the currently selected coin.
+   */
+  calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber {
+    return this.operator.calculateFinalFee(howManyInputs, howManyOutputs, feePerUnit, maxUnits);
+  }
+
+  /**
    * Signs an unsigned transaction.
    * @param wallet Wallet which will be used to sign the transaction.
    * @param password Wallet password, if the provided walled is an encrypted software wallet.

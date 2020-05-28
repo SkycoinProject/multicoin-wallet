@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import BigNumber from 'bignumber.js';
 
 import { WalletBase } from '../wallet-operations/wallet-objects';
 import { GeneratedTransaction, Output } from '../wallet-operations/transaction-objects';
@@ -26,6 +27,8 @@ export interface SpendingOperator {
     password: string|null,
     unsigned: boolean,
     fee: string): Observable<GeneratedTransaction>;
+
+  calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber;
 
   signTransaction(
     wallet: WalletBase,
