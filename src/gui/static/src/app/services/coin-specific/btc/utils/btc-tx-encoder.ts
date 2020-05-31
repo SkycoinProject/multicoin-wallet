@@ -194,10 +194,12 @@ export class BtcTxEncoder {
     // Write the value.
     if (bytesForInputsNumber.isEqualTo(1)) {
       dataView.setUint8(currentPos, int.toNumber());
-      return currentPos + 1;  
+
+      return currentPos + 1;
     } else if (bytesForInputsNumber.isEqualTo(1)) {
       dataView.setUint16(currentPos, int.toNumber(), true);
-      return currentPos + 2;  
+
+      return currentPos + 2;
     } else {
       throw new Error('Invalid variable size int.');
     }

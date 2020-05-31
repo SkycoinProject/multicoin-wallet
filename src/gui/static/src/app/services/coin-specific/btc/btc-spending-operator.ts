@@ -3,6 +3,7 @@ import { concat, delay, retryWhen, take, mergeMap, catchError, map, filter, firs
 import { Injector } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
+import * as Base58 from 'base-x';
 
 import { HwWalletService } from '../../hw-wallet.service';
 import { StorageService, StorageType } from '../../storage.service';
@@ -14,8 +15,8 @@ import { SpendingOperator } from '../spending-operator';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { BtcApiService } from '../../api/btc-api.service';
-import { getOutputId } from './utils/btc-history-utils';
 import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { BtcInput, BtcOutput, BtcTxEncoder } from './utils/btc-tx-encoder';
 
 /**
  * Operator for SpendingService to be used with btc-like coins.
@@ -30,6 +31,9 @@ export class BtcSpendingOperator implements SpendingOperator {
   private currentCoin: Coin;
 
   private operatorsSubscription: Subscription;
+
+  // Used for decoding Base58 strings.
+  private base58Decoder = Base58('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
 
   // Services and operators used by this operator.
   private btcApiService: BtcApiService;
@@ -112,17 +116,16 @@ export class BtcSpendingOperator implements SpendingOperator {
 
     // Inputs that will be used for the transaction.
     const inputs: Output[] = [];
-    const inputsMap = new Map<string, Output>();
-    // Transaction in raw format.
-    let rawTransaction: string;
     // How many coins will be sent.
     let amountToSend = new BigNumber(0);
+    // Amount to send plus the fee.
+    let amountNeeded = new BigNumber(0);
     // How many coin the inputs have.
     let coinsInInputs = new BigNumber(0);
     // Transaction fee.
     let calculatedFee = new BigNumber(0);
 
-    response = response.pipe(mergeMap((availableOutputs: Output[]) => {
+    response = response.pipe(map((availableOutputs: Output[]) => {
       // Order the available outputs from highest to lowest according to the amount of coins.
       availableOutputs = availableOutputs.sort((a, b) => b.coins.minus(a.coins).toNumber());
 
@@ -131,104 +134,96 @@ export class BtcSpendingOperator implements SpendingOperator {
       // Start adding inputs until having the coins needed.
       for (let i = 0; i < availableOutputs.length; i++) {
         inputs.push(availableOutputs[i]);
-        inputsMap.set(availableOutputs[i].hash, availableOutputs[i]);
 
         coinsInInputs = coinsInInputs.plus(availableOutputs[i].coins);
 
         if (coinsInInputs.isGreaterThanOrEqualTo(amountToSend)) {
-          break;
+          // Add the fee to the amount of coins needed.
+          calculatedFee = this.calculateFinalFee(inputs.length, destinations.length, new BigNumber(fee), new BigNumber(0));
+          amountNeeded = amountToSend.plus(calculatedFee);
+
+          // Exit if no more coins are needed.
+          if (coinsInInputs.isGreaterThanOrEqualTo(amountNeeded)) {
+            break;
+          }
         }
       }
 
-      // Convert the inputs to the formar needed by the API.
-      const inputsForNode = [];
-      inputs.forEach(input => {
-        // BTC output hashes are saved as the transaction hash and the output number,
-        // separated by '/'.
-        const hashParts = input.hash.split('/');
-        if (hashParts.length !== 2) {
-          throw new Error('Unexpected input hash');
-        }
-
-        inputsForNode.push({
-          txid: hashParts[0],
-          vout: Number.parseInt(hashParts[1], 10),
-        });
+      // Convert the inputs to the correct object type.
+      const processedInputs: Input[] = inputs.map(input => {
+        return {
+          hash: input.hash,
+          address: input.address,
+          coins: input.coins,
+        };
       });
 
       calculatedFee = coinsInInputs;
 
-      // Convert the outputs to the formar needed by the API. The coins of each output is
-      // removed from the fee.
-      const outputsForNode = {};
+      // Convert the outputs to the format needed. The coins of each output
+      // is removed from the fee.
+      const processedOutputs: Output[] = [];
       destinations.forEach(destination => {
-        outputsForNode[destination.address] = new BigNumber(destination.coins).toNumber();
+        processedOutputs.push({
+          hash: '',
+          address: destination.address,
+          coins: new BigNumber(destination.coins),
+        });
+
         calculatedFee = calculatedFee.minus(destination.coins);
       });
 
       // Create an extra output for the remaining coins.
-      if (coinsInInputs.minus(amountToSend).isGreaterThan(0)) {
-        outputsForNode[changeAddress] = coinsInInputs.minus(amountToSend).toNumber();
-        calculatedFee = calculatedFee.minus(coinsInInputs.minus(amountToSend));
+      if (coinsInInputs.minus(amountNeeded).isGreaterThan(0)) {
+        processedOutputs.push({
+          hash: '',
+          address: changeAddress,
+          coins: coinsInInputs.minus(amountNeeded),
+        });
+
+        calculatedFee = calculatedFee.minus(coinsInInputs.minus(amountNeeded));
       }
 
-      // Create the raw transaction.
-      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'createrawtransaction', [inputsForNode, outputsForNode]);
-    }), mergeMap(generatedRawTransaction => {
-      rawTransaction = generatedRawTransaction;
-
-      // Decode the raw transaction.
-      return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'decoderawtransaction', [rawTransaction]);
-    }), map(transaction => {
       // Return an error if using a hw wallet and the transaction has too many inputs or outputs.
       if (wallet && wallet.isHardware) {
-        if (transaction.vin.length > 8) {
+        if (processedInputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
-        if (transaction.vout.length > 8) {
+        if (processedOutputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
       }
 
-      // Process the inputs returned by the node and create a known objects.
-      const processedInputs: Input[] = (transaction.vin as any[]).map(input => {
-        if (inputsMap.has(getOutputId(input.txid, input.vout))) {
-          return {
-            hash: getOutputId(input.txid, input.vout),
-            address: inputsMap.get(getOutputId(input.txid, input.vout)).address,
-            coins: inputsMap.get(getOutputId(input.txid, input.vout)).coins,
-          };
-        } else {
-          // Precaution in case of unexpected errors.
-          return {
-            hash: 'unknown',
-            address: 'unknown',
-            coins: new BigNumber(0),
-          };
-        }
-      });
-
-      // Process the rest of the node response and create a known object.
+      // Create the transaction object.
       const tx: GeneratedTransaction = {
         inputs: processedInputs,
-        outputs: (transaction.vout as any[]).map(output => {
-          return {
-            hash: getOutputId(transaction.txid, output.n),
-            address: output.scriptPubKey.addresses.join(', '),
-            coins: new BigNumber(output.value),
-          };
-        }),
+        outputs: processedOutputs,
         coinsToSend: amountToSend,
         fee: calculatedFee,
         from: senderString,
         to: destinations.map(destination => destination.address).join(', '),
         wallet: wallet,
-        encoded: rawTransaction,
+        encoded: '',
         innerHash: '',
       };
 
       return tx;
     }));
+
+    // If required, append to the response the steps needed for signing the transaction.
+    if (!unsigned) {
+      let unsignedTx: GeneratedTransaction;
+
+      response = response.pipe(mergeMap(transaction => {
+        unsignedTx = transaction;
+
+        return this.signTransaction(wallet, null, transaction);
+      })).pipe(map(encodedSignedTx => {
+        unsignedTx.encoded = encodedSignedTx;
+
+        return unsignedTx;
+      }));
+    }
 
     return response;
   }
@@ -249,12 +244,120 @@ export class BtcSpendingOperator implements SpendingOperator {
     password: string|null,
     transaction: GeneratedTransaction,
     rawTransactionString = ''): Observable<string> {
-      return null;
+
+    const inputList = transaction.inputs.map(input => input.hash);
+
+    // Get the original info about each input, to known how each one has to be signed.
+    return this.recursivelyGetOriginalOutputsInfo(inputList).pipe(map(rawInputs => {
+      // Convert the inputs to the format the encoder needs.
+      const inputs: BtcInput[] = [];
+      transaction.inputs.forEach((input, i) => {
+        const processedInput = new BtcInput();
+
+        // Get the transaction id and output number.
+        const inputIdParts = input.hash.split('/');
+        if (inputIdParts.length !== 2) {
+          throw new Error('invalid output.');
+        }
+
+        processedInput.transaction = inputIdParts[0];
+        processedInput.vout = Number.parseInt(inputIdParts[1], 10);
+        // Add the script needed to unlock the input.
+        if (rawInputs.has(input.hash)) {
+          const rawInput = rawInputs.get(input.hash);
+
+          if (rawInput.scriptPubKey && rawInput.scriptPubKey.type === 'pubkeyhash') {
+            processedInput.script = this.getP2pkhScriptSig(i);
+          } else {
+            processedInput.script = '';
+          }
+        } else {
+          processedInput.script = '';
+        }
+
+        inputs.push(processedInput);
+      });
+
+      // Needed for converting the coin amounts to sats.
+      const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
+
+      // Convert the outputs to the format the encoder needs.
+      const outputs: BtcOutput[] = [];
+      transaction.outputs.forEach(output => {
+        const processedOutput = new BtcOutput();
+
+        processedOutput.satsValue = output.coins.multipliedBy(decimalsCorrector);
+        processedOutput.script = this.createP2pkhOutputScript(output.address);
+
+        outputs.push(processedOutput);
+      });
+
+      // Encode the transaction and return it.
+      return BtcTxEncoder.encode(inputs, outputs);
+    }));
+  }
+
+  /**
+   * Creates a P2PKH script for an output.
+   * @param address Address that will own the output.
+   */
+  private createP2pkhOutputScript(address: string) {
+    // Decode the address.
+    const hexAddress = this.base58Decoder.decode(address).toString('hex') as string;
+    // Get the public key hash.
+    const addressPkh = hexAddress.substr(2, hexAddress.length - 10);
+    // Get the size, in bytes, of the public key hash.
+    const addressPkhLength = new BigNumber(addressPkh.length).dividedBy(2).decimalPlaces(0, BigNumber.ROUND_CEIL).toString(16);
+
+    return '76a9' + addressPkhLength + addressPkh + '88ac';
+  }
+
+  /**
+   * Temporal function, only for testing, for getting the script for unlocking an input. For
+   * using it, you must add the script inside the code.
+   * @param index Index of the input inside the transaction that is being created.
+   */
+  private getP2pkhScriptSig(index: number) {
+    return '';
+  }
+
+  /**
+   * Gets the original data inside the node about the outputs in the provided list.
+   * @param outputs IDs of the outputs to check. The list will be altered by the function.
+   * @param currentElements Already obtained outputs. For internal use.
+   * @returns Map with the data, accessible via the provided output IDs.
+   */
+  private recursivelyGetOriginalOutputsInfo(outputs: string[], currentElements = new Map<string, any>()): Observable<Map<string, any>> {
+    if (outputs.length === 0) {
+      return of(currentElements);
+    }
+
+    // Get the transaction and number the last output.
+    const currentOutputId = outputs[outputs.length - 1];
+    const outputIdParts = currentOutputId.split('/');
+    if (outputIdParts.length !== 2) {
+      throw new Error('invalid output.');
+    }
+
+    // Get the data of the last output.
+    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'gettxout', [outputIdParts[0], Number.parseInt(outputIdParts[1], 10)]).pipe(mergeMap(response => {
+      // Add the output to the map.
+      currentElements.set(currentOutputId, response);
+
+      outputs.pop();
+
+      if (outputs.length === 0) {
+        return of(currentElements);
+      }
+
+      // Continue to the next step.
+      return this.recursivelyGetOriginalOutputsInfo(outputs, currentElements);
+    }));
   }
 
   injectTransaction(encodedTx: string, note: string|null): Observable<boolean> {
     // Send the transaction.
-    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'sendrawtransaction', [encodedTx, false]).pipe(
+    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'sendrawtransaction', [encodedTx, 0]).pipe(
       mergeMap(txId => {
         // Refresh the balance after a small delay.
         setTimeout(() => this.balanceAndOutputsOperator.refreshBalance(), 200);
