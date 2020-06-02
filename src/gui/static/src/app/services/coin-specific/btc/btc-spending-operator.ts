@@ -3,7 +3,6 @@ import { concat, delay, retryWhen, take, mergeMap, catchError, map, filter, firs
 import { Injector } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
-import * as Base58 from 'base-x';
 
 import { HwWalletService } from '../../hw-wallet.service';
 import { StorageService, StorageType } from '../../storage.service';
@@ -31,9 +30,6 @@ export class BtcSpendingOperator implements SpendingOperator {
   private currentCoin: Coin;
 
   private operatorsSubscription: Subscription;
-
-  // Used for decoding Base58 strings.
-  private base58Decoder = Base58('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
 
   // Services and operators used by this operator.
   private btcApiService: BtcApiService;
@@ -99,9 +95,32 @@ export class BtcSpendingOperator implements SpendingOperator {
 
     let response: Observable<any>;
 
+    // Get the locking scripts for the destination addresses.
+    const addressesToCheck = destinations.map(destination => destination.address);
+    let destinationLockingScripts: Map<string, string>;
+    response = this.recursivelyGetAddressesScripts(addressesToCheck).pipe(map(result => {
+      // If it was not possible to get the script for an address, the address is not valid.
+      const invalidAddresses: string[] = [];
+      result.forEach((val, key) => {
+        if (!val) {
+          invalidAddresses.push(key);
+        }
+      });
+
+      // If there are invalid addresses, show an error.
+      if (invalidAddresses.length > 0) {
+        let errorString = this.translate.instant('send.invalid-address' + (invalidAddresses.length > 1 ? 'es' : ''));
+        errorString += invalidAddresses.join(', ');
+        throw new Error(errorString);
+      }
+
+      // Save the scripts in a map.
+      destinationLockingScripts = result;
+    }));
+
     // Get a list with available outputs for the transaction.
     if (unspents) {
-      response = of(unspents);
+      response = response.pipe(map(() => unspents));
     } else {
       // Get all the outputs of the provided wallet or address list.
       let AddressesToCheck: string[] = [];
@@ -111,7 +130,7 @@ export class BtcSpendingOperator implements SpendingOperator {
         wallet.addresses.forEach(address => AddressesToCheck.push(address.address));
       }
 
-      response = this.balanceAndOutputsOperator.getOutputs(AddressesToCheck.join(','));
+      response = response.pipe(mergeMap(() => this.balanceAndOutputsOperator.getOutputs(AddressesToCheck.join(','))));
     }
 
     // Inputs that will be used for the transaction.
@@ -168,6 +187,7 @@ export class BtcSpendingOperator implements SpendingOperator {
           hash: '',
           address: destination.address,
           coins: new BigNumber(destination.coins),
+          lockingScript: destinationLockingScripts.get(destination.address),
         });
 
         calculatedFee = calculatedFee.minus(destination.coins);
@@ -228,6 +248,37 @@ export class BtcSpendingOperator implements SpendingOperator {
     return response;
   }
 
+  /**
+   * Gets the locking scripts needed to send coins to the provided addresses.
+   * @param addresses Addresses to check. The list will be altered by the function.
+   * @param currentElements Already obtained data. For internal use.
+   * @returns Map with the scripts of each address. If an address is invalid, the script is null.
+   */
+  private recursivelyGetAddressesScripts(addresses: string[], currentElements = new Map<string, string>()): Observable<Map<string, string>> {
+    if (addresses.length === 0) {
+      return of(currentElements);
+    }
+
+    // Get the data of the last address.
+    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'validateaddress', [addresses[addresses.length - 1]]).pipe(mergeMap(response => {
+      if (!response.isvalid || !response.scriptPubKey) {
+        // Do not accept invalid addresses.
+        currentElements.set(addresses[addresses.length - 1], null);
+      } else {
+        currentElements.set(addresses[addresses.length - 1], response.scriptPubKey);
+      }
+
+      addresses.pop();
+
+      if (addresses.length === 0) {
+        return of(currentElements);
+      }
+
+      // Continue to the next step.
+      return this.recursivelyGetAddressesScripts(addresses, currentElements);
+    }));
+  }
+
   calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber {
     // Maultiply the inputs and outputs by their aproximate size.
     const inputsSize = new BigNumber(howManyInputs).multipliedBy(180);
@@ -286,8 +337,12 @@ export class BtcSpendingOperator implements SpendingOperator {
       transaction.outputs.forEach(output => {
         const processedOutput = new BtcOutput();
 
+        if (!output.lockingScript) {
+          throw new Error('Locking script not found.');
+        }
+
         processedOutput.satsValue = output.coins.multipliedBy(decimalsCorrector);
-        processedOutput.script = this.createP2pkhOutputScript(output.address);
+        processedOutput.script = output.lockingScript;
 
         outputs.push(processedOutput);
       });
@@ -295,21 +350,6 @@ export class BtcSpendingOperator implements SpendingOperator {
       // Encode the transaction and return it.
       return BtcTxEncoder.encode(inputs, outputs);
     }));
-  }
-
-  /**
-   * Creates a P2PKH script for an output.
-   * @param address Address that will own the output.
-   */
-  private createP2pkhOutputScript(address: string) {
-    // Decode the address.
-    const hexAddress = this.base58Decoder.decode(address).toString('hex') as string;
-    // Get the public key hash.
-    const addressPkh = hexAddress.substr(2, hexAddress.length - 10);
-    // Get the size, in bytes, of the public key hash.
-    const addressPkhLength = new BigNumber(addressPkh.length).dividedBy(2).decimalPlaces(0, BigNumber.ROUND_CEIL).toString(16);
-
-    return '76a9' + addressPkhLength + addressPkh + '88ac';
   }
 
   /**

@@ -24,6 +24,11 @@ export interface Output {
   coins: BigNumber;
   hours?: BigNumber;
   confirmations?: number;
+  /**
+   * Locking script for Btc-like coins. NOTE: a value is assigned to this var only when creating
+   * a transaction while sending coins and is for internal use of the spending operator.
+   */
+  lockingScript?: string;
 }
 
 /**

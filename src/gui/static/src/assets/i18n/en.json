@@ -307,6 +307,8 @@
     "saving-note-error": "The transaction was successfully sent, but it was not possible to save the note.",
     "sent": "Transaction successfully sent.",
     "total-to-send": "Total:",
+    "invalid-address": "Invalid destination address found: ",
+    "invalid-addresses": "Invalid destination addresses found: ",
 
     "fees": {
       "very-high": "Very high",
