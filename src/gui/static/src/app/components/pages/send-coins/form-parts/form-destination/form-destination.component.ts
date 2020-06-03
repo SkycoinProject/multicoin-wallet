@@ -502,8 +502,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
       // Clean the values values.
       if (cleanNumbers) {
-        destination.coins = new BigNumber(destination.coins).toString();
-        destination.originalAmount = new BigNumber(destination.originalAmount).toString();
+        destination.coins = new BigNumber(destination.coins).toString(10);
+        destination.originalAmount = new BigNumber(destination.originalAmount).toString(10);
       }
 
       if (this.showHourFields) {

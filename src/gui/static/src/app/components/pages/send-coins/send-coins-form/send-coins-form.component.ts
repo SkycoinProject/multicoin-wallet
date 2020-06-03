@@ -484,6 +484,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         this.form.get('gasPrice').setValue(this.recommendedFees.recommendedEthFees.gasPrice.decimalPlaces(this.maxFeeDecimals).toString(10), { emitEvent: false });
       }
     }
+
+    this.updateAvailableBalance();
   }
 
   // Connects to the node to get the recommended fees. If the current coin uses coin hours,

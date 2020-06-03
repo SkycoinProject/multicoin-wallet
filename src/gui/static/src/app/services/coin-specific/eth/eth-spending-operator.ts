@@ -14,6 +14,8 @@ import { SpendingOperator } from '../spending-operator';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { EthApiService } from '../../api/eth-api.service';
+import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
+import { EthTransactionData, EthTxEncoder } from './utils/eth-tx-encoder';
 
 /**
  * Operator for SpendingService to be used with eth-like coins.
@@ -76,6 +78,14 @@ export class EthSpendingOperator implements SpendingOperator {
       addresses = [addresses[0]];
     }
 
+    // Get the gas price (first part of the fee string) and max gas (second part).
+    const feeParts = fee.split('/');
+    if (feeParts.length !== 2) {
+      throw new Error('Invalid fee format.');
+    }
+    // Aproximate transaction fee.
+    const calculatedFee = this.calculateFinalFee(0, 0, new BigNumber(feeParts[0]), new BigNumber(feeParts[1]));
+
     // Create a string indicating where the coins come from.
     let senderString = '';
     if (wallet) {
@@ -109,19 +119,58 @@ export class EthSpendingOperator implements SpendingOperator {
       inputs: txInputs,
       outputs: txOutputs,
       coinsToSend: new BigNumber(destinations[0].coins),
-      fee: new BigNumber(0),
+      fee: calculatedFee,
       from: senderString,
       to: destinations[0].address,
       wallet: wallet,
-      encoded: null,
+      encoded: '',
       innerHash: '',
     };
 
-    return of(tx);
+    // Get how many transactions the address has, for using it as nonce.
+    let response = this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_getTransactionCount', [addresses[0], 'pending']).pipe(map((result: string) => {
+      // Needed for calculating the value in wei.
+      const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as EthCoinConfig).decimals);
+
+      // Encode the transaction.
+      const txForEncoding: EthTransactionData = {
+        data: '',
+        destinationAddress: destinations[0].address,
+        value: new BigNumber(destinations[0].coins).multipliedBy(decimalsCorrector),
+        gasPriceInWei: new BigNumber(feeParts[0]).multipliedBy(1000000000),
+        gasLimit: new BigNumber(feeParts[1]),
+        nonce: new BigNumber(result.substr(2), 16),
+        chainId: new BigNumber((this.currentCoin.config as EthCoinConfig).chainId),
+      };
+      tx.encoded = EthTxEncoder.encodeUnsigned(txForEncoding);
+
+      return tx;
+    }));
+
+    // If required, append to the response the steps needed for signing the transaction.
+    if (!unsigned) {
+      let unsignedTx: GeneratedTransaction;
+
+      response = response.pipe(mergeMap(transaction => {
+        unsignedTx = transaction;
+
+        return this.signTransaction(wallet, null, transaction);
+      })).pipe(map(encodedSignedTx => {
+        unsignedTx.encoded = encodedSignedTx;
+
+        return unsignedTx;
+      }));
+    }
+
+    return response;
   }
 
   calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber {
-    return new BigNumber(0);
+    // Needed for returning the value in coins, not wei.
+    const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as EthCoinConfig).decimals);
+
+    // feePerUnit is in gwei, so it has to be multiplied by 1000000000.
+    return maxUnits.multipliedBy(feePerUnit.multipliedBy(1000000000)).dividedBy(decimalsCorrector);
   }
 
   signTransaction(
@@ -129,11 +178,29 @@ export class EthSpendingOperator implements SpendingOperator {
     password: string|null,
     transaction: GeneratedTransaction,
     rawTransactionString = ''): Observable<string> {
-      return null;
+
+    const tx = rawTransactionString ? rawTransactionString : transaction.encoded;
+
+    // Get the test signature.
+    const signature = this.getSignature();
+    const r = signature.substr(0, 64);
+    const s = signature.substr(64);
+
+    return of(EthTxEncoder.addSignatureToRawTx(tx, new BigNumber((this.currentCoin.config as EthCoinConfig).chainId), r, s, 0));
+  }
+
+  /**
+   * Temporal function, only for testing, for getting a signature for signing a transaction. For
+   * using it, you must add the signature inside the code.
+   */
+  private getSignature() {
+    return '13b0dbb70d09a3665ec693aec1b1b1a3b2aaefdf3c57f963a0229c83d1883c386b2171092d7e8f3d0087d01832e389392223993e0d14440ad6f0295f8e5e219d';
   }
 
   injectTransaction(encodedTx: string, note: string|null): Observable<boolean> {
-    return null;
+    return this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_sendRawTransaction', [encodedTx]).pipe(map(() => {
+      return true;
+    }));
   }
 
   getCurrentRecommendedFees(): Observable<RecommendedFees> {
