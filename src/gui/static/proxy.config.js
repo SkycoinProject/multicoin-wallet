@@ -21,6 +21,12 @@ const PROXY_CONFIG = {
     "changeOrigin": true,
     pathRewrite: {'^/local-btc' : ''}
   },
+  "/local-eth": {
+    "target": "http://127.0.0.1:8545/",
+    "logLevel": "debug",
+    "changeOrigin": true,
+    pathRewrite: {'^/local-eth' : ''}
+  },
   "/local-blockbook": {
     "target": "http://127.0.0.1:9130/",
     "logLevel": "debug",

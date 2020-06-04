@@ -107,7 +107,7 @@
               </span>
             </div>
           </div>
-          <div class="-data">
+          <div class="-data" *ngIf="!input.coins.isEqualTo(0)">
             <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins | amount:true:'first' }}
           </div>
           <div class="-data" *ngIf="coinHasHours">

@@ -8,8 +8,8 @@ import { Output } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
-import { EthApiService } from '../../api/eth-api.service';
 import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**
  * Balance of a wallet, for internal use.
@@ -63,7 +63,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
   /**
    * After the service retrieves the balance of each wallet, the balance returned
-   * by the node for each wallet is saved here, accessible via the wallet id.
+   * by the backend for each wallet is saved here, accessible via the wallet id.
    */
   private savedBalanceData = new Map<string, WalletBalance>();
   /**
@@ -80,15 +80,15 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   private currentCoin: Coin;
 
   // Services and operators used by this operator.
-  private ethApiService: EthApiService;
+  private blockbookApiService: BlockbookApiService;
   private ngZone: NgZone;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.ethApiService = injector.get(EthApiService);
+    this.blockbookApiService = injector.get(BlockbookApiService);
     this.ngZone = injector.get(NgZone);
 
-    // Intervals for updating the data must be longer if connecting to a remote node.
+    // Intervals for updating the data must be longer if connecting to a remote backend.
     if (!currentCoin.isLocal) {
       this.updatePeriod = 600 * 1000;
       this.errorUpdatePeriod = 60 * 1000;
@@ -169,10 +169,10 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param delayMs Delay before starting to update the balance.
    * @param updateWalletsFirst If true, after the delay the function will inmediatelly update
    * the wallet list with the data on savedWalletsList and using the last balance data obtained
-   * from the node (or will set all the wallets to 0, if no data exists) and only after that will
-   * try to get the balance data from the node and update the wallet list again. This allows to
-   * inmediatelly reflect changes made to the wallet list, without having to wait for the node
-   * to respond.
+   * from the backend (or will set all the wallets to 0, if no data exists) and only after that
+   * will try to get the balance data from the backend and update the wallet list again. This
+   * allows to inmediatelly reflect changes made to the wallet list, without having to wait for
+   * the backend to respond.
    */
   private startDataRefreshSubscription(delayMs: number, updateWalletsFirst: boolean) {
     if (this.dataRefreshSubscription) {
@@ -225,7 +225,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param wallets The current wallet lists.
    * @param forceQuickCompleteArrayUpdate If true, the balance data saved on savedBalanceData
    * will be used to set the balance of the wallet list, instead of getting the data from
-   * the node. If false, the balance data is obtained from the node and savedBalanceData is
+   * the backend. If false, the balance data is obtained from the backend and savedBalanceData is
    * updated.
    */
   private refreshBalances(wallets: WalletBase[], forceQuickCompleteArrayUpdate: boolean): Observable<any> {
@@ -306,7 +306,8 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       if (!forceQuickCompleteArrayUpdate) {
         this.savedBalanceData = this.temporalSavedBalanceData;
         if (!this.firstFullUpdateMadeSubject.value) {
-          // Inform that the service already obtained the balance from the node for the first time.
+          // Inform that the service already obtained the balance from the backend for the
+          // first time.
           this.ngZone.run(() => {
             this.firstFullUpdateMadeSubject.next(true);
           });
@@ -316,11 +317,11 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   }
 
   /**
-   * Gets from the node the balance of a wallet and uses the retrieved data to update an instamce
-   * of WalletWithBalance. It also saves the retrieved data on temporalSavedBalanceData.
+   * Gets from the backend the balance of a wallet and uses the retrieved data to update an
+   * instamce of WalletWithBalance. It also saves the retrieved data on temporalSavedBalanceData.
    * @param wallet Wallet to update.
    * @param useSavedBalanceData If true, the balance data saved on savedBalanceData
-   * will be used instead of retrieving the data from the node.
+   * will be used instead of retrieving the data from the backend.
    * @returns True if there are one or more pending transactions that will affect the balance of
    * the provided walled, false otherwise. If useSavedBalanceData is true, the value of
    * hasPendingTransactionsSubject will be returned.
@@ -329,31 +330,19 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     let query: Observable<WalletBalance>;
 
     if (!useSavedBalanceData) {
-      // Get the number of the lastest block.
-      query = this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_blockNumber').pipe(mergeMap(result => {
-        const currentBlockNumber = new BigNumber((result as string).substr(2), 16).toNumber();
-        const addresses = wallet.addresses.map(a => a.address);
+      // Get the balance of all addresses.
+      const addresses = wallet.addresses.map(a => a.address);
+      query = this.recursivelyGetBalances(addresses).pipe(mergeMap(result => {
+        const response = new WalletBalance();
 
-        // Get the balance of all addresses.
-        return this.recursivelyGetBalances(addresses, currentBlockNumber);
-      }), map(result => {
-        const balance = new WalletBalance();
-
-        // Add the balances.
-        wallet.addresses.forEach(address => {
-          let addressBalance: AddressBalance;
-          if (result.has(address.address)) {
-            addressBalance = result.get(address.address);
-          } else {
-            addressBalance = new AddressBalance();
-          }
-
-          balance.addresses.set(address.address, addressBalance);
-          balance.current = balance.current.plus(addressBalance.current);
-          balance.predicted = balance.predicted.plus(addressBalance.predicted);
+        result.forEach((addressBalance, address) => {
+          // Add the values to the balance of the wallet.
+          response.addresses.set(address, addressBalance);
+          response.current = response.current.plus(addressBalance.current);
+          response.predicted = response.predicted.plus(addressBalance.predicted);
         });
 
-        return balance;
+        return of(response);
       }));
     } else {
       // Get the balance from the saved data, if possible.
@@ -392,40 +381,35 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param currentElements Already obtained balances. For internal use.
    * @returns Map with the balances of the provided address list.
    */
-  private recursivelyGetBalances(addresses: string[], currentBlockNumber: number, currentElements = new Map<string, AddressBalance>()): Observable<Map<string, AddressBalance>> {
-    // Address to check during this pass.
-    const currentAddress = addresses[addresses.length - 1];
-    // Value which will allow to get the value in coins, instead of wei.
+  private recursivelyGetBalances(addresses: string[], currentElements = new Map<string, AddressBalance>()): Observable<Map<string, AddressBalance>> {
+    if (addresses.length === 0) {
+      return of(currentElements);
+    }
+
+    // Value which will allow to get the balances in coins, instead of wei.
     const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as EthCoinConfig).decimals);
-    let predictedBalance: BigNumber;
 
-    // Get the predicted balance.
-    return this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_getBalance', [currentAddress, 'pending']).pipe(mergeMap(response => {
-      predictedBalance = new BigNumber((response as string).substr(2), 16).dividedBy(decimalsCorrector);
+    // Get the balance of the address.
+    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'basic'})
+      .pipe(mergeMap((response) => {
+        // Calculate the balances and create the balance object.
+        const balance = response.balance ? new BigNumber(response.balance).dividedBy(decimalsCorrector) : new BigNumber(0);
+        const unconfirmed = response.unconfirmedBalance ? new BigNumber(response.unconfirmedBalance).dividedBy(decimalsCorrector) : new BigNumber(0);
+        const predicted = balance.plus(unconfirmed);
+        currentElements.set(addresses[addresses.length - 1], {
+          current: balance,
+          predicted: predicted,
+        });
 
-      let blockForLastConfirmedBalance = new BigNumber(currentBlockNumber).minus(this.currentCoin.confirmationsNeeded - 1);
-      if (blockForLastConfirmedBalance.isLessThan(0)) {
-        blockForLastConfirmedBalance = new BigNumber(0);
-      }
-
-      // Get the balance some blocks before, to get the confirmed balance.
-      return this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_getBalance', [currentAddress, '0x' + blockForLastConfirmedBalance.toString(16)]);
-    }), mergeMap(response => {
-      // Save the balance.
-      currentElements.set(currentAddress, {
-        current: new BigNumber((response as string).substr(2), 16).dividedBy(decimalsCorrector),
-        predicted: predictedBalance,
-      });
-
-      // Go to the next address, if there are more addresses.
-      if (addresses.length > 1) {
         addresses.pop();
 
-        return this.recursivelyGetBalances(addresses, currentBlockNumber, currentElements);
-      }
+        if (addresses.length === 0) {
+          return of(currentElements);
+        }
 
-      return of(currentElements);
-    }));
+        // Continue to the next step.
+        return this.recursivelyGetBalances(addresses, currentElements);
+      }));
   }
 
   /**

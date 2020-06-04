@@ -6,7 +6,7 @@ import { Injector } from '@angular/core';
 import { NodeOperator } from '../node-operator';
 import { Coin } from '../../../coins/coin';
 import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
-import { EthApiService } from '../../api/eth-api.service';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**
  * Operator for NodeService to be used with eth-like coins.
@@ -38,13 +38,13 @@ export class EthNodeOperator implements NodeOperator {
   private currentCoin: Coin;
 
   // Services used by this operator.
-  private ethApiService: EthApiService;
+  private blockbookApiService: BlockbookApiService;
 
   private basicInfoSubscription: Subscription;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
-    this.ethApiService = injector.get(EthApiService);
+    this.blockbookApiService = injector.get(BlockbookApiService);
 
     this.currentCoin = currentCoin;
 
@@ -69,21 +69,9 @@ export class EthNodeOperator implements NodeOperator {
 
     this.basicInfoSubscription = of(1).pipe(
       delay(delayMs),
-      mergeMap(() => this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'web3_clientVersion')),
+      mergeMap(() => this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api')),
     ).subscribe(response => {
-      // Get the version parts.
-      const parts = (response as string).split('/');
-      if (parts.length >= 2) {
-        // Use the node name and version only.
-        this.nodeVersionInternal = parts[0] + '/' + parts[1];
-      } else {
-        // If the format is unknown, limit the text to 15 characters.
-        if ((response as string).length < 15) {
-          this.nodeVersionInternal = response;
-        } else {
-          this.nodeVersionInternal = (response as string).substr(0, 12) + '...';
-        }
-      }
+      this.nodeVersionInternal = response.backend.version;
 
       this.remoteNodeDataUpdatedInternal.next(true);
     }, () => {

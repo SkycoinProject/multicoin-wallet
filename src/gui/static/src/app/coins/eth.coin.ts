@@ -6,7 +6,8 @@ export class EthCoin extends Coin {
   coinType = CoinTypes.ETH;
   devOnly = true;
   isLocal = false;
-  nodeUrl = 'http://localhost:8545';
+  nodeUrl = '/local-eth';
+  indexerUrl = '/local-blockbook';
   coinName = 'Ethereum';
   coinSymbol = 'ETH';
   feePaymentCoinUnit = 'Gwei';
