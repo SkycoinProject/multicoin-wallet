@@ -6,4 +6,5 @@ export class FiberFeatures implements CoinTypeFeatures {
   networkingStats = true;
   showAllPendingTransactions = true;
   coinHours = true;
+  limitedSendingOptions = false;
 }

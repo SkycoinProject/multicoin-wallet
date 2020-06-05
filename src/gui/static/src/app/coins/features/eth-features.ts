@@ -6,4 +6,5 @@ export class EthFeatures implements CoinTypeFeatures {
   networkingStats = false;
   showAllPendingTransactions = false;
   coinHours = false;
+  limitedSendingOptions = true;
 }

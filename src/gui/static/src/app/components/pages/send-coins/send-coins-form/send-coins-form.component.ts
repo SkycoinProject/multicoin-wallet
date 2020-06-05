@@ -72,10 +72,9 @@ export interface FormData {
   destinations: Destination[];
   hoursSelection: HoursDistributionOptions;
   /**
-   * If true, the hours must be distributed automatically. If false, the user must manually
-   * enter the hours for each destination.
+   * If true, the options for selecting the auto hours distribution factor are shown.
    */
-  autoOptions: boolean;
+  showAutoHourDistributionOptions: boolean;
   /**
    * All unspent outputs obtained from the node, not the selected ones.
    */
@@ -180,7 +179,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // hours.
   autoHours = true;
   // If true, the options for selecting the auto hours distribution factor are shown.
-  autoOptions = false;
+  showAutoHourDistributionOptions = false;
+  // If the UI must show the options for setting the fee.
+  showFeeOptions = false;
   // Factor used for automatically distributing the coins.
   autoShareValue = this.defaultAutoShareValue;
   // If true, the form is shown deactivated.
@@ -193,6 +194,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   feePaymentCoinUnit = '';
   // Type of the fees, in coins, that must be paid for sending transactions.
   coinFeeType: FeeTypes;
+  // If the coin only allows to send transactions to a single destination and does not allow
+  // to select the change address.
+  limitedSendingOptions = false;
+  // If true, the form will show the option for creating unsigned transactions.
+  showUsignedOptions = false;
 
   feeTypes = FeeTypes;
 
@@ -218,6 +224,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.feePaymentCoinUnit = coinService.currentCoinInmediate.feePaymentCoinUnit;
+    this.limitedSendingOptions = coinService.currentCoinInmediate.coinTypeFeatures.limitedSendingOptions;
+    this.showUsignedOptions = coinService.currentCoinInmediate.coinTypeFeatures.softwareWallets;
+
     if (!this.coinHasHours) {
       if (coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
         this.coinFeeType = FeeTypes.Btc;
@@ -449,15 +458,19 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  toggleFeeOptions() {
+    this.showFeeOptions = !this.showFeeOptions;
+  }
+
   // Shows or hides the hours distribution options.
-  toggleOptions(event) {
+  toggleAutoHourDistributionOptions(event) {
     event.stopPropagation();
     event.preventDefault();
 
     // Resets the hours distribution options.
     this.autoShareValue = this.defaultAutoShareValue;
 
-    this.autoOptions = !this.autoOptions;
+    this.showAutoHourDistributionOptions = !this.showAutoHourDistributionOptions;
   }
 
   // Activates/deactivates the option for automatic hours distribution.
@@ -466,7 +479,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.formMultipleDestinations.updateValuesAndValidity();
 
     if (!this.autoHours) {
-      this.autoOptions = false;
+      this.showAutoHourDistributionOptions = false;
     }
   }
 
@@ -578,7 +591,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.autoHours = false;
     }
 
-    this.autoOptions = this.formData.form.autoOptions;
+    this.showAutoHourDistributionOptions = this.formData.form.showAutoHourDistributionOptions;
 
     if (this.formData.form.recommendedFees) {
       // If the data already includes recommended fees, use them and update the fee type.
@@ -878,7 +891,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             changeAddress: this.form.get('changeAddress').value,
             destinations: destinations,
             hoursSelection: this.hoursSelection,
-            autoOptions: this.autoOptions,
+            showAutoHourDistributionOptions: this.showAutoHourDistributionOptions,
             allUnspentOutputs: this.formSourceSelection.unspentOutputsList,
             outputs: this.selectedSources.unspentOutputs,
             currency: this.formMultipleDestinations.currentlySelectedCurrency,
@@ -913,7 +926,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.get('changeAddress').setValue('');
     this.form.get('note').setValue('');
     this.autoHours = true;
-    this.autoOptions = false;
+    this.showAutoHourDistributionOptions = false;
     this.autoShareValue = this.defaultAutoShareValue;
   }
 

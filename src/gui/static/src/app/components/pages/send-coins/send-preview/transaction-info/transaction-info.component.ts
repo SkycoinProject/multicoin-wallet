@@ -11,6 +11,7 @@ import { WalletsAndAddressesService } from '../../../../../services/wallet-opera
 import { getTransactionIconName } from '../../../../../utils/history-utils';
 import { WalletBase } from '../../../../../services/wallet-operations/wallet-objects';
 import { CoinService } from '../../../../../services/coin.service';
+import { CoinTypes } from '../../../../../coins/coin-types';
 
 /**
  * Allows to view the details of a transaction which is about to be sent or a transaction
@@ -38,6 +39,8 @@ export class TransactionInfoComponent implements OnDestroy {
   coinHasHours = false;
   // How many confirmations a transaction must have to be considered fully confirmed.
   confirmationsNeeded = 0;
+  // If the currently selected coin uses gas for the fee calculation.
+  currentCoinUsesGas = false;
 
   oldTransactionTypes = OldTransactionTypes;
 
@@ -53,6 +56,7 @@ export class TransactionInfoComponent implements OnDestroy {
 
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
+    this.currentCoinUsesGas = coinService.currentCoinInmediate.coinType === CoinTypes.ETH;
 
     // Get the list of internal addresses, to be able to identify them on the UI.
     walletsAndAddressesService.currentWallets.pipe(first()).subscribe(wallets => {

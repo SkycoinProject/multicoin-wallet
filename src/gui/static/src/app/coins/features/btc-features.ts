@@ -6,4 +6,5 @@ export class BtcFeatures implements CoinTypeFeatures {
   networkingStats = false;
   showAllPendingTransactions = false;
   coinHours = false;
+  limitedSendingOptions = false;
 }

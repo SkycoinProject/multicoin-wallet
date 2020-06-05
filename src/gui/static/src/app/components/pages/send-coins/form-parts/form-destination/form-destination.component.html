@@ -8,8 +8,8 @@
   <div class="form-field">
     <!-- Label. -->
     <label for="destination" class="destinations-label">
-      {{ (!showSimpleForm ? 'send.destinations-label' : 'send.amount-label') | translate }}
-      <mat-icon class="help-icon" *ngIf="!showSimpleForm" [matTooltip]="('send.destinations-help' + (!this.showHourFields ? '1' : '2')) | translate">help</mat-icon>
+      {{ destinationsLabel | translate }}
+      <mat-icon class="help-icon" *ngIf="!showSimpleForm" [matTooltip]="destinationsHelp | translate">help</mat-icon>
     </label>
     <!-- Currency selector. -->
     <div class="coin-selector-container" *ngIf="price" [ngClass]="{ 'element-disabled': busy }">
@@ -24,7 +24,7 @@
 
     <!-- Bulk send button. -->
     <app-arrow-link
-      *ngIf="!showSimpleForm"
+      *ngIf="!showSimpleForm && !limitedSendingOptions"
       [text]="'send.bulk-send.title'"
       (pressed)="requestBulkSend()"
       [ngClass]="{'element-disabled' : busy}">
@@ -34,11 +34,11 @@
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
         <!-- Address. -->
-        <div *ngIf="!showSimpleForm" [ngClass]="{'col-lg-5 col-md-4': coinHasHours, 'col-md-7': !coinHasHours}">
+        <div *ngIf="!showSimpleForm" [ngClass]="{'col-lg-5 col-md-4': showHourFields, 'col-md-7': !showHourFields && !limitedSendingOptions, 'col-md-8': !showHourFields && limitedSendingOptions}">
           <input formControlName="address" [id]="i === 0 ? 'destination' : 'address' + i" [attr.disabled]="busy ? 'true' : null">
         </div>
         <!-- Coins. Only part of the group shown on the simple form. -->
-        <div [ngClass]="{'col-md-3': !showSimpleForm && coinHasHours, 'col-md-4': !showSimpleForm && !coinHasHours, 'col-md-12': showSimpleForm}">
+        <div [ngClass]="{'col-md-3': !showSimpleForm && showHourFields, 'col-md-4': !showSimpleForm && !showHourFields, 'col-md-12': showSimpleForm}">
           <div class="-input-addon">
             <input formControlName="coins" [attr.disabled]="busy ? 'true' : null">
             <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? ('coinSymbol' | commonText) : ('common.usd' | translate) }}</span>
@@ -56,21 +56,21 @@
           </div>
         </div>
         <!-- Hours. -->
-        <div *ngIf="!showSimpleForm && coinHasHours" class="col-lg-3 col-md-4">
-          <div [ngClass]="{ '-input-addon': true, 'd-none': !showHourFields }">
+        <div *ngIf="!showSimpleForm && showHourFields" class="col-lg-3 col-md-4">
+          <div class="-input-addon">
             <input formControlName="hours" [attr.disabled]="busy ? 'true' : null">
             <span>{{ 'hours' | commonText }}</span>
           </div>
         </div>
-        <div *ngIf="!showSimpleForm" class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
+        <div *ngIf="!showSimpleForm && !limitedSendingOptions" class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
           <img *ngIf="i === 0" class="image-button" (click)="addDestination()" src="assets/img/plus-green.png" alt="plus">
           <img *ngIf="i !== 0" class="image-button" (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
         </div>
       </div>
     </div>
     <div class="row" *ngIf="destControls.length > 1">
-      <div [ngClass]="{'col-lg-5 col-md-4': coinHasHours, 'col-md-8': !coinHasHours}"></div>
-      <div [ngClass]="{'col-md-3': coinHasHours, 'col-md-4': !coinHasHours}" class="col-md-3">
+      <div [ngClass]="{'col-lg-5 col-md-4': showHourFields, 'col-md-7': !showHourFields && !limitedSendingOptions, 'col-md-8': !showHourFields && limitedSendingOptions}"></div>
+      <div [ngClass]="{'col-md-3': showHourFields, 'col-md-4': !showHourFields}">
         <div class="coins-value-label">
           <span>{{ 'send.total-to-send' | translate }}</span> {{ totalCoins | amount }}
           <ng-container *ngIf="price">/ {{ totalFiat.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}</ng-container>

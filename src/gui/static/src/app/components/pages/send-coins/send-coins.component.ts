@@ -8,6 +8,7 @@ import { SignRawTxComponent } from './offline-dialogs/implementations/sign-raw-t
 import { BroadcastRawTxComponent } from './offline-dialogs/implementations/broadcast-raw-tx.component';
 import { SendCoinsData } from './send-coins-form/send-coins-form.component';
 import { NodeService } from '../../../services/node.service';
+import { CoinService } from '../../../services/coin.service';
 
 /**
  * Shows the form which allows the user to send coins.
@@ -27,6 +28,8 @@ export class SendCoinsComponent implements OnDestroy {
   // If the page must show the simple form (left) or the advanced one (right).
   activeForm: DoubleButtonActive;
   activeForms = DoubleButtonActive;
+  // If true, the page will show the options related to raw transactions.
+  showRawTxOptions = false;
 
   private subscriptionsGroup: SubscriptionLike[] = [];
 
@@ -35,7 +38,10 @@ export class SendCoinsComponent implements OnDestroy {
     private changeDetector: ChangeDetectorRef,
     private dialog: MatDialog,
     private nodeService: NodeService,
+    coinService: CoinService,
   ) {
+    this.showRawTxOptions = coinService.currentCoinInmediate.coinTypeFeatures.softwareWallets;
+
     // Check if the node service has updated data.
     this.subscriptionsGroup.push(this.nodeService.remoteNodeDataUpdated.subscribe(response => {
       this.nodeDataUpdated = response;

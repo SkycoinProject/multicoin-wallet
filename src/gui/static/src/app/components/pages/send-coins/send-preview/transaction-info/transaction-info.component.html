@@ -46,7 +46,13 @@
           </span>
         </div>
         <div class="-data" *ngIf="!coinHasHours">
-          <span>{{ 'tx.fee-small-label' | translate }}</span> <span>{{ transaction.fee | amount }}</span>
+          <span>{{ 'tx.fee-small-label' | translate }}</span>
+          <span>
+            {{ transaction.fee | amount }}
+            <!-- Warning indicating the fee is approximate. Only for ETH tx previews. -->
+            <ng-container *ngIf="isPreview && currentCoinUsesGas"> {{ 'tx.approximate-fee-warning' | translate }}</ng-container>
+            <mat-icon *ngIf="isPreview && currentCoinUsesGas" class="help-icon pl-0" [matTooltip]="'tx.approximate-fee-info' | translate">help</mat-icon>
+          </span>
         </div>
         <div class="-data" *ngIf="!isPreview">
           <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.id }}</span>

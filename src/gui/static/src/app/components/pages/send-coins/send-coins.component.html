@@ -29,7 +29,7 @@
     ></app-send-preview>
   </div>
   <!-- Links at the bottom. -->
-  <div class="-links">
+  <div class="-links" *ngIf="showRawTxOptions">
     <span class="link" (click)="signTransaction()">{{ 'offline-transactions.sign-tx.title' | translate }}</span>
     <span class="separator"> / </span>
     <span class="link" (click)="broadcastTransaction()">{{ 'offline-transactions.broadcast-tx.title' | translate }}</span>

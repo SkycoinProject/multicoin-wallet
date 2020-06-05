@@ -124,6 +124,9 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   totalFiat = new BigNumber(0);
   // Total amount of hours that will be sent to all destinations, if the manual hours are active.
   totalHours = new BigNumber(0);
+  // If the coin only allows to send transactions to a single destination and does not allow
+  // to select the change address.
+  limitedSendingOptions = false;
 
   private priceSubscription: SubscriptionLike;
   private addressSubscription: SubscriptionLike;
@@ -144,6 +147,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     private coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
+    this.limitedSendingOptions = coinService.currentCoinInmediate.coinTypeFeatures.limitedSendingOptions;
   }
 
   ngOnInit() {
@@ -171,6 +175,26 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
     this.onChanges.complete();
     this.onBulkRequested.complete();
+  }
+
+  get destinationsLabel() {
+    if (this.showSimpleForm) {
+      return 'send.amount-label';
+    } else {
+      if (!this.limitedSendingOptions) {
+        return 'send.destinations-label';
+      } else {
+        return 'send.destination-label';
+      }
+    }
+  }
+
+  get destinationsHelp() {
+    if (!this.limitedSendingOptions) {
+      return 'send.destinations-help' + (!this.showHourFields ? '1' : '2');
+    } else {
+      return 'send.destination-help';
+    }
   }
 
   // Changes the currency in which the user enters the values on the UI.

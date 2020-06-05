@@ -1,4 +1,4 @@
-<div *ngIf="!showSimpleForm" class="mode-selector">
+<div *ngIf="!showSimpleForm && showUsignedOptions" class="mode-selector">
   <!-- Switch for selecting the advanced mode or the manual usingned tx mode. -->
   <app-double-button
     [changeActiveButtonManually]="true"
@@ -72,7 +72,7 @@
   </app-form-destination>
 
   <!-- Change address. -->
-  <div *ngIf="!showSimpleForm" class="form-field">
+  <div *ngIf="!showSimpleForm && !limitedSendingOptions" class="form-field">
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
       <mat-icon class="help-icon" [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
@@ -85,8 +85,25 @@
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
   </div>
 
+  <!-- Note. -->
+  <div *ngIf="!showForManualUnsigned" class="form-field">
+    <label for="note">
+      {{ 'send.personal-note-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+  </div>
+
+  <app-arrow-link
+    *ngIf="coinFeeType !== feeTypes.None"
+    [text]="'send.fee-options'"
+    (pressed)="toggleFeeOptions()"
+    [pointDown]="!showFeeOptions"
+    [noPadding]="true">
+  </app-arrow-link>
+
   <!-- BTC fee area. -->
-  <div class="form-field" *ngIf="coinFeeType === feeTypes.Btc">
+  <div class="form-field -options-wrapper" *ngIf="coinFeeType === feeTypes.Btc && showFeeOptions">
     <label for="feeType" class="destinations-label">
       {{ 'send.fee-label' | translate }}
     </label>
@@ -116,8 +133,8 @@
   </div>
 
   <!-- ETH fee area. -->
-  <ng-container *ngIf="coinFeeType === feeTypes.Eth">
-    <div class="form-field">
+  <ng-container *ngIf="coinFeeType === feeTypes.Eth && showFeeOptions">
+    <div class="form-field -options-wrapper">
       <label for="gasPrice" class="destinations-label">
         {{ 'send.gas-price-label' | translate }}
       </label>
@@ -151,15 +168,6 @@
     </div>
   </ng-container>
 
-  <!-- Note. -->
-  <div *ngIf="!showForManualUnsigned" class="form-field">
-    <label for="note">
-      {{ 'send.personal-note-label' | translate }}
-      <mat-icon class="help-icon" [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
-    </label>
-    <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
-  </div>
-
   <!-- Automatic hours distributions options. -->
   <div *ngIf="coinHasHours && !showSimpleForm" class="form-field">
     <div class="row" [ngClass]="{'element-disabled' : busy}">
@@ -170,15 +178,15 @@
             *ngIf="autoHours"
             [text]="'send.options-link'"
             (mousedown)="$event.stopPropagation();"
-            (pressed)="toggleOptions($event)"
-            [pointDown]="!autoOptions">
+            (pressed)="toggleAutoHourDistributionOptions($event)"
+            [pointDown]="!showAutoHourDistributionOptions">
           </app-arrow-link>
         </mat-checkbox>
       </div>
     </div>
 
     <!-- Automatic hours distributions factor. -->
-    <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !autoOptions }">
+    <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !showAutoHourDistributionOptions }">
       <div class="col-md-7">
         <div class="form-field">
           <label class="-space-between" for="value">

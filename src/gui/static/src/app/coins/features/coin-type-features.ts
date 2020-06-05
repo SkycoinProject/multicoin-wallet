@@ -24,4 +24,9 @@ export interface CoinTypeFeatures {
    * If the coin type generates coin hours.
    */
   coinHours: boolean;
+  /**
+   * If the coin only allows to send transactions to a single destination and does not allow
+   * to select the change address.
+   */
+  limitedSendingOptions: boolean;
 }
