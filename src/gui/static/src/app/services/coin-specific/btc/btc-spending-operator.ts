@@ -82,17 +82,6 @@ export class BtcSpendingOperator implements SpendingOperator {
       }
     }
 
-    // Select a change address.
-    if (!changeAddress) {
-      if (wallet) {
-        changeAddress = wallet.addresses[0].address;
-      } else if (addresses) {
-        changeAddress = addresses[0];
-      } else if (unspents) {
-        changeAddress = unspents[0].address;
-      }
-    }
-
     let response: Observable<any>;
 
     // Get the locking scripts for the destination addresses.
@@ -134,7 +123,7 @@ export class BtcSpendingOperator implements SpendingOperator {
     }
 
     // Inputs that will be used for the transaction.
-    const inputs: Output[] = [];
+    let inputs: Output[];
     // How many coins will be sent.
     let amountToSend = new BigNumber(0);
     // Amount to send plus the fee.
@@ -145,28 +134,27 @@ export class BtcSpendingOperator implements SpendingOperator {
     let calculatedFee = new BigNumber(0);
 
     response = response.pipe(map((availableOutputs: Output[]) => {
-      // Order the available outputs from highest to lowest according to the amount of coins.
-      availableOutputs = availableOutputs.sort((a, b) => b.coins.minus(a.coins).toNumber());
-
+      // Order the available outputs from lowest to highest according to the amount of coins.
+      const outputsToChoseFrom: Output[] = availableOutputs.map(output => output).sort((a, b) => a.coins.minus(b.coins).toNumber());
+      // Calculate how many coins are going to be sent (without considering the fee).
       destinations.forEach(destination => amountToSend = amountToSend.plus(destination.coins));
 
-      // Start adding inputs until having the coins needed.
-      for (let i = 0; i < availableOutputs.length; i++) {
-        inputs.push(availableOutputs[i]);
+      // Select the inputs for the operation.
+      inputs = this.recursivelySelectOutputs(outputsToChoseFrom, amountToSend, destinations.length, new BigNumber(fee));
+      // Calculate how many coins the inputs have.
+      inputs.forEach(input => coinsInInputs = coinsInInputs.plus(input.coins));
 
-        coinsInInputs = coinsInInputs.plus(availableOutputs[i].coins);
-
-        if (coinsInInputs.isGreaterThanOrEqualTo(amountToSend)) {
-          // Add the fee to the amount of coins needed.
-          calculatedFee = this.calculateFinalFee(inputs.length, destinations.length, new BigNumber(fee), new BigNumber(0));
-          amountNeeded = amountToSend.plus(calculatedFee);
-
-          // Exit if no more coins are needed.
-          if (coinsInInputs.isGreaterThanOrEqualTo(amountNeeded)) {
-            break;
-          }
-        }
+      // If not specific change address was selected, select the one on the first input, which
+      // is the one with most coins.
+      if (!changeAddress) {
+        changeAddress = inputs[0].address;
       }
+
+      // Add the fee to the amount of coins needed. The calculation ignores the fee needed for
+      // the change output, if the selected inputs have more coins than neeed. This is to avoid
+      // overcomplicating the available balance calculation in the UI.
+      calculatedFee = this.calculateFinalFee(inputs.length, destinations.length, new BigNumber(fee), null);
+      amountNeeded = amountToSend.plus(calculatedFee);
 
       // Convert the inputs to the correct object type.
       const processedInputs: Input[] = inputs.map(input => {
@@ -246,6 +234,96 @@ export class BtcSpendingOperator implements SpendingOperator {
     }
 
     return response;
+  }
+
+  /**
+   * Selects the outputs that should be used as inputs for a transaction. The function will
+   * try to use as few outputs as possible, prefering the ones with less coins. However, the
+   * function may add an additional input if the solution with the least amount of inputs
+   * would require to create a change output with so few coins that it would not be convenient
+   * to send it due to the fees.
+   * @param outputs List with the outputs available to be used. Must be ordered from lowest
+   * to highest according to the amount of coins. The list will be altered by the function.
+   * @param amountToSend How many coins are going to be sent in the transaction.
+   * @param destinations How many destinations the transaction will have.
+   * @param feePerUnit Approximate amount of sats per byte that will be paid as fee. Note: the
+   * function ignores the fee needed for the change output, if the selected inputs have more
+   * coins than neeed. This is to avoid overcomplicating the available balance calculation in
+   * the UI.
+   * @param currentlySelectedBalance Coins in the already selected outputs. For internal use.
+   * @param currentlySelectedOutputs Already selected outputs. For internal use.
+   */
+  private recursivelySelectOutputs(
+    outputs: Output[],
+    amountToSend: BigNumber,
+    destinations: number,
+    feePerUnit: BigNumber,
+    currentlySelectedBalance = new BigNumber(0),
+    currentlySelectedOutputs: Output[] = [],
+  ) {
+
+    if (outputs.length < 1) {
+      return currentlySelectedBalance;
+    }
+
+    // Check the outputs in ascending order (according to the coins).
+    for (let i = 0; i < outputs.length; i++) {
+      // How many coins the procedure would have with the inputs selected in the previous steps
+      // of the recursive procedure and the one being checked right now.
+      const potentinalNewSelectedBalance = currentlySelectedBalance.plus(outputs[i].coins);
+
+      if (potentinalNewSelectedBalance.isGreaterThan(amountToSend)) {
+        // Add the fee to the amount of coins needed.
+        const calculatedFee = this.calculateFinalFee(currentlySelectedOutputs.length + 1, destinations, feePerUnit, null);
+        const totalAmountNeeded = amountToSend.plus(calculatedFee);
+
+        // Check if no more coins are needed.
+        if (potentinalNewSelectedBalance.isGreaterThanOrEqualTo(totalAmountNeeded)) {
+          // Add the output to the list of the ones that have been selected.
+          currentlySelectedOutputs.push(outputs[i]);
+
+          // Needed for converting from sats to coins.
+          const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
+
+          // Check how many coins will have to be added to a change output and how much would
+          // it cost to use that change output in a future transaction if using the current fee.
+          const remainingCoins = potentinalNewSelectedBalance.minus(totalAmountNeeded);
+          const aproxChangeOutputCost = new BigNumber(180).multipliedBy(feePerUnit).dividedBy(decimalsCorrector);
+
+          // If the change output is needed but it would cost more than 10% of its value to
+          // send it in a future transaction, try to add another input.
+          if (!remainingCoins.isEqualTo(0) && remainingCoins.isLessThan(aproxChangeOutputCost.multipliedBy(10))) {
+            for (let j = 0; j < outputs.length; j++) {
+              if (j !== i) {
+                // Check the amounts that would be obtained after adding the new input.
+                const balanceWithAdditionalInput = potentinalNewSelectedBalance.plus(outputs[j].coins);
+                const calculatedFeeWithAdditionalInput = this.calculateFinalFee(currentlySelectedOutputs.length + 1, destinations, feePerUnit, null);
+                const totalAmountNeededWithAdditionalInput = amountToSend.plus(calculatedFeeWithAdditionalInput);
+                const remainingCoinsWithAdditionalInput = balanceWithAdditionalInput.minus(totalAmountNeededWithAdditionalInput);
+
+                // If the new input causes the change output to be spendable without having
+                // to pay more than 10% of its value in fees, use it.
+                if (remainingCoinsWithAdditionalInput.isGreaterThanOrEqualTo(aproxChangeOutputCost.multipliedBy(10))) {
+                  currentlySelectedOutputs.push(outputs[j]);
+
+                  break;
+                }
+              }
+            }
+          }
+
+          return currentlySelectedOutputs;
+        }
+      }
+    }
+
+    // If no output in this pass of the recursive procedure was able sum the coins needed,
+    // add the output with most coins to the selected list and go to the next step.
+    currentlySelectedOutputs.push(outputs[outputs.length - 1]);
+    currentlySelectedBalance = currentlySelectedBalance.plus(outputs[outputs.length - 1].coins);
+    outputs.pop();
+
+    return this.recursivelySelectOutputs(outputs, amountToSend, destinations, feePerUnit, currentlySelectedBalance, currentlySelectedOutputs);
   }
 
   /**
