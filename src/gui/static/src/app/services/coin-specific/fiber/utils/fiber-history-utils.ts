@@ -10,6 +10,31 @@ import { FiberApiService } from '../../../api/fiber-api.service';
 import { Coin } from '../../../../coins/coin';
 
 /**
+ * Checks the addresses of a wallet to know which ones have been used, defined as having
+ * received coins.
+ * @returns A map with all addresses indicating which ones have been used and which ones
+ * have not.
+ */
+export function getIfAddressesUsed(currentCoin: Coin, wallet: WalletBase, fiberApiService: FiberApiService, storageService: StorageService): Observable<Map<string, boolean>> {
+  const response = new Map<string, boolean>();
+  wallet.addresses.forEach(address => response.set(address.address, false));
+
+  // Get the transaction history.
+  return getTransactionsHistory(currentCoin, [wallet], fiberApiService, storageService).pipe(map(transactions => {
+    // Search all the outputs and set to true all the addresses found.
+    transactions.forEach(transaction => {
+      transaction.outputs.forEach(output => {
+        if (response.has(output.address)) {
+          response.set(output.address, true);
+        }
+      });
+    });
+
+    return response;
+  }));
+}
+
+/**
  * Gets the transaction history of a wallet list.
  * @param wallets Wallets to consult.
  */

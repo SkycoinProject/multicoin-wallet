@@ -103,6 +103,16 @@ export class HistoryService {
   }
 
   /**
+   * Checks the addresses of a wallet to know which ones have been used, defined as having
+   * received coins.
+   * @returns A map with all addresses indicating which ones have been used and which ones
+   * have not.
+   */
+  getIfAddressesUsed(wallet: WalletBase): Observable<Map<string, boolean>> {
+    return this.operator.getIfAddressesUsed(wallet);
+  }
+
+  /**
    * Gets the list of pending transactions currently on the node. The data is not
    * automatically updated.
    */

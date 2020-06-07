@@ -51,6 +51,40 @@ export class BtcHistoryOperator implements HistoryOperator {
     this.operatorsSubscription.unsubscribe();
   }
 
+  getIfAddressesUsed(wallet: WalletBase): Observable<Map<string, boolean>> {
+    const addresses = wallet.addresses.map(address => address.address);
+
+    return this.recursivelyGetIfAddressesUsed(addresses);
+  }
+
+  /**
+   * Checks the provided addresses and returns a map indicating which ones have been used,
+   * defined as having received coins.
+   * @param addresses Addresses to check. The list will be altered by the function.
+   * @param currentElements Already obtained data. For internal use.
+   */
+  private recursivelyGetIfAddressesUsed(addresses: string[], currentElements = new Map<string, boolean>()): Observable<Map<string, boolean>> {
+    if (addresses.length === 0) {
+      return of(currentElements);
+    }
+
+    // Get the information of the address.
+    this.blockbookApiService.get(this.currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'basic'})
+      .pipe(mergeMap((response) => {
+        // Check is the address has received coins.
+        currentElements.set(addresses[addresses.length - 1], response.totalReceived && new BigNumber(response.totalReceived).isGreaterThan(0));
+
+        addresses.pop();
+
+        if (addresses.length === 0) {
+          return of(currentElements);
+        }
+
+        // Continue to the next step.
+        return this.recursivelyGetIfAddressesUsed(addresses, currentElements);
+      }));
+  }
+
   getTransactionsHistory(wallet: WalletBase|null): Observable<OldTransaction[]> {
     // Use the provided wallet or get all wallets.
     let initialRequest: Observable<WalletBase[]>;

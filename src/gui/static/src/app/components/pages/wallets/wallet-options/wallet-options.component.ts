@@ -201,21 +201,12 @@ export class WalletOptionsComponent implements OnDestroy {
           // If the previous check failed, use the real transaction history to be sure.
         } else {
           this.removeOperationSubscription();
-          this.operationSubscription = this.historyService.getTransactionsHistory(this.wallet).pipe(first()).subscribe(transactions => {
-            // Save which addresses have transaction history.
-            const AddressesWithTxs = new Map<string, boolean>();
-            transactions.forEach(transaction => {
-              transaction.outputs.forEach(output => {
-                if (!AddressesWithTxs.has(output.address)) {
-                  AddressesWithTxs.set(output.address, true);
-                }
-              });
-            });
-
+          // Check which addresses have been used.
+          this.operationSubscription = this.historyService.getIfAddressesUsed(this.wallet).subscribe(AddressesWithTxs => {
             // Get the index of the last address with transaction history.
             let lastWithTxs = 0;
             relevantAddresses.forEach((address, i) => {
-              if (AddressesWithTxs.has(address.address)) {
+              if (AddressesWithTxs.has(address.address) && AddressesWithTxs.get(address.address)) {
                 lastWithTxs = i;
               }
             });

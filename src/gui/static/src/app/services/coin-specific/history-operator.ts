@@ -16,6 +16,7 @@ export interface HistoryOperator {
   dispose();
 
   // Functions for consulting the transactions. Documented on the service.
+  getIfAddressesUsed(wallet: WalletBase): Observable<Map<string, boolean>>;
   getTransactionsHistory(wallet: WalletBase|null): Observable<OldTransaction[]>;
   getPendingTransactions(): Observable<PendingTransactionsResponse>;
   getAddressesHistory(wallet: WalletBase): Observable<AddressesHistoryResponse>;

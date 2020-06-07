@@ -11,7 +11,7 @@ import { StorageService, StorageType } from '../../storage.service';
 import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { WalletsAndAddressesOperator, LastAddress, CreateWalletArgs, CreateSoftwareWalletArgs } from '../wallets-and-addresses-operator';
-import { getTransactionsHistory } from './utils/fiber-history-utils';
+import { getTransactionsHistory, getIfAddressesUsed } from './utils/fiber-history-utils';
 import { FiberApiService } from '../../api/fiber-api.service';
 
 /**
@@ -278,21 +278,19 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
         const finalResponse: LastAddress = { lastAddress: '' };
 
         // Map with all the addreses which have already received coins.
-        const usedMap = new Map<string, boolean>();
+        let usedMap = new Map<string, boolean>();
 
-        let firstStep: Observable<OldTransaction[]>;
+        let firstStep: Observable<Map<string, boolean>>;
         if (checkUnused) {
-          // Get the tx history of the wallet.
-          firstStep = getTransactionsHistory(this.currentCoin, [wallet], this.fiberApiService, this.storageService);
+          // Get which addresses have been used.
+          firstStep = getIfAddressesUsed(this.currentCoin, wallet, this.fiberApiService, this.storageService);
         } else {
           firstStep = of(undefined);
         }
 
         return firstStep.pipe(mergeMap(response => {
           if (checkUnused) {
-            response.forEach(transaction => {
-              transaction.outputs.forEach(output => usedMap.set(output.address, true));
-            });
+            usedMap = response;
           }
 
           // Request the general info of the wallet, to get the updated address list.
@@ -325,12 +323,12 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
             // Check how many previous addresses are unused.
             let previousUnused = 0;
             (response.entries as any[]).forEach((address, i) => {
-              if (i < indexOfLastAddress && (!address.change || address.change === 0) && !usedMap.has(address.address)) {
+              if (i < indexOfLastAddress && (!address.change || address.change === 0) && (!usedMap.has(address.address) || !usedMap.get(address.address))) {
                 previousUnused += 1;
               }
             });
 
-            finalResponse.alreadyUsed = usedMap.has(finalResponse.lastAddress);
+            finalResponse.alreadyUsed = usedMap.has(finalResponse.lastAddress) && usedMap.get(finalResponse.lastAddress);
             finalResponse.previousUnusedAddresses = previousUnused;
           }
 
