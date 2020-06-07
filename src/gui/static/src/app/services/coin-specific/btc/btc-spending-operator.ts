@@ -162,6 +162,8 @@ export class BtcSpendingOperator implements SpendingOperator {
           hash: input.hash,
           address: input.address,
           coins: input.coins,
+          transactionId: input.transactionId,
+          indexInTransaction: input.indexInTransaction,
         };
       });
 
@@ -374,23 +376,17 @@ export class BtcSpendingOperator implements SpendingOperator {
     transaction: GeneratedTransaction,
     rawTransactionString = ''): Observable<string> {
 
-    const inputList = transaction.inputs.map(input => input.hash);
+    const inputList = transaction.inputs.map(input => input);
 
     // Get the original info about each input, to known how each one has to be signed.
-    return this.recursivelyGetOriginalOutputsInfo(inputList).pipe(map(rawInputs => {
+    return this.recursivelyGetOriginalInputsInfo(inputList).pipe(map(rawInputs => {
       // Convert the inputs to the format the encoder needs.
       const inputs: BtcInput[] = [];
       transaction.inputs.forEach((input, i) => {
         const processedInput = new BtcInput();
+        processedInput.transaction = input.transactionId;
+        processedInput.vout = input.indexInTransaction;
 
-        // Get the transaction id and output number.
-        const inputIdParts = input.hash.split('/');
-        if (inputIdParts.length !== 2) {
-          throw new Error('invalid output.');
-        }
-
-        processedInput.transaction = inputIdParts[0];
-        processedInput.vout = Number.parseInt(inputIdParts[1], 10);
         // Add the script needed to unlock the input.
         if (rawInputs.has(input.hash)) {
           const rawInput = rawInputs.get(input.hash);
@@ -440,36 +436,29 @@ export class BtcSpendingOperator implements SpendingOperator {
   }
 
   /**
-   * Gets the original data inside the node about the outputs in the provided list.
-   * @param outputs IDs of the outputs to check. The list will be altered by the function.
-   * @param currentElements Already obtained outputs. For internal use.
-   * @returns Map with the data, accessible via the provided output IDs.
+   * Gets the original data inside the node about the inputs in the provided list.
+   * @param inputs inputs to check. The list will be altered by the function.
+   * @param currentElements Already obtained inputs. For internal use.
+   * @returns Map with the data, accessible via the provided input hashes.
    */
-  private recursivelyGetOriginalOutputsInfo(outputs: string[], currentElements = new Map<string, any>()): Observable<Map<string, any>> {
-    if (outputs.length === 0) {
+  private recursivelyGetOriginalInputsInfo(inputs: Input[], currentElements = new Map<string, any>()): Observable<Map<string, any>> {
+    if (inputs.length === 0) {
       return of(currentElements);
     }
 
-    // Get the transaction and number the last output.
-    const currentOutputId = outputs[outputs.length - 1];
-    const outputIdParts = currentOutputId.split('/');
-    if (outputIdParts.length !== 2) {
-      throw new Error('invalid output.');
-    }
-
     // Get the data of the last output.
-    return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'gettxout', [outputIdParts[0], Number.parseInt(outputIdParts[1], 10)]).pipe(mergeMap(response => {
+    this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'gettxout', [inputs[inputs.length - 1].transactionId, inputs[inputs.length - 1].indexInTransaction]).pipe(mergeMap(response => {
       // Add the output to the map.
-      currentElements.set(currentOutputId, response);
+      currentElements.set(inputs[inputs.length - 1].hash, response);
 
-      outputs.pop();
+      inputs.pop();
 
-      if (outputs.length === 0) {
+      if (inputs.length === 0) {
         return of(currentElements);
       }
 
       // Continue to the next step.
-      return this.recursivelyGetOriginalOutputsInfo(outputs, currentElements);
+      return this.recursivelyGetOriginalInputsInfo(inputs, currentElements);
     }));
   }
 

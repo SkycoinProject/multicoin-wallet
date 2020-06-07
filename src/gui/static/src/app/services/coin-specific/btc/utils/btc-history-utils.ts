@@ -53,6 +53,8 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
             hash: getOutputId(transaction.txid, output.n),
             address: (output.addresses as string[]).join(', '),
             coins: new BigNumber(output.value).dividedBy(decimalsCorrector),
+            transactionId: transaction.txid,
+            indexInTransaction: output.n,
           });
         }
       });
@@ -68,9 +70,9 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
         id: transaction.txid,
         inputs: (transaction.vin as any[]).map(input => {
           return {
-            hash: input.coinbase ? input.coinbase : getOutputId(input.txid, input.vout),
-            address: input.coinbase ? null : (input.addresses as string[]).join(', '),
-            coins: input.coinbase ? new BigNumber(0) : new BigNumber(input.value).dividedBy(decimalsCorrector),
+            hash: !input.isAddress ? '' : getOutputId(input.txid, input.vout),
+            address: !input.isAddress ? null : (input.addresses as string[]).join(', '),
+            coins: !input.isAddress ? new BigNumber(0) : new BigNumber(input.value).dividedBy(decimalsCorrector),
           };
         }),
         outputs: outputs,
@@ -148,7 +150,7 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
  * format returned by the backend.
  */
 export function recursivelyGetTransactions(currentCoin: Coin, blockbookApiService: BlockbookApiService, addresses: string[], currentElements = new Map<string, any>()): Observable<any[]> {
-  return blockbookApiService.get(currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'txs'})
+  return blockbookApiService.get(currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'txslight'})
     .pipe(mergeMap((response) => {
       if (response.transactions) {
         (response.transactions as any[]).forEach(transaction => {

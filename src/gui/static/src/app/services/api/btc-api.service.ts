@@ -6,7 +6,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { processServiceError } from '../../utils/errors';
 
 /**
- * Allows to make request to the btcd node api with ease. Check the node API documentation for
+ * Allows to make request to the bitcoind node api with ease. Check the node API documentation for
  * information about the API endpoints.
  */
 @Injectable()
@@ -16,7 +16,7 @@ export class BtcApiService {
   ) { }
 
   /**
-   * Calls a RPC method of the btcd node. If the call returns an error in the "error" field of
+   * Calls a RPC method of the bitcoind node. If the call returns an error in the "error" field of
    * the RPC response, an error is thrown.
    * @param nodeUrl URL of the node.
    * @param methodName Name of the RPC method to call.

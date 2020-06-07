@@ -213,6 +213,8 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
             coins: new BigNumber(output.value).dividedBy(decimalsCorrector),
             hash: getOutputId(output.txid, output.vout),
             confirmations: output.confirmations ? output.confirmations : 0,
+            transactionId: output.txid,
+            indexInTransaction: output.vout,
           };
 
           currentElements.push(processedOutput);

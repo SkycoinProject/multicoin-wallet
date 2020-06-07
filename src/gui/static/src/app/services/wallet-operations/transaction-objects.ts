@@ -13,10 +13,18 @@ export interface Input {
   address: string;
   coins: BigNumber;
   hours?: BigNumber;
+  /**
+   * ID of the transaction where the original output was created. Only for Btc-like coins.
+   */
+  transactionId?: string;
+  /**
+   * Index of the original output in the transaction where it was created. Only for Btc-like coins.
+   */
+  indexInTransaction?: number;
 }
 
 /**
- * Object with the properties of an output.
+ * Object with the properties of an output;
  */
 export interface Output {
   hash: string;
@@ -29,6 +37,14 @@ export interface Output {
    * a transaction while sending coins and is for internal use of the spending operator.
    */
   lockingScript?: string;
+  /**
+   * ID of the transaction where the output was created. Only for Btc-like coins.
+   */
+  transactionId?: string;
+  /**
+   * Index of the output in the transaction where it was created. Only for Btc-like coins.
+   */
+  indexInTransaction?: number;
 }
 
 /**
