@@ -9,6 +9,7 @@ import { BlockchainOperator } from '../blockchain-operator';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { EthApiService } from '../../api/eth-api.service';
+import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**
  * Operator for BlockchainService to be used with eth-like coins.
@@ -21,6 +22,11 @@ export class EthBlockchainOperator implements BlockchainOperator {
 
   private dataSubscription: Subscription;
   private operatorsSubscription: Subscription;
+
+  /**
+   * If the node was synchronized the last time it was checked.
+   */
+  private nodeSynchronized = false;
 
   /**
    * Time interval in which periodic data updates will be made.
@@ -39,12 +45,14 @@ export class EthBlockchainOperator implements BlockchainOperator {
   private currentCoin: Coin;
 
   // Services and operators used by this operator.
+  private blockbookApiService: BlockbookApiService;
   private ethApiService: EthApiService;
   private ngZone: NgZone;
   private balanceAndOutputsOperator: BalanceAndOutputsOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
+    this.blockbookApiService = injector.get(BlockbookApiService);
     this.ethApiService = injector.get(EthApiService);
     this.ngZone = injector.get(NgZone);
 
@@ -98,21 +106,42 @@ export class EthBlockchainOperator implements BlockchainOperator {
       this.dataSubscription.unsubscribe();
     }
 
+    let blockbookData: any;
+
     this.ngZone.runOutsideAngular(() => {
       this.dataSubscription = of(0).pipe(
         delay(delayMs),
         mergeMap(() => {
+          return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api');
+        }),
+        mergeMap(result => {
+          blockbookData = result;
+
           return this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_syncing');
         }),
       ).subscribe(result => {
         this.ngZone.run(() => {
+          let synchronized = false;
+
+          // If the result is false, the blockchain is synchronized.
           if (result === false) {
-            // If the result is false, the blockchain is synchronized.
-            this.progressSubject.next({
-              currentBlock: 0,
-              highestBlock: 0,
-              synchronized: true,
-            });
+            // If Blockbook and the node are more than 1 block appart, consider everything
+            // out of sync.
+            if (new BigNumber(blockbookData.backend.blocks).minus(blockbookData.blockbook.bestHeight).isGreaterThan(1)) {
+              this.progressSubject.next({
+                currentBlock: blockbookData.blockbook.bestHeight,
+                highestBlock: blockbookData.backend.blocks,
+                synchronized: false,
+              });
+            } else {
+              this.progressSubject.next({
+                currentBlock: 0,
+                highestBlock: 0,
+                synchronized: true,
+              });
+
+              synchronized = true;
+            }
           } else {
             this.progressSubject.next({
               currentBlock: new BigNumber((result.currentBlock as string).substr(2), 16).toNumber(),
@@ -120,6 +149,13 @@ export class EthBlockchainOperator implements BlockchainOperator {
               synchronized: false,
             });
           }
+
+          // If the node was out of sync and now it is not, refresh the balance.
+          if (synchronized && !this.nodeSynchronized) {
+            this.balanceAndOutputsOperator.refreshBalance();
+          }
+
+          this.nodeSynchronized = synchronized;
 
           this.startDataRefreshSubscription(this.updatePeriod);
         });

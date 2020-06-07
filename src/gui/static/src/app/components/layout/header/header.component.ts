@@ -48,6 +48,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   // If the app already got the balance from the node.
   balanceObtained = false;
   walletDownloadUrl = AppConfig.walletDownloadUrl;
+  /**
+   * If it is possible to show the progress of the blockchain synchronization while the
+   * backend is out of sync.
+   */
+  showBlockchainSyncProgress = true;
 
   private subscriptionsGroup: SubscriptionLike[] = [];
 
@@ -61,6 +66,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
+    this.showBlockchainSyncProgress = coinService.currentCoinInmediate.coinTypeFeatures.blockchainSyncProgress;
   }
 
   ngOnInit() {

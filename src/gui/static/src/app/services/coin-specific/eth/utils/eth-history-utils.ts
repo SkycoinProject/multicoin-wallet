@@ -128,7 +128,7 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
  * format returned by the backend.
  */
 export function recursivelyGetTransactions(currentCoin: Coin, blockbookApiService: BlockbookApiService, addresses: string[], currentElements = new Map<string, any>()): Observable<any[]> {
-  return blockbookApiService.get(currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'txs'})
+  return blockbookApiService.get(currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'txslight'})
     .pipe(mergeMap((response) => {
       if (response.transactions) {
         (response.transactions as any[]).forEach(transaction => {

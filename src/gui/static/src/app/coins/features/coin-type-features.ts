@@ -16,6 +16,10 @@ export interface CoinTypeFeatures {
    */
   networkingStats: boolean;
   /**
+   * If the app can show information about the progress while the backend is synchronizing.
+   */
+  blockchainSyncProgress: boolean;
+  /**
    * If the app can show all the pending transactions and not only the ones related to
    * the user wallets.
    */

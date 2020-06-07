@@ -13,7 +13,8 @@
       <div class="balance-container">
         <div class="balance">
           <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)" class="loading-header">{{ 'common.loading' | translate }}</p>
-          <p *ngIf="synchronizationInfoObtained && !synchronized" class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
+          <p *ngIf="synchronizationInfoObtained && !synchronized && showBlockchainSyncProgress" class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
+          <p *ngIf="synchronizationInfoObtained && !synchronized && !showBlockchainSyncProgress" class="loading-header"><span>{{ 'header.syncing-blocks' | translate }}</span></p>
           <p *ngIf="synchronized && balanceObtained" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
           <p class="dollars" *ngIf="showPrice">
             <span *ngIf="price">
@@ -33,14 +34,19 @@
       </div>
       <!-- Elements for coins without hours. -->
       <div *ngIf="!coinHasHours && synchronizationInfoObtained && !synchronized" class="hour-balance">
-        <p *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
+        <p *ngIf="synchronizationInfoObtained && !synchronized">
+          {{ 'header.syncing-blocks' | translate }}
+          <ng-container *ngIf="showBlockchainSyncProgress">
+            {{ '(' + currentBlock + '/'  + highestBlock + ')' }}
+          </ng-container>
+        </p>
       </div>
       <div *ngIf="!coinHasHours && (!synchronizationInfoObtained || synchronized)" class="empty-hour-balance"></div>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>
   <mat-progress-bar
-    *ngIf="!synchronized"
+    *ngIf="!synchronized && showBlockchainSyncProgress"
     color="primary"
     [mode]="!synchronizationInfoObtained ? 'query' : 'determinate'"
     [value]="synchronizationPercentage * 100"></mat-progress-bar

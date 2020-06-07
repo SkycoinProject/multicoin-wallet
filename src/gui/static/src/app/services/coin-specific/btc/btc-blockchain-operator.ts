@@ -1,5 +1,5 @@
 import { Subscription, of, Observable, ReplaySubject } from 'rxjs';
-import { delay, map, mergeMap } from 'rxjs/operators';
+import { delay, map, mergeMap, filter, first } from 'rxjs/operators';
 import { NgZone, Injector } from '@angular/core';
 import BigNumber from 'bignumber.js';
 
@@ -11,6 +11,8 @@ import { BlockchainOperator } from '../blockchain-operator';
 import { environment } from '../../../../environments/environment';
 import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
+import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
+import { OperatorService } from '../../operators.service';
 
 /**
  * Operator for BlockchainService to be used with btc-like coins..
@@ -22,6 +24,12 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   private progressSubject: ReplaySubject<ProgressEvent> = new ReplaySubject<ProgressEvent>(1);
 
   private dataSubscription: Subscription;
+  private operatorsSubscription: Subscription;
+
+  /**
+   * If the node was synchronized the last time it was checked.
+   */
+  private nodeSynchronized = false;
 
   /**
    * Time interval in which periodic data updates will be made.
@@ -42,6 +50,7 @@ export class BtcBlockchainOperator implements BlockchainOperator {
   // Services and operators used by this operator.
   private blockbookApiService: BlockbookApiService;
   private ngZone: NgZone;
+  private balanceAndOutputsOperator: BalanceAndOutputsOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
@@ -56,11 +65,17 @@ export class BtcBlockchainOperator implements BlockchainOperator {
 
     this.currentCoin = currentCoin;
 
-    // Start checking the state of the blockchain.
-    this.startDataRefreshSubscription(0);
+    // Get the operators and only then start using them.
+    this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
+
+      // Start checking the state of the blockchain.
+      this.startDataRefreshSubscription(0);
+    });
   }
 
   dispose() {
+    this.operatorsSubscription.unsubscribe();
     if (this.dataSubscription) {
       this.dataSubscription.unsubscribe();
     }
@@ -119,13 +134,28 @@ export class BtcBlockchainOperator implements BlockchainOperator {
         }),
       ).subscribe(result => {
         this.ngZone.run(() => {
-          // Consider the blockchain out of sync if the last block is more than 90 minutes old.
+          // Consider the blockchain out of sync if the last block is very old.
+          let synchronized = environment.ignoreNonFiberNetworIssues ? true :
+            Date.now() - (moment(result.blockbook.lastBlockTime).unix() * 1000) < (this.currentCoin.config as BtcCoinConfig).outOfSyncMinutes * 60000;
+
+          // If Blockbook and the node are more than 1 block appart, consider everything
+          // out of sync.
+          if (new BigNumber(result.backend.blocks).minus(result.blockbook.bestHeight).isGreaterThan(1)) {
+            synchronized = false;
+          }
+
           this.progressSubject.next({
             currentBlock: 0,
             highestBlock: 0,
-            synchronized: environment.ignoreNonFiberNetworIssues ? true :
-              Date.now() - (moment(result.blockbook.lastBlockTime).unix() * 1000) < (this.currentCoin.config as BtcCoinConfig).outOfSyncMinutes * 60000,
+            synchronized: synchronized,
           });
+
+          // If the node was out of sync and now it is not, refresh the balance.
+          if (synchronized && !this.nodeSynchronized) {
+            this.balanceAndOutputsOperator.refreshBalance();
+          }
+
+          this.nodeSynchronized = synchronized;
 
           this.startDataRefreshSubscription(this.updatePeriod);
         });
