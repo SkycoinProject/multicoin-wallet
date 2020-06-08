@@ -71,6 +71,17 @@ export interface AddressesState {
   alreadyUsed: boolean;
 }
 
+export interface TransactionHistory {
+  /**
+   * Transaction list.
+   */
+  transactions: OldTransaction[];
+  /**
+   * If true, some transactions were ignored in the transaction list, for performance reasons.
+   */
+  hasMore: boolean;
+}
+
 /**
  * Allows to get the transaction history and pending transactions.
  */
@@ -98,7 +109,7 @@ export class HistoryService {
    * @param wallet Specific wallet for which the transaction history will be returned. If null,
    * the transactions of all wallets will be returned.
    */
-  getTransactionsHistory(wallet: WalletBase|null): Observable<OldTransaction[]> {
+  getTransactionsHistory(wallet: WalletBase|null): Observable<TransactionHistory> {
     return this.operator.getTransactionsHistory(wallet);
   }
 

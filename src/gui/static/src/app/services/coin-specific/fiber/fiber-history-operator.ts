@@ -10,7 +10,7 @@ import { WalletBase, WalletWithBalance, WalletTypes } from '../../wallet-operati
 import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { getTransactionsHistory, getIfAddressesUsed } from './utils/fiber-history-utils';
-import { PendingTransactionsResponse, AddressesHistoryResponse, AddressesState, PendingTransactionData } from '../../wallet-operations/history.service';
+import { PendingTransactionsResponse, AddressesHistoryResponse, AddressesState, PendingTransactionData, TransactionHistory } from '../../wallet-operations/history.service';
 import { HistoryOperator } from '../history-operator';
 import { FiberApiService } from '../../api/fiber-api.service';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
@@ -60,7 +60,7 @@ export class FiberHistoryOperator implements HistoryOperator {
     return getIfAddressesUsed(this.currentCoin, wallet, this.fiberApiService, this.storageService);
   }
 
-  getTransactionsHistory(wallet: WalletBase|null): Observable<OldTransaction[]> {
+  getTransactionsHistory(wallet: WalletBase|null): Observable<TransactionHistory> {
     // Use the provided wallet or get all wallets.
     let initialRequest: Observable<WalletBase[]>;
     if (wallet) {
@@ -72,6 +72,14 @@ export class FiberHistoryOperator implements HistoryOperator {
     // Get the history.
     return initialRequest.pipe(first(), mergeMap(wallets => {
       return getTransactionsHistory(this.currentCoin, wallets, this.fiberApiService, this.storageService);
+    }), map(transactions => {
+      const response: TransactionHistory = {
+        transactions: transactions,
+        // This operator always returns the complete history.
+        hasMore: false,
+      };
+
+      return response;
     }));
   }
 
@@ -132,18 +140,12 @@ export class FiberHistoryOperator implements HistoryOperator {
         return throwError('Invalid wallet.');
       }
 
-      return this.getTransactionsHistory(wallet);
-    }), map(response => {
+      return this.getIfAddressesUsed(wallet);
+    }), map(usedMap => {
       // Create a map with all the addresses the node says the wallet has.
       const nodeAddressMap = new Map<string, any>();
       (nodeWallet.entries as any[]).forEach(currentAddress => {
         nodeAddressMap.set(currentAddress.address, currentAddress);
-      });
-
-      // Create a map with all the addreses which have alrady received coins.
-      const usedMap = new Map<string, boolean>();
-      response.forEach(transaction => {
-        transaction.outputs.forEach(output => usedMap.set(output.address, true));
       });
 
       const finalResponse: AddressesHistoryResponse = {
@@ -157,7 +159,7 @@ export class FiberHistoryOperator implements HistoryOperator {
         const processedAddress: AddressesState = {
           address: currentAddress,
           indexInWallet: nodeAddressMap.has(currentAddress.address) ? nodeAddressMap.get(currentAddress.address).child_number : 0,
-          alreadyUsed: usedMap.has(currentAddress.address),
+          alreadyUsed: usedMap.has(currentAddress.address) && usedMap.get(currentAddress.address),
         };
 
         // Add the address to the appropiate array.

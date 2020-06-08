@@ -310,9 +310,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   private loadTransactions(delayMs: number) {
     this.removeTransactionsSubscription();
 
-    this.transactionsSubscription = of(1).pipe(delay(delayMs), mergeMap(() => this.historyService.getTransactionsHistory(null))).subscribe(
-      (transactions: OldTransaction[]) => {
-        this.allTransactions = transactions;
+    this.transactionsSubscription = of(1).pipe(delay(delayMs), mergeMap(() => this.historyService.getTransactionsHistory(null))).subscribe(response => {
+        this.allTransactions = response.transactions;
         this.transactionsLoaded = true;
 
         // Filter the transactions.

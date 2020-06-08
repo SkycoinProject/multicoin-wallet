@@ -5,15 +5,15 @@ import BigNumber from 'bignumber.js';
 
 import { StorageService } from '../../storage.service';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
-import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
-import { PendingTransactionsResponse, AddressesHistoryResponse, PendingTransactionData } from '../../wallet-operations/history.service';
+import { PendingTransactionsResponse, AddressesHistoryResponse, PendingTransactionData, TransactionHistory } from '../../wallet-operations/history.service';
 import { HistoryOperator } from '../history-operator';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { OperatorService } from '../../operators.service';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
 import { recursivelyGetTransactions, getTransactionsHistory } from './utils/eth-history-utils';
 import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
+import { AppConfig } from '../../../app.config';
 
 /**
  * Operator for HistoryService to be used with eth-like coins.
@@ -85,7 +85,7 @@ export class EthHistoryOperator implements HistoryOperator {
       }));
   }
 
-  getTransactionsHistory(wallet: WalletBase|null): Observable<OldTransaction[]> {
+  getTransactionsHistory(wallet: WalletBase|null): Observable<TransactionHistory> {
     // Use the provided wallet or get all wallets.
     let initialRequest: Observable<WalletBase[]>;
     if (wallet) {
@@ -101,7 +101,14 @@ export class EthHistoryOperator implements HistoryOperator {
   }
 
   getPendingTransactions(): Observable<PendingTransactionsResponse> {
-    return this.walletsAndAddressesOperator.currentWallets.pipe(first(), mergeMap(wallets => {
+    let wallets: WalletBase[];
+
+    return this.walletsAndAddressesOperator.currentWallets.pipe(first(), mergeMap(response => {
+      wallets = response;
+
+      // Get the basic backend info to know the number of the lastest block.
+      return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api');
+    }), mergeMap(generalData => {
       // Allows to avoid repeating addresses.
       const addressesMap = new Map<string, boolean>();
 
@@ -116,14 +123,21 @@ export class EthHistoryOperator implements HistoryOperator {
         });
       });
 
-      // Get the full history.
-      return recursivelyGetTransactions(this.currentCoin, this.blockbookApiService, addresses);
-    }), map(transactions => {
-      // Get only the pending transactions.
-      transactions = transactions.filter(tx => !tx.confirmations || tx.confirmations < this.currentCoin.confirmationsNeeded);
+      // Calculate how many transactions to get per address.
+      const hasManyAddresses = addresses.length > AppConfig.fewAddressesLimit;
+      const transactionsToGet = hasManyAddresses ? AppConfig.maxTxPerAddressIfManyAddresses : AppConfig.maxTxPerAddressIfFewAddresses;
+
+      // Determine the initial block to get only the pending transactions.
+      const startingBlock = generalData.blockbook.bestHeight - (this.currentCoin.confirmationsNeeded - 1);
+
+      // Get the history.
+      return recursivelyGetTransactions(this.currentCoin, this.blockbookApiService, addresses, transactionsToGet, startingBlock);
+    }), map(response => {
+      // Security measure for race conditions, as 2 request were made.
+      response.transactions = response.transactions.filter(tx => !tx.confirmations || tx.confirmations < this.currentCoin.confirmationsNeeded);
 
       return {
-        user: transactions.map(tx => this.processTransactionData(tx)).sort((a, b) => b.confirmations - a.confirmations),
+        user: response.transactions.map(tx => this.processTransactionData(tx)).sort((a, b) => b.confirmations - a.confirmations),
         all: [],
       };
     }));

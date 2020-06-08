@@ -9,12 +9,14 @@ import { calculateGeneralData } from '../../../../utils/history-utils';
 import { Coin } from '../../../../coins/coin';
 import { BlockbookApiService } from '../../../../services/api/blockbook-api.service';
 import { EthCoinConfig } from '../../../../coins/config/eth.coin-config';
+import { TransactionHistory } from '../../../../services/wallet-operations/history.service';
+import { AppConfig } from '../../../../app.config';
 
 /**
  * Gets the transaction history of a wallet list.
  * @param wallets Wallets to consult.
  */
-export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[], blockbookApiService: BlockbookApiService, storageService: StorageService): Observable<OldTransaction[]> {
+export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[], blockbookApiService: BlockbookApiService, storageService: StorageService): Observable<TransactionHistory> {
   let transactions: OldTransaction[];
   /**
    * Allows to easily know which addresses are part of the wallets and also to know
@@ -41,10 +43,18 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
   // Value which will allow to get amounts in coins, instead of wei.
   const decimalsCorrector = new BigNumber(10).exponentiatedBy((currentCoin.config as EthCoinConfig).decimals);
 
+  // If not all transactions were retrieved, for performance reasons.
+  let historyHasMoreTransactions: boolean;
+  // Calculate how many transactions to get per address.
+  const hasManyAddresses = addresses.length > AppConfig.fewAddressesLimit;
+  const transactionsToGet = hasManyAddresses ? AppConfig.maxTxPerAddressIfManyAddresses : AppConfig.maxTxPerAddressIfFewAddresses;
+
   // Get the transactions of all addresses.
-  return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses).pipe(mergeMap((response: any[]) => {
+  return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, transactionsToGet).pipe(mergeMap((response: TransactionsResponse) => {
+    historyHasMoreTransactions = response.hasMore;
+
     // Process the response and convert it into a known object type. Some values are temporal.
-    transactions = response.map<OldTransaction>(transaction => {
+    transactions = response.transactions.map<OldTransaction>(transaction => {
       // Build the output list.
       const outputs: Output[] = [];
       (transaction.vout as any[]).forEach(output => {
@@ -92,7 +102,7 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
       notesMap.set(key, notes[key]);
     });
 
-    return transactions
+    transactions = transactions
       // Sort the transactions by date.
       .sort((a, b) =>  {
         if (b.timestamp >= 0 && a.timestamp >= 0) {
@@ -117,37 +127,91 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
 
         return transaction;
       });
+
+    const finalResponse: TransactionHistory = {
+      transactions: transactions,
+      hasMore: historyHasMoreTransactions,
+    };
+
+    return finalResponse;
   }));
+}
+
+/**
+ * Object returned by the recursivelyGetTransactions function.
+ */
+export interface TransactionsResponse {
+  transactions: any[];
+  /**
+   * If true, some transactions were ignored due to the value of the maxPerAddress param sent
+   * to the function.
+   */
+  hasMore: boolean;
 }
 
 /**
  * Gets the transaction history of the addresses in the provided address list.
  * @param addresses Addresses to check. The list will be altered by the function.
+ * @param maxPerAddress Max number of transactions to return per address.
+ * @param startingBlock Block from which to start looking for transactions.
  * @param currentElements Already obtained transactions. For internal use.
+ * @param hasMore If the maxPerAddress param caused some of the transactions of one or more
+ * addresses to be ignored. For internal use.
  * @returns Array with all the transactions related to the provided address list, in the
  * format returned by the backend.
  */
-export function recursivelyGetTransactions(currentCoin: Coin, blockbookApiService: BlockbookApiService, addresses: string[], currentElements = new Map<string, any>()): Observable<any[]> {
-  return blockbookApiService.get(currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'txslight'})
+export function recursivelyGetTransactions(
+  currentCoin: Coin,
+  blockbookApiService: BlockbookApiService,
+  addresses: string[],
+  maxPerAddress: number,
+  startingBlock: number = null,
+  currentElements = new Map<string, any>(),
+  hasMore = false,
+): Observable<TransactionsResponse> {
+  const requestParams = {
+    pageSize: maxPerAddress,
+    details: 'txslight',
+  };
+
+  if (startingBlock) {
+    requestParams['from'] = startingBlock;
+  }
+
+  return blockbookApiService.get(currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], requestParams)
     .pipe(mergeMap((response) => {
+      // Save the transactions. A map is used to avoid repeating transactions.
       if (response.transactions) {
         (response.transactions as any[]).forEach(transaction => {
           currentElements.set(transaction.txid, transaction);
         });
       }
 
+      // Check if some transactions were ignored.
+      if (!hasMore) {
+        if (response.totalPages && response.totalPages > 1) {
+          hasMore = true;
+        }
+      }
+
       addresses.pop();
 
+      // If there are no more addresses, build and return the final response.
       if (addresses.length === 0) {
-        const finalResponse: any[] = [];
+        const transactionsForResponse: any[] = [];
         currentElements.forEach(tx => {
-          finalResponse.push(tx);
+          transactionsForResponse.push(tx);
         });
+
+        const finalResponse: TransactionsResponse = {
+          transactions: transactionsForResponse,
+          hasMore: hasMore,
+        };
 
         return of(finalResponse);
       }
 
       // Continue to the next step.
-      return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, currentElements);
+      return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, maxPerAddress, startingBlock, currentElements, hasMore);
     }));
 }
