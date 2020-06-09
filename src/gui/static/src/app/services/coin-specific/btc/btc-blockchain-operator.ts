@@ -134,13 +134,22 @@ export class BtcBlockchainOperator implements BlockchainOperator {
         }),
       ).subscribe(result => {
         this.ngZone.run(() => {
+          // If Blockbook and the node are out of sync but only by 1 or 2 blocks, retry after a
+          // small delay.
+          const blockbookBlocksBehind = new BigNumber(result.backend.blocks).minus(result.blockbook.bestHeight);
+          if (blockbookBlocksBehind.isGreaterThan(0) && blockbookBlocksBehind.isLessThanOrEqualTo(2)) {
+            this.startDataRefreshSubscription(10000);
+
+            return;
+          }
+
           // Consider the blockchain out of sync if the last block is very old.
           let synchronized = environment.ignoreNonFiberNetworIssues ? true :
             Date.now() - (moment(result.blockbook.lastBlockTime).unix() * 1000) < (this.currentCoin.config as BtcCoinConfig).outOfSyncMinutes * 60000;
 
-          // If Blockbook and the node are more than 1 block appart, consider everything
+          // If Blockbook and the node are more than 2 blocks appart, consider everything
           // out of sync.
-          if (new BigNumber(result.backend.blocks).minus(result.blockbook.bestHeight).isGreaterThan(1)) {
+          if (blockbookBlocksBehind.isGreaterThan(2)) {
             synchronized = false;
           }
 
@@ -157,7 +166,8 @@ export class BtcBlockchainOperator implements BlockchainOperator {
 
           this.nodeSynchronized = synchronized;
 
-          this.startDataRefreshSubscription(this.updatePeriod);
+          // Refresh faster if the node is out of sync.
+          this.startDataRefreshSubscription(synchronized ? this.updatePeriod : this.errorUpdatePeriod);
         });
       }, () => {
         this.startDataRefreshSubscription(this.errorUpdatePeriod);

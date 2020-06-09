@@ -72,10 +72,21 @@
   padding: 0;
 }
 
-.-transaction {
+.-pending {
+  opacity: 0.5;
+}
+
+.-transaction-container {
   background-color: $white;
   border-bottom: 1px solid $grey-very-light;
   cursor: pointer;
+
+  &:hover {
+    background-color: $white-hover;
+  }
+}
+
+.-transaction {
   display: flex;
   padding: 20px 12px;
 
@@ -90,8 +101,8 @@
       width: $normal-icon-size;
     }
 
-    &.-pending {
-      opacity: 0.5;
+    .-grey {
+      filter: grayscale(100%);
     }
   }
 
@@ -170,10 +181,6 @@
       display: inline-block;
       margin: 0;
     }
-  }
-
-  &:hover {
-    background-color: $white-hover;
   }
 }
 

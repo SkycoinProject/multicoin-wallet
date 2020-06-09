@@ -109,7 +109,9 @@ export class TopBarComponent implements OnInit, OnDestroy {
   }
 
   refresBalance() {
-    this.balanceAndOutputsService.refreshBalance();
+    if (!this.refreshingBalance) {
+      this.balanceAndOutputsService.refreshBalance();
+    }
   }
 
   changelanguage() {

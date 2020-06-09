@@ -123,11 +123,20 @@ export class EthBlockchainOperator implements BlockchainOperator {
         this.ngZone.run(() => {
           let synchronized = false;
 
+          // If Blockbook and the node are out of sync but only by 1 or 2 blocks, retry after a
+          // small delay.
+          const blockbookBlocksBehind = new BigNumber(blockbookData.backend.blocks).minus(blockbookData.blockbook.bestHeight);
+          if (blockbookBlocksBehind.isGreaterThan(0) && blockbookBlocksBehind.isLessThanOrEqualTo(2)) {
+            this.startDataRefreshSubscription(10000);
+
+            return;
+          }
+
           // If the result is false, the blockchain is synchronized.
           if (result === false) {
-            // If Blockbook and the node are more than 1 block appart, consider everything
+            // If Blockbook and the node are more than 2 block2 appart, consider everything
             // out of sync.
-            if (new BigNumber(blockbookData.backend.blocks).minus(blockbookData.blockbook.bestHeight).isGreaterThan(1)) {
+            if (blockbookBlocksBehind.isGreaterThan(2)) {
               this.progressSubject.next({
                 currentBlock: blockbookData.blockbook.bestHeight,
                 highestBlock: blockbookData.backend.blocks,
@@ -143,9 +152,20 @@ export class EthBlockchainOperator implements BlockchainOperator {
               synchronized = true;
             }
           } else {
+            const currentBlock = new BigNumber((result.currentBlock as string).substr(2), 16);
+            const highestBlock = new BigNumber((result.highestBlock as string).substr(2), 16);
+
+            // If the node is out of sync but only by 1 or 2 blocks, retry after a small delay.
+            const blocksBehind = new BigNumber(highestBlock).minus(currentBlock);
+            if (blocksBehind.isGreaterThan(0) && blocksBehind.isLessThanOrEqualTo(2)) {
+              this.startDataRefreshSubscription(10000);
+
+              return;
+            }
+
             this.progressSubject.next({
-              currentBlock: new BigNumber((result.currentBlock as string).substr(2), 16).toNumber(),
-              highestBlock: new BigNumber((result.highestBlock as string).substr(2), 16).toNumber(),
+              currentBlock: currentBlock.toNumber(),
+              highestBlock: highestBlock.toNumber(),
               synchronized: false,
             });
           }
@@ -157,7 +177,8 @@ export class EthBlockchainOperator implements BlockchainOperator {
 
           this.nodeSynchronized = synchronized;
 
-          this.startDataRefreshSubscription(this.updatePeriod);
+          // Refresh faster if the node is out of sync.
+          this.startDataRefreshSubscription(synchronized ? this.updatePeriod : this.errorUpdatePeriod);
         });
       }, () => {
         this.startDataRefreshSubscription(this.errorUpdatePeriod);

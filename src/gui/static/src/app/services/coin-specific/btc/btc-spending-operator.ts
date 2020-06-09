@@ -26,6 +26,9 @@ import { BtcInput, BtcOutput, BtcTxEncoder } from './utils/btc-tx-encoder';
  * checking SpendingOperator and SpendingService.
  */
 export class BtcSpendingOperator implements SpendingOperator {
+  private readonly aproxP2pkhInputSize = 150;
+  private readonly aproxOutputSize = 34;
+
   // Coin the current instance will work with.
   private currentCoin: Coin;
 
@@ -290,7 +293,7 @@ export class BtcSpendingOperator implements SpendingOperator {
           // Check how many coins will have to be added to a change output and how much would
           // it cost to use that change output in a future transaction if using the current fee.
           const remainingCoins = potentinalNewSelectedBalance.minus(totalAmountNeeded);
-          const aproxChangeOutputCost = new BigNumber(180).multipliedBy(feePerUnit).dividedBy(decimalsCorrector);
+          const aproxChangeOutputCost = new BigNumber(this.aproxP2pkhInputSize).multipliedBy(feePerUnit).dividedBy(decimalsCorrector);
 
           // If the change output is needed but it would cost more than 10% of its value to
           // send it in a future transaction, try to add another input.
@@ -361,13 +364,15 @@ export class BtcSpendingOperator implements SpendingOperator {
 
   calculateFinalFee(howManyInputs: number, howManyOutputs: number, feePerUnit: BigNumber, maxUnits: BigNumber): BigNumber {
     // Maultiply the inputs and outputs by their aproximate size.
-    const inputsSize = new BigNumber(howManyInputs).multipliedBy(180);
-    const outputsSize = new BigNumber(howManyOutputs).multipliedBy(34);
+    const inputsSize = new BigNumber(howManyInputs).multipliedBy(this.aproxP2pkhInputSize);
+    const outputsSize = new BigNumber(howManyOutputs).multipliedBy(this.aproxOutputSize);
+
+    const otherDataSize = new BigNumber(10);
 
     // Needed for returning the value in coins and not satoshis.
     const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
 
-    return inputsSize.plus(outputsSize).plus(10).multipliedBy(feePerUnit).dividedBy(decimalsCorrector);
+    return inputsSize.plus(outputsSize).plus(otherDataSize).multipliedBy(feePerUnit).dividedBy(decimalsCorrector);
   }
 
   signTransaction(

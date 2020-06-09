@@ -83,10 +83,10 @@
   <!-- Transaction list. -->
   <div class="paper" *ngIf="transactions && transactions.length > 0">
     <ng-container *ngFor="let transaction of transactions">
-      <div class="-transaction" (click)="showTransaction(transaction)">
+      <div class="-transaction-container" (click)="showTransaction(transaction)"><div class="-transaction" [ngClass]="{ '-pending': !transaction.confirmed }">
         <!-- Icon. -->
-        <div class="-icon" [ngClass]="{ '-pending': !transaction.confirmed }">
-          <img [src]="'assets/img/' + getTransactionIconName(transaction) + '-blue.png'">
+        <div class="-icon">
+          <img [src]="'assets/img/' + getTransactionIconName(transaction) + '-blue.png'" [ngClass]="{ '-pending -grey': !transaction.confirmed }">
         </div>
         <div class="-address">
           <!-- First line. -->
@@ -133,7 +133,7 @@
         </div>
         <div class="-balance">
           <div class="-top-line" *ngIf="transaction.confirmed">{{ transaction.timestamp | dateTime }}</div>
-          <div class="-top-line yellow-text" *ngIf="!transaction.confirmed">
+          <div class="-top-line red-text" *ngIf="!transaction.confirmed">
             {{ 'history.pending-indication' | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded} }}
             <mat-icon
               [matTooltip]="'history.confirmations-help' | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded}"
@@ -160,7 +160,7 @@
               {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
             </p>
           </ng-container>
-        </div>
+        </div></div>
       </div>
     </ng-container>
     <div *ngIf="viewingTruncatedList && !someTransactionsWereIgnored" class="view-all-button" (click)="showAll()">
