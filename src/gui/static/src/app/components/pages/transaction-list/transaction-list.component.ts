@@ -7,12 +7,14 @@ import { ActivatedRoute } from '@angular/router';
 
 import { PriceService } from '../../../services/price.service';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
-import { HistoryService } from '../../../services/wallet-operations/history.service';
+import { HistoryService, TransactionLimits } from '../../../services/wallet-operations/history.service';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 import { OldTransaction, OldTransactionTypes } from '../../../services/wallet-operations/transaction-objects';
 import { WalletTypes } from '../../../services/wallet-operations/wallet-objects';
 import { getTransactionIconName } from '../../../utils/history-utils';
 import { CoinService } from '../../../services/coin.service';
+import { AppConfig } from '../../../app.config';
+import { Coin } from '../../../coins/coin';
 
 /**
  * Represents a wallet, to be used as filter.
@@ -54,6 +56,51 @@ class Address {
 }
 
 /**
+ * Steps the page can go through to get the the data. In each step some transaction may have
+ * been ignored due to the limitations in transactions per address.
+ */
+enum LoadingSteps {
+  /**
+   * The page is loading the initial data.
+   */
+  Starting = 1,
+  /**
+   * The page loaded the history using the standard limitations for transactions per address.
+   */
+  FirstGroup = 2,
+  /**
+   * The page loaded the history using the extended limitations for transactions per address.
+   */
+  SecondGroup = 3,
+  /**
+   * The page loaded the history using the maximum allowed limit for transactions per address.
+   */
+  LastGroup = 4,
+}
+
+/**
+ * Steps the page can go through to show the the data.
+ */
+enum ShowingSteps {
+  /**
+   * Showing the initial group, which includes at most the transactions available in
+   * LoadingSteps.FirstGroup.
+   */
+  InitialGroup = 1,
+  /**
+   * Showing the estended group, which includes at most the transactions available in
+   * LoadingSteps.SecondGroup.
+   */
+  ExtraGroup = 2,
+  /**
+   * Showing the full history obtained from the backend. Should only be used when no
+   * trasnsactions have been ignored due to the limitations in transactions per address or
+   * when the loading state is LoadingSteps.LastGroup.
+   */
+  All = 3,
+}
+
+/**
  * Shows the transaction history and options for the user to filter it. The "addr" and "wal"
  * params can be added to the url to limit the history to a list of wallet IDs (as a comma
  * separated string) or a list of addresses, respectively.
@@ -70,6 +117,15 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   allTransactions: OldTransaction[];
   // Contains the filtered transaction list.
   transactions: OldTransaction[];
+  // Current step in the process for loading the data. The app will only perform additional steps
+  // if the previous ones did not recover all the transactions and the user requested more data.
+  loadingStep = LoadingSteps.Starting;
+  // If true, some transactions were ignored for the wallets and addresses currently selected as
+  // filter, due to the limitations in transactions per address.
+  someTransactionsWereIgnored: boolean;
+  // List with the addresses for which transactions were ignored the last time the history
+  // was recovered.
+  addressesWitMoreTransactions: Set<string>;
   // All wallets the user has, for filtering.
   wallets: Wallet[];
   // All wallets that must be shown in the filter list with all its addresses.
@@ -81,9 +137,11 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   addresses: Address[];
   // If true, the currently selected coin includes coin hours.
   coinHasHours = false;
+  currentCoin: Coin;
   // How many confirmations a transaction must have to be considered fully confirmed.
   confirmationsNeeded = 0;
-  transactionsLoaded = false;
+  transactionsLoadedForTheFirsTime = false;
+  loadingTransactions = false;
   form: FormGroup;
 
   // If the involved addresses of every transaction must be shown.
@@ -92,10 +150,12 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   userHasMultipleWallets = false;
 
   oldTransactionTypes = OldTransactionTypes;
+  showingSteps = ShowingSteps;
 
   // Vars for showing only some elements at the same time by default.
-  readonly maxInitialElements = 40;
-  viewAll = false;
+  maxInitialElements = 40;
+  maxExtraElements = 80;
+  showingStep = ShowingSteps.InitialGroup;
   viewingTruncatedList = false;
   totalElements: number;
 
@@ -126,6 +186,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       filter: [[]],
     });
 
+    this.currentCoin = coinService.currentCoinInmediate;
+
     // Intervals for updating the data must be longer if connecting to a remote backend.
     if (!coinService.currentCoinInmediate.isLocal) {
       this.errorUpdatePeriod = 60 * 1000;
@@ -141,7 +203,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       // Add prefixes to make it easier to identify the requested filters.
       Addresses = Addresses.map(element => 'a-' + element);
       Wallets = Wallets.map(element => 'w-' + element);
-      this.viewAll = false;
+      this.showingStep = ShowingSteps.InitialGroup;
 
       // Save the list of requested filters.
       this.requestedFilters = Addresses.concat(Wallets);
@@ -160,6 +222,21 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       }
 
       this.userHasWallets = true;
+
+      // Limit the max number of transactions to show per step to make it not bigger than how many
+      // transactions can be obtained per address, to avoid showing an invalid transaction order
+      // in edge cases.
+      let addressCount = 0;
+      wallets.forEach(wallet => {
+        addressCount += wallet.addresses.length;
+      });
+      const maxTxsPerAddress = addressCount > AppConfig.fewAddressesLimit ? AppConfig.maxTxPerAddressIfManyAddresses : AppConfig.maxTxPerAddressIfFewAddresses;
+      this.maxInitialElements = Math.min(this.maxInitialElements, maxTxsPerAddress);
+      this.maxExtraElements = Math.min(this.maxExtraElements, maxTxsPerAddress * AppConfig.maxTxPerAddressMultiplier);
+
+      // Reset the values.
+      this.showingStep = ShowingSteps.InitialGroup;
+      this.loadingStep = LoadingSteps.Starting;
 
       // If the user only has one wallet, the addresses of each transaction will be shown.
       this.userHasMultipleWallets = wallets.length > 1;
@@ -230,7 +307,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
 
     this.filterSubscription = this.form.get('filter').valueChanges.subscribe(() => {
-      this.viewAll = false;
+      this.showingStep = ShowingSteps.InitialGroup;
       this.filterTransactions();
     });
   }
@@ -245,9 +322,34 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
   // Shows all transactions.
   showAll() {
-    if (!this.viewAll) {
-      this.viewAll = true;
+    if (this.showingStep !== ShowingSteps.All) {
+      this.showingStep = ShowingSteps.All;
       this.filterTransactions();
+    }
+  }
+
+  // Show or load more transactions.
+  loadMore() {
+    // Compare the current step the page is in for showing data with the step for
+    // loading the data, to be able to know if more data must be loaded or the page
+    // only needs to show previously obtained data.
+    if (this.showingStep === ShowingSteps.InitialGroup) {
+      if (this.loadingStep === LoadingSteps.FirstGroup) {
+        this.loadTransactions(0);
+      } else if (this.loadingStep === LoadingSteps.SecondGroup) {
+        this.showingStep = ShowingSteps.ExtraGroup;
+        this.filterTransactions();
+      } else if (this.loadingStep === LoadingSteps.LastGroup) {
+        this.showingStep = ShowingSteps.All;
+        this.filterTransactions();
+      }
+    } else if (this.showingStep === ShowingSteps.ExtraGroup) {
+      if (this.loadingStep === LoadingSteps.SecondGroup) {
+        this.loadTransactions(0);
+      } else if (this.loadingStep === LoadingSteps.LastGroup) {
+        this.showingStep = ShowingSteps.All;
+        this.filterTransactions();
+      }
     }
   }
 
@@ -310,21 +412,50 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   private loadTransactions(delayMs: number) {
     this.removeTransactionsSubscription();
 
-    this.transactionsSubscription = of(1).pipe(delay(delayMs), mergeMap(() => this.historyService.getTransactionsHistory(null))).subscribe(response => {
+    this.loadingTransactions = true;
+
+    // Limit the transactions per address.
+    let transactionLimitperAddress: TransactionLimits;
+    if (this.loadingStep === LoadingSteps.Starting) {
+      transactionLimitperAddress = TransactionLimits.NormalLimit;
+    } else if (this.loadingStep === LoadingSteps.FirstGroup) {
+      transactionLimitperAddress = TransactionLimits.ExtraLimit;
+    } else {
+      transactionLimitperAddress = TransactionLimits.MaxAllowed;
+    }
+
+    this.transactionsSubscription = of(1).pipe(delay(delayMs), mergeMap(() => this.historyService.getTransactionsHistory(null, transactionLimitperAddress))).subscribe(response => {
         this.allTransactions = response.transactions;
-        this.transactionsLoaded = true;
+        this.addressesWitMoreTransactions = response.addressesWitMoreTransactions;
+        this.transactionsLoadedForTheFirsTime = true;
+        this.loadingTransactions = false;
+
+        this.loadingStep += 1;
+
+        // Make the page show the new data.
+        if (this.loadingStep === LoadingSteps.FirstGroup) {
+          this.showingStep = ShowingSteps.InitialGroup;
+        } else if (this.loadingStep === LoadingSteps.SecondGroup) {
+          this.showingStep = ShowingSteps.ExtraGroup;
+        } else if (this.loadingStep === LoadingSteps.LastGroup) {
+          this.showingStep = ShowingSteps.All;
+        }
 
         // Filter the transactions.
         this.showRequestedFilters();
         this.filterTransactions();
       },
       // If there is an error, retry after a short delay.
-      () => this.loadTransactions(this.errorUpdatePeriod),
+      () => {
+        this.loadingTransactions = false;
+
+        this.loadTransactions(this.errorUpdatePeriod);
+      },
     );
   }
 
   /**
-   * Updates the list of transaction which will be shown on the UI.
+   * Updates the list of transactions that the UI will show.
    */
   private filterTransactions() {
     const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
@@ -337,7 +468,11 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     if (selectedfilters.length === 0) {
       // If no filter was selected, show all transactions.
       this.transactions = this.allTransactions;
+
+      this.someTransactionsWereIgnored = this.addressesWitMoreTransactions.size > 0;
     } else {
+      this.someTransactionsWereIgnored = false;
+
       // Save all the allowed addresses.
       const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
       selectedfilters.forEach(filter => {
@@ -346,10 +481,18 @@ export class TransactionListComponent implements OnInit, OnDestroy {
           (filter as Wallet).addresses.forEach(address => {
             selectedAddresses.set(address.address, true);
             address.showingWholeWallet = true;
+
+            if (this.addressesWitMoreTransactions.has(address.address)) {
+              this.someTransactionsWereIgnored = true;
+            }
           });
           (filter as Wallet).allAddressesSelected = true;
         } else {
           selectedAddresses.set((filter as Address).address, true);
+
+          if (this.addressesWitMoreTransactions.has((filter as Address).address)) {
+            this.someTransactionsWereIgnored = true;
+          }
         }
       });
 
@@ -359,10 +502,17 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       );
     }
 
+    let maxElementsToShow: number;
+    if (this.showingStep === ShowingSteps.InitialGroup) {
+      maxElementsToShow = this.maxInitialElements;
+    } else if (this.showingStep === ShowingSteps.ExtraGroup) {
+      maxElementsToShow = this.maxExtraElements;
+    }
+
     // Truncate the list, if needed.
     this.totalElements = this.transactions.length;
-    if (!this.viewAll && this.totalElements > this.maxInitialElements) {
-      this.transactions = this.transactions.slice(0, this.maxInitialElements);
+    if (this.showingStep !== ShowingSteps.All && this.totalElements > maxElementsToShow) {
+      this.transactions = this.transactions.slice(0, maxElementsToShow);
       this.viewingTruncatedList = true;
     } else {
       this.viewingTruncatedList = false;
@@ -374,7 +524,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
    * still loading important data.
    */
   private showRequestedFilters() {
-    if (!this.transactionsLoaded || !this.wallets || this.wallets.length === 0 || this.requestedFilters === null || this.requestedFilters === undefined) {
+    if (!this.transactionsLoadedForTheFirsTime || !this.wallets || this.wallets.length === 0 || this.requestedFilters === null || this.requestedFilters === undefined) {
       return;
     }
 

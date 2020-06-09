@@ -7,7 +7,7 @@ import { StorageService } from '../../storage.service';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
 import { Coin } from '../../../coins/coin';
 import { getTransactionsHistory, recursivelyGetTransactions } from './utils/btc-history-utils';
-import { PendingTransactionsResponse, AddressesHistoryResponse, PendingTransactionData, TransactionHistory } from '../../wallet-operations/history.service';
+import { PendingTransactionsResponse, AddressesHistoryResponse, PendingTransactionData, TransactionHistory, TransactionLimits } from '../../wallet-operations/history.service';
 import { HistoryOperator } from '../history-operator';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { OperatorService } from '../../operators.service';
@@ -85,7 +85,7 @@ export class BtcHistoryOperator implements HistoryOperator {
       }));
   }
 
-  getTransactionsHistory(wallet: WalletBase|null): Observable<TransactionHistory> {
+  getTransactionsHistory(wallet: WalletBase|null, transactionLimitperAddress: TransactionLimits): Observable<TransactionHistory> {
     // Use the provided wallet or get all wallets.
     let initialRequest: Observable<WalletBase[]>;
     if (wallet) {
@@ -96,7 +96,7 @@ export class BtcHistoryOperator implements HistoryOperator {
 
     // Get the history.
     return initialRequest.pipe(first(), mergeMap(wallets => {
-      return getTransactionsHistory(this.currentCoin, wallets, this.blockbookApiService, this.storageService);
+      return getTransactionsHistory(this.currentCoin, wallets, transactionLimitperAddress, this.blockbookApiService, this.storageService);
     }));
   }
 

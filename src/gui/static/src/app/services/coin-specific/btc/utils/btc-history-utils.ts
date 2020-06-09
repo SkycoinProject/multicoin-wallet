@@ -9,14 +9,21 @@ import { calculateGeneralData } from '../../../../utils/history-utils';
 import { Coin } from '../../../../coins/coin';
 import { BlockbookApiService } from '../../../../services/api/blockbook-api.service';
 import { BtcCoinConfig } from '../../../../coins/config/btc.coin-config';
-import { TransactionHistory } from '../../../../services/wallet-operations/history.service';
+import { TransactionHistory, TransactionLimits } from '../../../../services/wallet-operations/history.service';
 import { AppConfig } from '../../../../app.config';
 
 /**
  * Gets the transaction history of a wallet list.
  * @param wallets Wallets to consult.
  */
-export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[], blockbookApiService: BlockbookApiService, storageService: StorageService): Observable<TransactionHistory> {
+export function getTransactionsHistory(
+  currentCoin: Coin,
+  wallets: WalletBase[],
+  transactionLimitperAddress: TransactionLimits,
+  blockbookApiService: BlockbookApiService,
+  storageService: StorageService,
+): Observable<TransactionHistory> {
+
   let transactions: OldTransaction[];
   /**
    * Allows to easily know which addresses are part of the wallets and also to know
@@ -43,15 +50,20 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
   // Value which will allow to get the value in coins, instead of sats.
   const decimalsCorrector = new BigNumber(10).exponentiatedBy((currentCoin.config as BtcCoinConfig).decimals);
 
-  // If not all transactions were retrieved, for performance reasons.
-  let historyHasMoreTransactions: boolean;
+  // Addresses for which transactions were ignored due to transactionLimitperAddres.
+  let addressesWitMoreTransactions: Set<string>;
   // Calculate how many transactions to get per address.
   const hasManyAddresses = addresses.length > AppConfig.fewAddressesLimit;
-  const transactionsToGet = hasManyAddresses ? AppConfig.maxTxPerAddressIfManyAddresses : AppConfig.maxTxPerAddressIfFewAddresses;
+  let transactionsToGet = hasManyAddresses ? AppConfig.maxTxPerAddressIfManyAddresses : AppConfig.maxTxPerAddressIfFewAddresses;
+  if (transactionLimitperAddress === TransactionLimits.ExtraLimit) {
+    transactionsToGet = transactionsToGet * AppConfig.maxTxPerAddressMultiplier;
+  } else if (transactionLimitperAddress === TransactionLimits.MaxAllowed) {
+    transactionsToGet = AppConfig.maxTxPerAddressAllowedByBackend;
+  }
 
   // Get the transactions of all addresses.
   return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, transactionsToGet).pipe(mergeMap((response: TransactionsResponse) => {
-    historyHasMoreTransactions = response.hasMore;
+    addressesWitMoreTransactions = response.addressesWitMoreTransactions;
 
     // Process the response and convert it into a known object type. Some values are temporal.
     transactions = response.transactions.map<OldTransaction>(transaction => {
@@ -152,7 +164,7 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
 
     const finalResponse: TransactionHistory = {
       transactions: transactions,
-      hasMore: historyHasMoreTransactions,
+      addressesWitMoreTransactions: addressesWitMoreTransactions,
     };
 
     return finalResponse;
@@ -165,10 +177,10 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
 export interface TransactionsResponse {
   transactions: any[];
   /**
-   * If true, some transactions were ignored due to the value of the maxPerAddress param sent
-   * to the function.
+   * List with the addresses for which transactions were ignored due to the value sent in the
+   * maxPerAddress param.
    */
-  hasMore: boolean;
+  addressesWitMoreTransactions: Set<string>;
 }
 
 /**
@@ -179,6 +191,8 @@ export interface TransactionsResponse {
  * @param currentElements Already obtained transactions. For internal use.
  * @param hasMore If the maxPerAddress param caused some of the transactions of one or more
  * addresses to be ignored. For internal use.
+ * @param addressesWitMoreTransactions Addresses with transactions which were ignored.
+ * For internal use.
  * @returns Array with all the transactions related to the provided address list, in the
  * format returned by the backend.
  */
@@ -189,7 +203,7 @@ export function recursivelyGetTransactions(
   maxPerAddress: number,
   startingBlock: number = null,
   currentElements = new Map<string, any>(),
-  hasMore = false,
+  addressesWitMoreTransactions = new Set<string>(),
 ): Observable<TransactionsResponse> {
   const requestParams = {
     pageSize: maxPerAddress,
@@ -210,10 +224,8 @@ export function recursivelyGetTransactions(
       }
 
       // Check if some transactions were ignored.
-      if (!hasMore) {
-        if (response.totalPages && response.totalPages > 1) {
-          hasMore = true;
-        }
+      if (response.totalPages && response.totalPages > 1) {
+        addressesWitMoreTransactions.add(addresses[addresses.length - 1]);
       }
 
       addresses.pop();
@@ -227,14 +239,14 @@ export function recursivelyGetTransactions(
 
         const finalResponse: TransactionsResponse = {
           transactions: transactionsForResponse,
-          hasMore: hasMore,
+          addressesWitMoreTransactions: addressesWitMoreTransactions,
         };
 
         return of(finalResponse);
       }
 
       // Continue to the next step.
-      return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, maxPerAddress, startingBlock, currentElements, hasMore);
+      return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, maxPerAddress, startingBlock, currentElements, addressesWitMoreTransactions);
     }));
 }
 

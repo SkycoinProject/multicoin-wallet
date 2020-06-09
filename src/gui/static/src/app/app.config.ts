@@ -35,25 +35,35 @@ export const AppConfig = {
    */
   mediumModalWidth: '566px',
 
-  // History settings.
+  // History settings for coins using Blockbook.
   ////////////////////////////////
 
   /**
    * Max number of transactions per address to retrieve when building the transaction history and
-   * the user has few addresses, for performance reasons. If any address has more transactions,
-   * the UI will show a link to open the explorer. Some coins may ignore this value.
+   * the user has few addresses, for performance reasons. Must not be more than 250.
    */
-  maxTxPerAddressIfFewAddresses: 100,
+  maxTxPerAddressIfFewAddresses: 50,
   /**
    * Max number of transactions per address to retrieve when building the transaction history and
-   * the user has many addresses, for performance reasons. If any address has more transactions,
-   * the UI will show a link to open the explorer. Some coins may ignore this value.
+   * the user has many addresses, for performance reasons. Must not be more than 250.
    */
-  maxTxPerAddressIfManyAddresses: 30,
+  maxTxPerAddressIfManyAddresses: 25,
+  /**
+   * Value wich will multiply maxTxPerAddressIfFewAddresses and maxTxPerAddressIfManyAddresses
+   * to get the max number of transactions per address to retrieve if the user asks for
+   * more transactions.
+   */
+  maxTxPerAddressMultiplier: 3,
+  /**
+   * Absolute max number of transactions per address that can be requested when building the
+   * transaction history. Must be less than 1000 and more than
+   * maxTxPerAddressIfFewAddresses * maxTxPerAddressMultiplier.
+   */
+  maxTxPerAddressAllowedByBackend: 300,
   /**
    * Max number of addresses considered as "few" while building the transaction history.
    */
-  fewAddressesLimit: 8,
+  fewAddressesLimit: 7,
 
   // Hw wallet firmware.
   ////////////////////////////////

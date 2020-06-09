@@ -7,9 +7,11 @@
     [noDataText]="'history.no-txs'"
   ></app-loading-content>
 </div>
-<div class="container" *ngIf="userHasWallets">
+
+<!-- Content. -->
+<div class="container" [ngClass]="{disabled: loadingTransactions && transactionsLoadedForTheFirsTime}" *ngIf="userHasWallets">
   <!-- Filtering options. -->
-  <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="transactionsLoaded">
+  <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="transactionsLoadedForTheFirsTime">
     <mat-select
       multiple
       formControlName="filter"
@@ -73,7 +75,7 @@
   </div>
 
   <app-loading-content
-    [isLoading]="!transactionsLoaded"
+    [isLoading]="!transactionsLoadedForTheFirsTime"
     [noDataText]="!allTransactions || allTransactions.length === 0 ? 'history.no-txs' : 'history.no-txs-filter'"
     *ngIf="!transactions || transactions.length === 0"
   ></app-loading-content>
@@ -161,6 +163,25 @@
         </div>
       </div>
     </ng-container>
-    <div *ngIf="viewingTruncatedList" class="view-all-button" (click)="showAll()">{{ 'history.view-all' | translate:{ number:totalElements } }}</div>
+    <div *ngIf="viewingTruncatedList && !someTransactionsWereIgnored" class="view-all-button" (click)="showAll()">
+      {{ 'history.view-all' | translate:{ number:totalElements } }}
+    </div>
+    <div *ngIf="someTransactionsWereIgnored && showingStep !== showingSteps.All" class="view-all-button" (click)="loadMore()">
+      {{ 'history.load-more' | translate }}
+      <mat-spinner *ngIf="loadingTransactions"></mat-spinner>
+    </div>
+
+    <a
+      *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && currentCoin.explorerUrl"
+      class="view-all-button"
+      [href]="currentCoin.explorerUrl"
+      target="_blank"
+      rel="noreferrer nofollow"
+    >
+      {{ 'history.use-explorer' | translate }}
+    </a>
+    <div *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && !currentCoin.explorerUrl" class="view-all-button no-selectable">
+      {{ 'history.use-explorer' | translate }}
+    </div>
   </div>
 </div>

@@ -10,7 +10,7 @@ import { WalletBase, WalletWithBalance, WalletTypes } from '../../wallet-operati
 import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { getTransactionsHistory, getIfAddressesUsed } from './utils/fiber-history-utils';
-import { PendingTransactionsResponse, AddressesHistoryResponse, AddressesState, PendingTransactionData, TransactionHistory } from '../../wallet-operations/history.service';
+import { PendingTransactionsResponse, AddressesHistoryResponse, AddressesState, PendingTransactionData, TransactionHistory, TransactionLimits } from '../../wallet-operations/history.service';
 import { HistoryOperator } from '../history-operator';
 import { FiberApiService } from '../../api/fiber-api.service';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
@@ -60,7 +60,7 @@ export class FiberHistoryOperator implements HistoryOperator {
     return getIfAddressesUsed(this.currentCoin, wallet, this.fiberApiService, this.storageService);
   }
 
-  getTransactionsHistory(wallet: WalletBase|null): Observable<TransactionHistory> {
+  getTransactionsHistory(wallet: WalletBase|null, transactionLimitperAddress: TransactionLimits): Observable<TransactionHistory> {
     // Use the provided wallet or get all wallets.
     let initialRequest: Observable<WalletBase[]>;
     if (wallet) {
@@ -76,7 +76,7 @@ export class FiberHistoryOperator implements HistoryOperator {
       const response: TransactionHistory = {
         transactions: transactions,
         // This operator always returns the complete history.
-        hasMore: false,
+        addressesWitMoreTransactions: new Set<string>(),
       };
 
       return response;

@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 
 import { WalletBase } from '../wallet-operations/wallet-objects';
-import { PendingTransactionsResponse, AddressesHistoryResponse, TransactionHistory } from '../wallet-operations/history.service';
+import { PendingTransactionsResponse, AddressesHistoryResponse, TransactionHistory, TransactionLimits } from '../wallet-operations/history.service';
 
 /**
  * Interface with the elements the operators for HistoryService must have.
@@ -16,7 +16,7 @@ export interface HistoryOperator {
 
   // Functions for consulting the transactions. Documented on the service.
   getIfAddressesUsed(wallet: WalletBase): Observable<Map<string, boolean>>;
-  getTransactionsHistory(wallet: WalletBase|null): Observable<TransactionHistory>;
+  getTransactionsHistory(wallet: WalletBase|null, transactionLimitperAddress: TransactionLimits): Observable<TransactionHistory>;
   getPendingTransactions(): Observable<PendingTransactionsResponse>;
   getAddressesHistory(wallet: WalletBase): Observable<AddressesHistoryResponse>;
 }

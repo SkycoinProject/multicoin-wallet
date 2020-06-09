@@ -522,7 +522,9 @@
     "other-wallets-title": "Other Wallets",
     "wallets-title": "Wallets",
     "addresses": "Addresses",
+    "load-more": "Load more",
     "view-all": "View all {{ number }} transactions",
+    "use-explorer": "Use the blockchain explorer for accessing the full transaction history",
     "show-addresses": "Show the addresses",
     "hide-addresses": "Hide the addresses",
     "balance-help": "Does not include {{ amount }} paid as fee."

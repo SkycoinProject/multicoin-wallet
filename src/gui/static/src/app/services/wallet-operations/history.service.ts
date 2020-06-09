@@ -71,15 +71,29 @@ export interface AddressesState {
   alreadyUsed: boolean;
 }
 
+/**
+ * Response returned by HistoryService.getTransactionsHistory.
+ */
 export interface TransactionHistory {
   /**
    * Transaction list.
    */
   transactions: OldTransaction[];
   /**
-   * If true, some transactions were ignored in the transaction list, for performance reasons.
+   * List with the addresses for which transactions were ignored due to the value sent in the
+   * transactionLimitperAddress param.
    */
-  hasMore: boolean;
+  addressesWitMoreTransactions: Set<string>;
+}
+
+/**
+ * Values indicating the limits in how many transactions per address will be retrieved when
+ * getting the transaction history.
+ */
+export enum TransactionLimits {
+  NormalLimit = 'NormalLimit',
+  ExtraLimit = 'ExtraLimit',
+  MaxAllowed = 'MaxAllowed',
 }
 
 /**
@@ -108,9 +122,11 @@ export class HistoryService {
    * Gets the transaction history of all the wallets or a specific wallet.
    * @param wallet Specific wallet for which the transaction history will be returned. If null,
    * the transactions of all wallets will be returned.
+   * @param transactionLimitperAddress How many transactions per address will be retrieved. Some
+   * coins will ignore this walue and return all the transactions.
    */
-  getTransactionsHistory(wallet: WalletBase|null): Observable<TransactionHistory> {
-    return this.operator.getTransactionsHistory(wallet);
+  getTransactionsHistory(wallet: WalletBase|null, transactionLimitperAddress: TransactionLimits): Observable<TransactionHistory> {
+    return this.operator.getTransactionsHistory(wallet, transactionLimitperAddress);
   }
 
   /**
