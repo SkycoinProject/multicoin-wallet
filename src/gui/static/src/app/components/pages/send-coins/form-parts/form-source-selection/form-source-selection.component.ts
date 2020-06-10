@@ -309,8 +309,12 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   }
 
   resetForm() {
+    // If there is only one wallet, there is no need for restarting the value.
+    if (this.allWallets.length !== 1) {
+      this.form.get('wallet').setValue('');
+    }
+
     this.form.get('manualAddresses').setValue('');
-    this.form.get('wallet').setValue('');
     this.form.get('addresses').setValue(null);
     this.form.get('outputs').setValue(null);
 

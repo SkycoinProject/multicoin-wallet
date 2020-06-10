@@ -11,7 +11,7 @@ export class BtcCoin extends Coin {
   indexerUrl = '/local-blockbook';
   coinName = 'Bitcoin';
   coinSymbol = 'BTC';
-  feePaymentCoinUnit = 'Sats';
+  feePaymentCoinUnit = 'sats';
   uriSpecificatioPrefix = 'bitcoin';
   priceTickerId = 'btc-bitcoin';
   assetsFolderName = 'bitcoin';

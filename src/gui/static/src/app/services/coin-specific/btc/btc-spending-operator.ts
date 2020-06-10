@@ -490,6 +490,7 @@ export class BtcSpendingOperator implements SpendingOperator {
     let veryLow: BigNumber;
     let low: BigNumber;
     let normal: BigNumber;
+    let thereWereProblems = false;
 
     // Get the recommended fee from the node.
     return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [20]).pipe(mergeMap(result => {
@@ -498,6 +499,7 @@ export class BtcSpendingOperator implements SpendingOperator {
         veryLow = new BigNumber(result).dividedBy(1000);
       } else {
         veryLow = new BigNumber(1);
+        thereWereProblems = true;
       }
 
       return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [10]);
@@ -506,6 +508,7 @@ export class BtcSpendingOperator implements SpendingOperator {
         low = new BigNumber(result).dividedBy(1000);
       } else {
         low = new BigNumber(1);
+        thereWereProblems = true;
       }
 
       return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [5]);
@@ -514,6 +517,7 @@ export class BtcSpendingOperator implements SpendingOperator {
         normal = new BigNumber(result).dividedBy(1000);
       } else {
         normal = new BigNumber(1);
+        thereWereProblems = true;
       }
 
       return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [1]);
@@ -526,6 +530,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       } else {
         high = new BigNumber(1);
         veryHigh = new BigNumber(1);
+        thereWereProblems = true;
       }
 
       return {
@@ -538,6 +543,7 @@ export class BtcSpendingOperator implements SpendingOperator {
           gasLimit: null,
         },
         recommendedEthFees: null,
+        thereWereProblems: thereWereProblems,
       };
     }), retryWhen(errors => errors.pipe(delay(5000))));
   }

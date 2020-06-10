@@ -214,6 +214,7 @@ export class EthSpendingOperator implements SpendingOperator {
           gasLimit: new BigNumber(21000),
         },
         recommendedBtcFees: null,
+        thereWereProblems: false,
       };
 
     }), retryWhen(errors => errors.pipe(delay(5000))));

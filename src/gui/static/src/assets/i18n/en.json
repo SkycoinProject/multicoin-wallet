@@ -253,6 +253,7 @@
     "fee-options": "Fee options",
     "fee-label": "Aproximate fee",
     "fee-measure": "{{ measure }} per byte",
+    "fee-problem-warning": "There was a problem trying to get the recommended fee, so it will have to be entered manually before sending the transaction.",
     "fee-low-warning": "The fee you entered is lower than recommended, the transaction could take a very long time to be confirmed.",
     "fee-high-warning": "The fee you entered is higher than recommended, the cost could be higher than desired.",
     "fee-unknown-warning": "The system is still obtaining the information about the recommended fees, so it is not possible to determine if the fee you entered is convenient.",
@@ -403,9 +404,11 @@
     "wallets-small-label": "Wallets:",
     "date-small-label": "Date:",
     "status-small-label": "Status:",
+    "amount-small-label": "Amount:",
     "coins-small-label": "Coins:",
     "hours-small-label": "Hours:",
     "fee-small-label": "Fee:",
+    "balance-to-send-info": "Includes the transaction fee.",
     "approximate-fee-warning": " / Approximate",
     "approximate-fee-info": "The fee could be less after processing the transaction. Any unused amount will be returned to the source address.",
     "id-small-label": "Tx ID:",
@@ -527,7 +530,7 @@
     "use-explorer": "Use the blockchain explorer for accessing the full transaction history",
     "show-addresses": "Show the addresses",
     "hide-addresses": "Hide the addresses",
-    "balance-help": "Does not include {{ amount }} paid as fee."
+    "balance-help": "Does not include {{ amount }} you paid as fee."
   },
 
   "address-history": {

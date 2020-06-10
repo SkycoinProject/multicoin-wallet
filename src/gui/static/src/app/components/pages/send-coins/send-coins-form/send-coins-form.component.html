@@ -112,12 +112,14 @@
       <div class="col-8">
         <div class="fee-spinner" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
         <div class="-select">
-          <select formControlName="feeType" id="feeType" [attr.disabled]="busy || showFeesLoading ? 'true' : null">
-            <option [ngValue]="0">{{ 'send.fees.very-high' | translate }}</option>
-            <option [ngValue]="1">{{ 'send.fees.high' | translate }}</option>
-            <option [ngValue]="2">{{ 'send.fees.Normal' | translate }}</option>
-            <option [ngValue]="3">{{ 'send.fees.Low' | translate }}</option>
-            <option [ngValue]="4">{{ 'send.fees.very-Low' | translate }}</option>
+          <select formControlName="feeType" id="feeType" [attr.disabled]="busy || showFeesLoading || !recommendedFees || recommendedFees.thereWereProblems ? 'true' : null">
+            <!-- Recommended values. -->
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="0">{{ 'send.fees.very-high' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="1">{{ 'send.fees.high' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="2">{{ 'send.fees.Normal' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="3">{{ 'send.fees.Low' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="4">{{ 'send.fees.very-Low' | translate }}</option>
+            <!-- Option for entering a custom value. -->
             <option [ngValue]="5">{{ 'send.fees.custom' | translate }}</option>
           </select>
         </div>
@@ -143,8 +145,10 @@
         <div class="col-8">
           <div class="fee-spinner" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
           <div class="-select">
-            <select formControlName="ethFeeType" id="ethFeeType" [attr.disabled]="busy || showFeesLoading ? 'true' : null">
-              <option [ngValue]="0">{{ 'send.eth-fees.Normal' | translate }}</option>
+            <select formControlName="ethFeeType" id="ethFeeType" [attr.disabled]="busy || showFeesLoading || !recommendedFees || recommendedFees.thereWereProblems ? 'true' : null">
+              <!-- Recommended value. -->
+              <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="0">{{ 'send.eth-fees.Normal' | translate }}</option>
+              <!-- Option for entering a custom value. -->
               <option [ngValue]="1">{{ 'send.eth-fees.custom' | translate }}</option>
             </select>
           </div>
@@ -208,10 +212,10 @@
 
 <!-- Buttons. -->
 <div class="text-center">
-  <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
+  <app-button #previewButton (action)="preview()" [disabled]="!form.valid" [ngClass]="{'primary-button': showSimpleForm}">
     {{ 'send.preview-button' | translate }}
   </app-button>
-  <app-button #sendButton (action)="send()" class="primary-button" [disabled]="!form.valid">
+  <app-button #sendButton (action)="send()" class="primary-button" [disabled]="!form.valid" *ngIf="!showSimpleForm">
     {{ ('send.' + (showForManualUnsigned ? 'show' : 'send') + '-button') | translate }}
   </app-button>
 </div>

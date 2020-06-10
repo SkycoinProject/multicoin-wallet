@@ -10,7 +10,7 @@ export class EthCoin extends Coin {
   indexerUrl = '/local-blockbook';
   coinName = 'Ethereum';
   coinSymbol = 'ETH';
-  feePaymentCoinUnit = 'Gwei';
+  feePaymentCoinUnit = 'gwei';
   uriSpecificatioPrefix = 'ethereum';
   priceTickerId = 'eth-ethereum';
   assetsFolderName = 'ethereum';

@@ -90,6 +90,10 @@ export interface FormData {
    */
   recommendedFees: RecommendedFees;
   /**
+   * If the fee options are visible or not.
+   */
+  showFeeOptions: boolean;
+  /**
    * Fee type selected from the list, for btc-like coins.
    */
   feeType: number;
@@ -508,42 +512,84 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.closeGetRecommendedFeesSubscription();
       // Get the data.
       this.getRecommendedFeesSubscription = this.spendingService.getCurrentRecommendedFees().subscribe(fees => {
-        // Update the vars.
+        // Update the vars and select the recommended fee.
         this.populateRecommendedFees(fees);
+        this.selecRecommendedFee(true);
 
-        if (this.coinFeeType === FeeTypes.Btc) {
-          // If the user has not entered a fee, the normal fee type is selected and the fee
-          // field is populated with the corresponding value. However, if a faster type has an
-          // a lower or equal cost, the faster method is used.
-          if (this.form.get('fee').value === '') {
-            if (fees.recommendedBtcFees.high.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.recommendedBtcFees.normal.decimalPlaces(this.maxFeeDecimals))) {
-              if (fees.recommendedBtcFees.veryHigh.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(fees.recommendedBtcFees.high.decimalPlaces(this.maxFeeDecimals))) {
-                this.form.get('feeType').setValue(0, { emitEvent: false });
-              } else {
-                this.form.get('feeType').setValue(1, { emitEvent: false });
-              }
-            } else {
-              this.form.get('feeType').setValue(2, { emitEvent: false });
-            }
-          }
-
-          // Update the fee field.
-          this.useSelectedFee();
-        } else if (this.coinFeeType === FeeTypes.Eth) {
-          // If the user has not entered a gas price, the one returned by the service is used.
-          if (this.form.get('gasPrice').value === '') {
-            this.form.get('ethFeeType').setValue(0, { emitEvent: false });
-          }
-
-          // If the user has not entered a gas limit, the one returned by the service is used.
-          if (this.form.get('gasLimit').value === '') {
-            this.form.get('gasLimit').setValue(fees.recommendedEthFees.gasLimit, { emitEvent: false });
-          }
-
-          // Update the fee field.
-          this.useSelectedFee();
+        // If there was a problem getting the recommended fee, show a warning.
+        if (fees.thereWereProblems) {
+          this.msgBarService.showWarning(this.translate.instant('send.fee-problem-warning'));
         }
       });
+    }
+  }
+
+  /**
+   * Checks this.recommendedFees and set the best value as the selected one.
+   * @param changeOnlyIfNotEdited If true, no changes will be made to fields the user
+   * already modified.
+   */
+  private selecRecommendedFee(changeOnlyIfNotEdited: boolean) {
+    // Check if there were errors trying to get the recommended fee.
+    if (!this.recommendedFees || this.recommendedFees.thereWereProblems) {
+      if (this.coinFeeType === FeeTypes.Eth && (!changeOnlyIfNotEdited || this.form.get('gasLimit').value === '')) {
+        // Having errors getting the recommended fee does not always means having errors
+        // getting the recommended gas limit.
+        if (this.recommendedFees.recommendedEthFees.gasLimit) {
+          this.form.get('gasLimit').setValue(this.recommendedFees.recommendedEthFees.gasLimit, { emitEvent: false });
+        } else {
+          this.form.get('gasLimit').setValue('0', { emitEvent: false });
+        }
+      }
+
+      // Set the fee per unit to 0. That will also make the fee type field to be set to "custom".
+      if (!changeOnlyIfNotEdited || this.form.get('fee').value === '') {
+        this.form.get('fee').setValue('0');
+      }
+      if (!changeOnlyIfNotEdited || this.form.get('gasPrice').value === '') {
+        this.form.get('gasPrice').setValue('0');
+      }
+
+      // Open the fee options.
+      this.showFeeOptions = true;
+
+      this.updateAvailableBalance();
+
+      return;
+    }
+
+    if (this.coinFeeType === FeeTypes.Btc) {
+      // If the user has not entered a fee, the normal fee type is selected and the fee
+      // field is populated with the corresponding value. However, if a faster type has an
+      // a lower or equal cost, the faster method is used.
+      if (!changeOnlyIfNotEdited || this.form.get('fee').value === '') {
+        const recommendedBtcFees = this.recommendedFees.recommendedBtcFees;
+        if (recommendedBtcFees.high.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(recommendedBtcFees.normal.decimalPlaces(this.maxFeeDecimals))) {
+          if (recommendedBtcFees.veryHigh.decimalPlaces(this.maxFeeDecimals).isLessThanOrEqualTo(recommendedBtcFees.high.decimalPlaces(this.maxFeeDecimals))) {
+            this.form.get('feeType').setValue(0, { emitEvent: false });
+          } else {
+            this.form.get('feeType').setValue(1, { emitEvent: false });
+          }
+        } else {
+          this.form.get('feeType').setValue(2, { emitEvent: false });
+        }
+      }
+
+      // Update the fee field.
+      this.useSelectedFee();
+    } else if (this.coinFeeType === FeeTypes.Eth) {
+      // If the user has not entered a gas price, the one returned by the service is used.
+      if (!changeOnlyIfNotEdited || this.form.get('gasPrice').value === '') {
+        this.form.get('ethFeeType').setValue(0, { emitEvent: false });
+      }
+
+      // If the user has not entered a gas limit, the one returned by the service is used.
+      if (!changeOnlyIfNotEdited || this.form.get('gasLimit').value === '') {
+        this.form.get('gasLimit').setValue(this.recommendedFees.recommendedEthFees.gasLimit, { emitEvent: false });
+      }
+
+      // Update the fee field.
+      this.useSelectedFee();
     }
   }
 
@@ -592,6 +638,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
 
     this.showAutoHourDistributionOptions = this.formData.form.showAutoHourDistributionOptions;
+    this.showFeeOptions = this.formData.form.showFeeOptions;
 
     if (this.formData.form.recommendedFees) {
       // If the data already includes recommended fees, use them and update the fee type.
@@ -671,7 +718,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // before continuing creating the transaction, if appropiate. It does nothing if the
   // form is not valid or busy.
   private checkFeeBeforeCreatingTx(creatingPreviewTx: boolean) {
-    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
+    if (!this.form.valid || this.busy) {
       return;
     }
 
@@ -726,7 +773,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // blockchain is synchronized and asks for confirmation if it is not. It does nothing if
   // the form is not valid or busy.
   private checkBeforeCreatingTx(creatingPreviewTx: boolean) {
-    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
+    if (!this.form.valid || this.busy) {
       return;
     }
 
@@ -754,7 +801,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   private prepareTransaction(creatingPreviewTx: boolean) {
     this.msgBarService.hide();
     this.previewButton.resetState();
-    this.sendButton.resetState();
+    if (this.sendButton) {
+      this.sendButton.resetState();
+    }
 
     // Request the password only if the wallet is encrypted and the transaction is going
     // to be sent without preview. If the wallet is bipp44 and encrypted, the password is
@@ -897,6 +946,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             currency: this.formMultipleDestinations.currentlySelectedCurrency,
             note: note,
             recommendedFees: this.recommendedFees,
+            showFeeOptions: this.showFeeOptions,
             feeType: this.form.get('feeType').value,
             fee: this.form.get('fee').value,
             ethFeeType: this.form.get('ethFeeType').value,
@@ -928,6 +978,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.autoHours = true;
     this.showAutoHourDistributionOptions = false;
     this.autoShareValue = this.defaultAutoShareValue;
+    this.showFeeOptions = false;
+    if (this.coinFeeType !== FeeTypes.None) {
+      this.selecRecommendedFee(false);
+    }
   }
 
   // Returns the hours distribution options selected on the form, but with the format needed
@@ -958,9 +1012,13 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   private showBusy(creatingPreviewTx: boolean) {
     if (creatingPreviewTx) {
       this.previewButton.setLoading();
-      this.sendButton.setDisabled();
+      if (this.sendButton) {
+        this.sendButton.setDisabled();
+      }
     } else {
-      this.sendButton.setLoading();
+      if (this.sendButton) {
+        this.sendButton.setLoading();
+      }
       this.previewButton.setDisabled();
     }
     this.busy = true;
@@ -976,12 +1034,16 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
     if (showDone) {
       this.msgBarService.showDone('send.sent');
-      this.sendButton.resetState();
-    } else {
-      this.sendButton.setSuccess();
-      setTimeout(() => {
+      if (this.sendButton) {
         this.sendButton.resetState();
-      }, 3000);
+      }
+    } else {
+      if (this.sendButton) {
+        this.sendButton.setSuccess();
+        setTimeout(() => {
+          this.sendButton.resetState();
+        }, 3000);
+      }
     }
   }
 
@@ -991,7 +1053,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.msgBarService.showError(error);
     this.navBarSwitchService.enableSwitch();
     this.previewButton.resetState().setEnabled();
-    this.sendButton.resetState().setEnabled();
+    if (this.sendButton) {
+      this.sendButton.resetState().setEnabled();
+    }
   }
 
   // Stops showing the UI busy and reactivates the navbar switch.
@@ -999,7 +1063,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.busy = false;
     this.navBarSwitchService.enableSwitch();
     this.previewButton.resetState().setEnabled();
-    this.sendButton.resetState().setEnabled();
+    if (this.sendButton) {
+      this.sendButton.resetState().setEnabled();
+    }
   }
 
   private closeGetRecommendedFeesSubscription() {

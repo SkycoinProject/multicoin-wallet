@@ -66,6 +66,11 @@ export interface HoursDistributionOptions {
 export interface RecommendedFees {
   recommendedBtcFees: RecommendedBtcFees;
   recommendedEthFees: RecommendedEthFees;
+  /**
+   * If true, it means that the backend did not return at least one of the recommended fee values.
+   * If this happens, some values may not be adecuate and the user must be informed.
+   */
+  thereWereProblems: boolean;
 }
 
 /**
@@ -104,7 +109,8 @@ export interface RecommendedEthFees {
    */
   gasPrice: BigNumber;
   /**
-   * Recommended gas limit.
+   * Recommended gas limit. If there was a problem getting it, it will be null and the
+   * "thereWereProblems" property of the parent object must be true.
    */
   gasLimit: BigNumber;
 }

@@ -54,8 +54,6 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    */
   private static readonly MaxUsdDecimals = 6;
 
-  // Balance available to send.
-  @Input() availableBalance: AvailableBalanceData;
   // Allows to deactivate the form while the system is busy.
   @Input() busy: boolean;
   // Emits when there have been changes in the contents of the component, so the validation
@@ -63,6 +61,23 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   @Output() onChanges = new EventEmitter<void>();
   // Emits when the user asks to open the modal window for bulk sending.
   @Output() onBulkRequested = new EventEmitter<void>();
+
+  // Balance available to send.
+  private availableBalanceInternal: AvailableBalanceData;
+  @Input() set availableBalance(val: AvailableBalanceData) {
+    if (!this.availableBalance || !val.availableCoins.isEqualTo(this.availableBalance.availableCoins) || !val.availableHours.isEqualTo(this.availableBalance.availableHours)) {
+      this.availableBalanceInternal = val;
+
+      // Update the validation, as the available balance is used for it.
+      if (this.form) {
+        this.form.get('destinations').updateValueAndValidity();
+        this.onChanges.emit();
+      }
+    }
+  }
+  get availableBalance(): AvailableBalanceData {
+    return this.availableBalanceInternal;
+  }
 
   // If the manual hours field must be shown.
   private showHourFieldsInternal: boolean;

@@ -45,10 +45,22 @@
             {{ transaction.fee | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
-        <div class="-data" *ngIf="!coinHasHours">
+        <div class="-data" *ngIf="!coinHasHours && isPreview">
+          <span>{{ 'tx.amount-small-label' | translate }}</span>
+          <span>
+            {{ balanceToShow | amount }}
+            <ng-container *ngIf="price">
+              ({{ balanceToShow.multipliedBy(price).toString(10) | currency:'USD':'symbol':'1.2-2' }})
+            </ng-container>
+          </span>
+        </div>
+        <div class="-data" *ngIf="!coinHasHours" [ngClass]="{'red-text': isPreview}">
           <span>{{ 'tx.fee-small-label' | translate }}</span>
           <span>
             {{ transaction.fee | amount }}
+            <ng-container *ngIf="price">
+              ({{ transaction.fee.multipliedBy(price).toString(10) | currency:'USD':'symbol':'1.2-2' }})
+            </ng-container>
             <!-- Warning indicating the fee is approximate. Only for ETH tx previews. -->
             <ng-container *ngIf="isPreview && currentCoinUsesGas"> {{ 'tx.approximate-fee-warning' | translate }}</ng-container>
             <mat-icon *ngIf="isPreview && currentCoinUsesGas" class="help-icon pl-0" [matTooltip]="'tx.approximate-fee-info' | translate">help</mat-icon>
@@ -71,7 +83,24 @@
           <img [src]="'/assets/img/' + getTransactionIconName(transaction) + '-blue.png'">
         </div>
         <ng-container>
-          <h4>{{ balanceToShow | amount }}</h4>
+          <h4 *ngIf="coinHasHours || !isPreview">
+            {{ balanceToShow | amount }}
+            <mat-icon
+              *ngIf="!coinHasHours &&
+                      (oldTransaction.type === oldTransactionTypes.Outgoing ||
+                      oldTransaction.type === oldTransactionTypes.MovedBetweenAddresses ||
+                      oldTransaction.type === oldTransactionTypes.MovedBetweenWallets)"
+              [matTooltip]="'history.balance-help' | translate:{amount: (oldTransaction.fee | amount)}"
+              [inline]="true"
+              class="-balance-help"
+            >
+              help
+            </mat-icon>
+          </h4>
+          <h4 *ngIf="!coinHasHours && isPreview">
+            {{ balanceToShow.plus(transaction.fee) | amount }}
+            <mat-icon [matTooltip]="'tx.balance-to-send-info' | translate" [inline]="true" class="-balance-help">help</mat-icon>
+          </h4>
           <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
             {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
           </p>
