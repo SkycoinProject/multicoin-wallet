@@ -355,20 +355,25 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
         } else {
           // Update only the balances with changes.
           this.walletsWithBalanceList.forEach((currentWallet, i) => {
-            if (!currentWallet.coins.isEqualTo(temporalWallets[i].coins) || !currentWallet.hours.isEqualTo(temporalWallets[i].hours)) {
-              currentWallet.coins = temporalWallets[i].coins;
-              currentWallet.hours = temporalWallets[i].hours;
+            if (
+              !currentWallet.coins.isEqualTo(temporalWallets[i].coins) ||
+              !currentWallet.confirmedCoins.isEqualTo(temporalWallets[i].confirmedCoins) ||
+              !currentWallet.hours.isEqualTo(temporalWallets[i].hours) ||
+              !currentWallet.confirmedHours.isEqualTo(temporalWallets[i].confirmedHours)
+            ) {
               changeDetected = true;
             }
 
             if (currentWallet.addresses.length !== temporalWallets[i].addresses.length) {
-              currentWallet.addresses = temporalWallets[i].addresses;
               changeDetected = true;
             } else {
               currentWallet.addresses.forEach((currentAddress, j) => {
-                if (!currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins) || !currentAddress.hours.isEqualTo(temporalWallets[i].addresses[j].hours)) {
-                  currentAddress.coins = temporalWallets[i].addresses[j].coins;
-                  currentAddress.hours = temporalWallets[i].addresses[j].hours;
+                if (
+                  !currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins) ||
+                  !currentAddress.confirmedCoins.isEqualTo(temporalWallets[i].addresses[j].confirmedCoins) ||
+                  !currentAddress.hours.isEqualTo(temporalWallets[i].addresses[j].hours) ||
+                  !currentAddress.confirmedHours.isEqualTo(temporalWallets[i].addresses[j].confirmedHours)
+                ) {
                   changeDetected = true;
                 }
               });
@@ -377,6 +382,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
 
           // If any of the balances changed, inform that there were changes.
           if (changeDetected) {
+            this.walletsWithBalanceList = temporalWallets;
             this.informDataUpdated();
           }
         }
@@ -426,26 +432,41 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
       if (balance.confirmed) {
-        wallet.coins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
-        wallet.hours = new BigNumber(balance.confirmed.hours);
+        wallet.coins = new BigNumber(balance.predicted.coins).dividedBy(1000000);
+        wallet.hours = new BigNumber(balance.predicted.hours);
+        wallet.confirmedCoins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
+        wallet.confirmedHours = new BigNumber(balance.confirmed.hours);
+        wallet.hasPendingCoins = !wallet.coins.isEqualTo(wallet.confirmedCoins);
+        wallet.hasPendingHours = !wallet.hours.isEqualTo(wallet.confirmedHours);
       } else {
         wallet.coins = new BigNumber(0);
         wallet.hours = new BigNumber(0);
+        wallet.confirmedCoins = new BigNumber(0);
+        wallet.confirmedHours = new BigNumber(0);
+        wallet.hasPendingCoins = false;
+        wallet.hasPendingHours = false;
       }
 
       wallet.addresses.forEach(address => {
         if (balance.addresses[address.address]) {
-          address.coins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
-          address.hours = new BigNumber(balance.addresses[address.address].confirmed.hours);
+          address.coins = new BigNumber(balance.addresses[address.address].predicted.coins).dividedBy(1000000);
+          address.hours = new BigNumber(balance.addresses[address.address].predicted.hours);
+          address.confirmedCoins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
+          address.confirmedHours = new BigNumber(balance.addresses[address.address].confirmed.hours);
+          address.hasPendingCoins = !address.coins.isEqualTo(address.confirmedCoins);
+          address.hasPendingHours = !address.hours.isEqualTo(address.confirmedHours);
         } else {
           address.coins = new BigNumber(0);
           address.hours = new BigNumber(0);
+          address.confirmedCoins = new BigNumber(0);
+          address.confirmedHours = new BigNumber(0);
+          address.hasPendingCoins = false;
+          address.hasPendingHours = false;
         }
       });
 
       if (!useSavedBalanceData) {
-        return !(new BigNumber(balance.predicted.coins).dividedBy(1000000)).isEqualTo(wallet.coins) ||
-          !(new BigNumber(balance.predicted.hours)).isEqualTo(wallet.hours);
+        return !wallet.confirmedCoins.isEqualTo(wallet.coins) || !wallet.confirmedHours.isEqualTo(wallet.hours);
       } else {
         return this.hasPendingTransactionsSubject.value;
       }

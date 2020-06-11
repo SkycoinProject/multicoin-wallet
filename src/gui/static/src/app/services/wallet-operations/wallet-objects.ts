@@ -155,6 +155,10 @@ function removeAdditionalProperties(useWalletBaseAsReference: boolean, objectToC
 export class WalletWithBalance extends WalletBase {
   coins = new BigNumber(0);
   hours = new BigNumber(0);
+  confirmedCoins = new BigNumber(0);
+  confirmedHours = new BigNumber(0);
+  hasPendingCoins = false;
+  hasPendingHours = false;
   addresses: AddressWithBalance[] = [];
 }
 
@@ -164,6 +168,10 @@ export class WalletWithBalance extends WalletBase {
 export class AddressWithBalance extends AddressBase {
   coins = new BigNumber(0);
   hours = new BigNumber(0);
+  confirmedCoins = new BigNumber(0);
+  confirmedHours = new BigNumber(0);
+  hasPendingCoins = false;
+  hasPendingHours = false;
 }
 
 /**

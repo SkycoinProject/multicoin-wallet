@@ -243,7 +243,10 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     let procedure: Observable<boolean[]>;
     if (wallets.length > 0) {
       // Get the balance of each wallet.
-      procedure = forkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, forceQuickCompleteArrayUpdate)));
+      procedure = this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api').pipe(mergeMap(response => {
+        // Get the balance of each wallet.
+        return forkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, response.blockbook.bestHeight, forceQuickCompleteArrayUpdate)));
+      }));
     } else {
       // Create a fake response, as there are no wallets.
       procedure = of([false]);
@@ -278,18 +281,15 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         } else {
           // Update only the balances with changes.
           this.walletsWithBalanceList.forEach((currentWallet, i) => {
-            if (!currentWallet.coins.isEqualTo(temporalWallets[i].coins)) {
-              currentWallet.coins = temporalWallets[i].coins;
+            if (!currentWallet.coins.isEqualTo(temporalWallets[i].coins) || !currentWallet.confirmedCoins.isEqualTo(temporalWallets[i].confirmedCoins)) {
               changeDetected = true;
             }
 
             if (currentWallet.addresses.length !== temporalWallets[i].addresses.length) {
-              currentWallet.addresses = temporalWallets[i].addresses;
               changeDetected = true;
             } else {
               currentWallet.addresses.forEach((currentAddress, j) => {
-                if (!currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins)) {
-                  currentAddress.coins = temporalWallets[i].addresses[j].coins;
+                if (!currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins) || !currentAddress.confirmedCoins.isEqualTo(temporalWallets[i].addresses[j].confirmedCoins)) {
                   changeDetected = true;
                 }
               });
@@ -298,6 +298,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
           // If any of the balances changed, inform that there were changes.
           if (changeDetected) {
+            this.walletsWithBalanceList = temporalWallets;
             this.informDataUpdated();
           }
         }
@@ -320,19 +321,20 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * Gets from the backend the balance of a wallet and uses the retrieved data to update an
    * instamce of WalletWithBalance. It also saves the retrieved data on temporalSavedBalanceData.
    * @param wallet Wallet to update.
+   * @param lastBlock Number of the last block on the blockchain.
    * @param useSavedBalanceData If true, the balance data saved on savedBalanceData
    * will be used instead of retrieving the data from the backend.
    * @returns True if there are one or more pending transactions that will affect the balance of
    * the provided walled, false otherwise. If useSavedBalanceData is true, the value of
    * hasPendingTransactionsSubject will be returned.
    */
-  private retrieveWalletBalance(wallet: WalletWithBalance, useSavedBalanceData: boolean): Observable<boolean> {
+  private retrieveWalletBalance(wallet: WalletWithBalance, lastBlock: number, useSavedBalanceData: boolean): Observable<boolean> {
     let query: Observable<WalletBalance>;
 
     if (!useSavedBalanceData) {
       // Get the balance of all addresses.
       const addresses = wallet.addresses.map(a => a.address);
-      query = this.recursivelyGetBalances(addresses).pipe(mergeMap(result => {
+      query = this.recursivelyGetBalances(addresses, lastBlock).pipe(mergeMap(result => {
         const response = new WalletBalance();
 
         result.forEach((addressBalance, address) => {
@@ -358,12 +360,18 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
       wallet.coins = balance.predicted;
+      wallet.confirmedCoins = balance.current;
+      wallet.hasPendingCoins = !wallet.coins.isEqualTo(wallet.confirmedCoins);
 
       wallet.addresses.forEach(address => {
         if (balance.addresses.has(address.address)) {
           address.coins = balance.addresses.get(address.address).predicted;
+          address.confirmedCoins = balance.addresses.get(address.address).current;
+          address.hasPendingCoins = !address.coins.isEqualTo(address.confirmedCoins);
         } else {
           address.coins = new BigNumber(0);
+          address.confirmedCoins = new BigNumber(0);
+          address.hasPendingCoins = false;
         }
       });
 
@@ -378,38 +386,124 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   /**
    * Gets the balances of the addresses in the provided address list.
    * @param addresses Addresses to check. The list will be altered by the function.
+   * @param lastBlock Number of the last block on the blockchain.
    * @param currentElements Already obtained balances. For internal use.
    * @returns Map with the balances of the provided address list.
    */
-  private recursivelyGetBalances(addresses: string[], currentElements = new Map<string, AddressBalance>()): Observable<Map<string, AddressBalance>> {
+  private recursivelyGetBalances(addresses: string[], lastBlock: number, currentElements = new Map<string, AddressBalance>()): Observable<Map<string, AddressBalance>> {
     if (addresses.length === 0) {
       return of(currentElements);
     }
 
-    // Value which will allow to get the balances in coins, instead of wei.
-    const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as EthCoinConfig).decimals);
+    const requestParams = {
+      details: 'txslight',
+    };
+
+    // When requesting the balance, the transactions of the blocks considered unconfirmed
+    // will be obtained too, to consider the balance moved in them as pending. This is
+    // because Blockbook only considers as pending the balance in the transactions which
+    // are still in the mempool.
+    if (this.currentCoin.confirmationsNeeded > 1) {
+      const lastUnconfirmedBlock = lastBlock - (this.currentCoin.confirmationsNeeded - 2);
+      requestParams['from'] = lastUnconfirmedBlock;
+    } else {
+      // Get only the transactions in the mempool, as only 1 confirmation is needed.
+      requestParams['from'] = -1;
+    }
 
     // Get the balance of the address.
-    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], {details: 'basic'})
-      .pipe(mergeMap((response) => {
-        // Calculate the balances and create the balance object.
-        const balance = response.balance ? new BigNumber(response.balance).dividedBy(decimalsCorrector) : new BigNumber(0);
-        const unconfirmed = response.unconfirmedBalance ? new BigNumber(response.unconfirmedBalance).dividedBy(decimalsCorrector) : new BigNumber(0);
-        const predicted = balance.plus(unconfirmed);
-        currentElements.set(addresses[addresses.length - 1], {
-          current: balance,
-          predicted: predicted,
-        });
+    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'address/' + addresses[addresses.length - 1], requestParams).pipe(mergeMap((response) => {
+      // Blockbook returns in the "balance" property the balance considering all the transactions
+      // already in a block and the "unconfirmedBalance" property should contain the variance
+      // in the balance after confirming the transactions currently in the mempool, but this last
+      // property does not work well for ETH. Because of this the balnce of the transaction
+      // currently in mempool is calculated here.
+      let transactionsInMempool: any[] = [];
+      if (response.transactions && (response.transactions as any[]).length > 0) {
+        transactionsInMempool = (response.transactions as any[]).filter(transactions => transactions.confirmations === 0);
+      }
+      const mempoolBalance = this.calculateBalanceFromTransactions(transactionsInMempool, addresses[addresses.length - 1]);
 
-        addresses.pop();
+      // The mempool balance is added to the balance in the transactions already in blocks.
+      const predicted = response.balance ? new BigNumber(response.balance).plus(mempoolBalance) : new BigNumber(0);
 
-        if (addresses.length === 0) {
-          return of(currentElements);
+      // If the response has transactions, the balance in those transactions is
+      // considered as unconfirmed.
+      const unconfirmed = this.calculateBalanceFromTransactions(response.transactions, addresses[addresses.length - 1]);
+      // Calculate the currently confirmed balance.
+      const balance = predicted.minus(unconfirmed);
+
+      // Value which will allow to get the balances in coins, instead of wei.
+      const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as EthCoinConfig).decimals);
+
+      // Create the response object.
+      currentElements.set(addresses[addresses.length - 1], {
+        current: balance.dividedBy(decimalsCorrector),
+        predicted: predicted.dividedBy(decimalsCorrector),
+      });
+
+      addresses.pop();
+
+      if (addresses.length === 0) {
+        return of(currentElements);
+      }
+
+      // Continue to the next step.
+      return this.recursivelyGetBalances(addresses, lastBlock, currentElements);
+    }));
+  }
+
+  /**
+   * Calculates the final balance of an address after several transactions, assuming that the
+   * initial balance is 0.
+   * @param transactions Transactions to check. Must be the array returned by Blockbook when
+   * calling the "address/" API endpoint. Can be null, as the api may not return any value.
+   * @param address Address to check.
+   */
+  private calculateBalanceFromTransactions(transactions: any[], address: string): BigNumber {
+    let balance = new BigNumber(0);
+
+    if (transactions && transactions.length > 0) {
+      transactions.forEach(transaction => {
+        // If the input is from the current address, consider the output and fee as outgoing coins.
+        if (transaction.vin && (transaction.vin as any[]).length === 1 && (transaction.vin as any[])[0].isAddress) {
+          if ((transaction.vin as any[])[0].addresses.length === 1 && (transaction.vin as any[])[0].addresses[0] === address) {
+            balance = balance.minus(this.getOutputValue(transaction));
+
+            // gasUsed is not available if the transaction is still in the mempool.
+            const gas = transaction.ethereumSpecific.gasUsed ? transaction.ethereumSpecific.gasUsed : transaction.ethereumSpecific.gasLimit;
+            if (gas && transaction.ethereumSpecific.gasPrice) {
+              balance = balance.minus(new BigNumber(gas).multipliedBy(transaction.ethereumSpecific.gasPrice));
+            }
+          }
         }
 
-        // Continue to the next step.
-        return this.recursivelyGetBalances(addresses, currentElements);
-      }));
+        // If the output is for the current address, consider the output as incoming coins.
+        balance = balance.plus(this.getOutputValue(transaction, address));
+      });
+    }
+
+    return balance;
+  }
+
+  /**
+   * Checks a transaction and returns the value of the output.
+   * @param transaction Transaction to check. Must be an object returned by Blockbook when
+   * calling the "address/" API endpoint.
+   * @param addressFilter If provided, the value of the output will be returned only if the
+   * output is for the provided address. If the output is for another address, the returned
+   * value is 0.
+   */
+  private getOutputValue(transaction: any, addressFilter: string = null): BigNumber {
+    if (transaction.vout && (transaction.vout as any[]).length === 1 && (transaction.vout as any[])[0].isAddress) {
+      if (!addressFilter || ((transaction.vout as any[])[0].addresses.length === 1 && (transaction.vout as any[])[0].addresses[0] === addressFilter)) {
+        if ((transaction.vout as any[])[0].value) {
+          return new BigNumber((transaction.vout as any[])[0].value);
+        }
+      }
+    }
+
+    return new BigNumber(0);
   }
 
   /**
