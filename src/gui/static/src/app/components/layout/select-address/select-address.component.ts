@@ -6,7 +6,7 @@ import BigNumber from 'bignumber.js';
 
 import { AppConfig } from '../../../app.config';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
-import { WalletTypes, WalletBase } from '../../../services/wallet-operations/wallet-objects';
+import { WalletTypes, WalletBase, AddressWithBalance } from '../../../services/wallet-operations/wallet-objects';
 import { CoinService } from '../../../services/coin.service';
 
 /**
@@ -16,16 +16,7 @@ import { CoinService } from '../../../services/coin.service';
 class ListElement {
   label: string;
   originalWallet: WalletBase;
-  addresses: ElementAddress[] = [];
-}
-
-/**
- * Address of a wallet shown on the list.
- */
-class ElementAddress {
-  address: string;
-  coins: BigNumber;
-  hours: BigNumber;
+  addresses: AddressWithBalance[] = [];
 }
 
 /**
@@ -85,11 +76,7 @@ export class SelectAddressComponent {
         // Exclude all unconfirmed addresses from the hw wallets.
         wallet.addresses.forEach(address => {
           if (!wallet.isHardware || address.confirmed) {
-            element.addresses.push({
-              address: address.address,
-              coins: address.coins,
-              hours: address.hours,
-            });
+            element.addresses.push(address);
           }
         });
 

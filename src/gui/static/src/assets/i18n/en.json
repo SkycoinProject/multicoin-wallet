@@ -14,7 +14,8 @@
     "close-button": "Close",
     "generic-confirmation-check": "I understand the risks and want to continue",
     "copied": "The text has been copied to the clipboard.",
-    "confirmations": "Confirmations"
+    "confirmations": "Confirmations",
+    "unconfirmed-balance-info": "This balance will be final after your last transactions receive more confirmations from the network. The currently confirmed balance is {{ balance }}. For more information check your pending transactions."
   },
 
   "errors": {
@@ -41,9 +42,10 @@
       "update-part2": "Not used. The code adds the versión number of the lastest update here.",
       "update-part3": "available.",
       "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
-      "pending-txs-part1": "There are some",
+      "pending-txs-part1": "You have",
       "pending-txs-part2": "pending transactions.",
-      "pending-txs-part3": "Data you see may not be updated.",
+      "pending-txs-part3": "The balances and some other data may not be updated.",
+      "pending-link-error": "You are already in the transaction history page.",
       "no-connections": "No connections active, your client is not connected to any other nodes!",
       "no-backend-part1": "Cannot reach backend. Please restart the app and/or seek help on our",
       "no-backend-part2": "Telegram.",

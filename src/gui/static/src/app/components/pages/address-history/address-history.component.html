@@ -39,8 +39,22 @@
               <app-qr-code-button [address]="address.address.address"></app-qr-code-button>
               {{ address.address.address }}
             </div>
-            <div class="-width-150 text-right">{{ address.address.coins | amount:true:'first' }}</div>
-            <div class="-width-150 text-right grey-text" *ngIf="coinHasHours">{{ address.address.hours | amount:false:'first' }}</div>
+            <div class="-width-150 text-right" [ngClass]="{'yellow-text': address.address.hasPendingCoins}">
+              {{ address.address.coins | amount:true:'first' }}
+              <mat-icon
+                class="unconfirmed-alert"
+                *ngIf="address.address.hasPendingCoins"
+                [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.address.confirmedCoins | amount:true:'first')}"
+              >warning</mat-icon>
+            </div>
+            <div class="-width-150 text-right" *ngIf="coinHasHours" [ngClass]="{'yellow-text': address.address.hasPendingHours, 'grey-text': !address.address.hasPendingHours}">
+              {{ address.address.hours | amount:false:'first' }}
+              <mat-icon
+                class="unconfirmed-alert"
+                *ngIf="address.address.hasPendingHours"
+                [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.address.confirmedHours | amount:false:'first')}"
+              >warning</mat-icon>
+            </div>
             <div class="-width-150 text-right" [ngClass]="{'green-text': !address.alreadyUsed, 'red-text': address.alreadyUsed}">
               {{ ('address-history.' + (address.alreadyUsed ? 'used-no' : 'used-yes')) | translate }}
               <mat-icon class="help-icon" [matTooltip]="('address-history.' + (address.alreadyUsed ? 'used-no-info' : 'used-yes-info')) | translate">help</mat-icon>

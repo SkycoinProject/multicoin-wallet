@@ -68,7 +68,8 @@
   <div class="notification-bar" *ngIf="hasPendingTxs || (!synchronized && synchronizationInfoObtained)">
     <div *ngIf="hasPendingTxs">
       {{ 'header.warnings.pending-txs-part1' | translate }}
-      <a routerLink='/settings/pending-transactions'>{{ 'header.warnings.pending-txs-part2' | translate }}</a>
+      <a *ngIf="!historyPage.pageLoaded" routerLink='/transactions'>{{ 'header.warnings.pending-txs-part2' | translate }}</a>
+      <a *ngIf="historyPage.pageLoaded" (click)="informAlreadyShowingHistory()">{{ 'header.warnings.pending-txs-part2' | translate }}</a>
       {{ 'header.warnings.pending-txs-part3' | translate }}
     </div>
     <div *ngIf="!synchronized && synchronizationInfoObtained && !hasPendingTxs">

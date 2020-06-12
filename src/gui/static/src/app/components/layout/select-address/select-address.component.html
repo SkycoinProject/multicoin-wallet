@@ -30,12 +30,26 @@
       <ng-container *ngFor="let address of element.addresses">
         <button mat-button color="primary" (click)="select(address.address)">
           <div class="address">{{ address.address }}</div>
-          <div class="balance">{{ address.coins | amount:true:'first' }}
+          <!-- Coins balance. -->
+          <div class="balance">
+            {{ address.coins | amount:true:'first' }}
             <span class="grey-text">{{ address.coins | amount:true:'last' }}</span>
+            <mat-icon
+              class="unconfirmed-alert"
+              *ngIf="address.hasPendingCoins"
+              [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.confirmedCoins | amount:true:'first')}"
+            >warning</mat-icon>
+
+            <!-- Hours balance. -->
             <ng-container *ngIf="coinHasHours">
               <span class="grey-text"> | </span>
               {{ address.hours | amount:false:'first' }}
               <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
+              <mat-icon
+                class="unconfirmed-alert"
+                *ngIf="address.hasPendingHours"
+                [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.confirmedHours | amount:false:'first')}"
+              >warning</mat-icon>
             </ng-container>
           </div>
         </button>

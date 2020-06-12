@@ -43,8 +43,22 @@
       </ng-container>
     </div>
     <!-- Coins and hours. -->
-    <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
-    <div *ngIf="coinHasHours" class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
+    <div class="-width-130 text-right" [ngClass]="{'yellow-text': address.hasPendingCoins}">
+      {{ (address.coins ? address.coins : 0) | amount:true:'first' }}
+      <mat-icon
+        class="unconfirmed-alert"
+        *ngIf="address.hasPendingCoins"
+        [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.confirmedCoins | amount:true:'first')}"
+      >warning</mat-icon>
+    </div>
+    <div *ngIf="coinHasHours" class="-width-130 text-right grey-text" [ngClass]="{'yellow-text': address.hasPendingHours, 'grey-text': !address.hasPendingHours}">
+      {{ (address.hours ? address.hours : 0) | amount:false:'first' }}
+      <mat-icon
+        class="unconfirmed-alert"
+        *ngIf="address.hasPendingHours"
+        [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.confirmedHours | amount:false:'first')}"
+      >warning</mat-icon>
+    </div>
     <!-- Options. -->
     <div class="-width-85 options-column">
       <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>

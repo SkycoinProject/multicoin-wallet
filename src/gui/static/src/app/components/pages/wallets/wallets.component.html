@@ -50,8 +50,22 @@
                     *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware">
               </div>
               <!-- Coins and hours. -->
-              <div class="-width-130 text-right">{{ (wallet.coins ? wallet.coins : 0) | amount:true:'first' }}</div>
-              <div *ngIf="coinHasHours" class="-width-130 text-right grey-text">{{ (wallet.hours ? wallet.hours : 0) | amount:false:'first' }}</div>
+              <div class="-width-130 text-right" [ngClass]="{'yellow-text': wallet.hasPendingCoins}">
+                {{ (wallet.coins ? wallet.coins : 0) | amount:true:'first' }}
+                <mat-icon
+                  class="unconfirmed-alert"
+                  *ngIf="wallet.hasPendingCoins"
+                  [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (wallet.confirmedCoins | amount:true:'first')}"
+                >warning</mat-icon>
+              </div>
+              <div *ngIf="coinHasHours" class="-width-130 text-right" [ngClass]="{'yellow-text': wallet.hasPendingHours, 'grey-text': !wallet.hasPendingHours}">
+                {{ (wallet.hours ? wallet.hours : 0) | amount:false:'first' }}
+                <mat-icon
+                  class="unconfirmed-alert"
+                  *ngIf="wallet.hasPendingHours"
+                  [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (wallet.confirmedHours | amount:false:'first')}"
+                >warning</mat-icon>
+              </div>
               <div class="-width-85 -expand">
                 <!-- Expand icon (deterministic wallets). -->
                 <img src="assets/img/chevron-right-grey.png" *ngIf="wallet.walletType === walletTypes.Deterministic"

@@ -111,6 +111,14 @@ enum ShowingSteps {
   styleUrls: ['./transaction-list.component.scss'],
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
+  private static pageLoadedInternal = false;
+  /**
+   * Allows to know if the page is currently being shown.
+   */
+  public static get pageLoaded(): boolean {
+    return TransactionListComponent.pageLoadedInternal;
+  }
+
   // If the user has at least one wallet for the currently selected coin.
   userHasWallets = true;
   // Contains all transactions on the user history.
@@ -310,6 +318,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       this.showingStep = ShowingSteps.InitialGroup;
       this.filterTransactions();
     });
+
+    setTimeout(() => TransactionListComponent.pageLoadedInternal = true);
   }
 
   ngOnDestroy() {
@@ -318,6 +328,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.walletsSubscription.unsubscribe();
     this.routeSubscription.unsubscribe();
     this.removeTransactionsSubscription();
+
+    TransactionListComponent.pageLoadedInternal = false;
   }
 
   // Shows all transactions.

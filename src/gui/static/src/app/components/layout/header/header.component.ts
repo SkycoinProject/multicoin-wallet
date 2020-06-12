@@ -13,6 +13,8 @@ import { Coin } from '../../../coins/coin';
 import { CoinService } from '../../../services/coin.service';
 import { AppUpdateService } from '../../../services/app-update.service';
 import { NodeService } from '../../../services/node.service';
+import { TransactionListComponent } from '../../pages/transaction-list/transaction-list.component';
+import { MsgBarService } from '../../../services/msg-bar.service';
 
 /**
  * Header shown at the top of most pages.
@@ -54,6 +56,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
    */
   showBlockchainSyncProgress = true;
 
+  historyPage = TransactionListComponent;
+
   private subscriptionsGroup: SubscriptionLike[] = [];
 
   constructor(
@@ -64,6 +68,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private coinService: CoinService,
+    private msgBarService: MsgBarService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.showBlockchainSyncProgress = coinService.currentCoinInmediate.coinTypeFeatures.blockchainSyncProgress;
@@ -132,7 +137,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }));
   }
 
+  // Shows a msg telling the user that the transaction history is already being displayed.
+  informAlreadyShowingHistory() {
+    this.msgBarService.showError('header.warnings.pending-link-error');
+  }
+
   ngOnDestroy() {
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
+    this.msgBarService.hide();
   }
 }

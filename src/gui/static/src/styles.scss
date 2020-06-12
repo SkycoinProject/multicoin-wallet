@@ -85,6 +85,13 @@ General Helpers
 Alerts
  */
 
+.unconfirmed-alert {
+  display: inline !important;
+  vertical-align: text-bottom;
+  font-size: $font-size-standard-plus !important;
+  animation: alert-blinking 1s linear infinite;
+}
+
 .alert-box {
   color: $red;
   font-size: $font-size-standard-minus;
