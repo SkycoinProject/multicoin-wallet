@@ -65,6 +65,29 @@ export interface HwOutput {
   address_index?: number;
 }
 
+/**
+ * Input of a BTC hw wallet transaction.
+ */
+export interface HwBtcInput {
+  index: number;
+  prev_hash: string;
+}
+
+/**
+ * Output of a BTC hw wallet transaction.
+ */
+export interface HwBtcOutput {
+  address: string;
+  coins: string;
+  /**
+   * Index of the address on the hw wallet. This indicates the device that the output is
+   * used for returning unused remaining coins and that, because of that, it should
+   * not be shown while asking the user for confirmation. It only works if the destination
+   * address really is is on the device at the indicated index.
+   */
+  address_index?: number;
+}
+
 @Injectable()
 export class HwWalletService {
   /**
@@ -481,15 +504,19 @@ export class HwWalletService {
    * @param inputs Transaction inputs.
    * @param outputs Transaction outputs.
    */
-  signTransaction(inputs: HwInput[], outputs: HwOutput[]): Observable<OperationResult> {
+  signTransaction(inputs: HwInput[] | HwBtcInput[], outputs: HwOutput[] | HwBtcOutput[]): Observable<OperationResult> {
+    const signingFiberTransaction = !!(inputs[0] as HwInput).hash;
+
     // Show the confirmation dialog.
     const previewData: HwWalletTxRecipientData[] = [];
     outputs.forEach(output => {
       if (output.address_index === undefined || output.address_index === null) {
         const currentOutput = new HwWalletTxRecipientData();
         currentOutput.address = output.address;
-        currentOutput.coins = new BigNumber(output.coins).decimalPlaces(6);
-        currentOutput.hours = new BigNumber(output.hours);
+        currentOutput.coins = new BigNumber(output.coins);
+        if (signingFiberTransaction) {
+          currentOutput.hours = new BigNumber(output.hours);
+        }
 
         previewData.push(currentOutput);
       }
@@ -509,9 +536,11 @@ export class HwWalletService {
         transaction_outputs: outputs,
       };
 
+      const apiEndpoint = signingFiberTransaction ? '/transaction_sign' : '/bitcoin_transaction_sign';
+
       return this.processDaemonResponse(
         this.hwWalletDaemonService.post(
-          '/transaction_sign',
+          apiEndpoint,
           params,
         ), null, true,
       ).pipe(map(response => {

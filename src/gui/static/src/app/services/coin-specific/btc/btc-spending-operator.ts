@@ -4,7 +4,7 @@ import { Injector } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
 
-import { HwWalletService } from '../../hw-wallet.service';
+import { HwWalletService, HwOutput, HwBtcInput, OperationResult, HwBtcOutput } from '../../hw-wallet.service';
 import { StorageService, StorageType } from '../../storage.service';
 import { WalletBase } from '../../wallet-operations/wallet-objects';
 import { GeneratedTransaction, Output, Input } from '../../wallet-operations/transaction-objects';
@@ -125,42 +125,45 @@ export class BtcSpendingOperator implements SpendingOperator {
       response = response.pipe(mergeMap(() => this.balanceAndOutputsOperator.getOutputs(AddressesToCheck.join(','))));
     }
 
-    // Inputs that will be used for the transaction.
-    let inputs: Output[];
     // How many coins will be sent.
     let amountToSend = new BigNumber(0);
-    // Amount to send plus the fee.
-    let amountNeeded = new BigNumber(0);
-    // How many coin the inputs have.
-    let coinsInInputs = new BigNumber(0);
     // Transaction fee.
     let calculatedFee = new BigNumber(0);
+    // Inputs in the format needed;
+    let processedInputs: Input[];
+    // Outputs in the format needed;
+    const processedOutputs: Output[] = [];
 
-    response = response.pipe(map((availableOutputs: Output[]) => {
+    response = response.pipe(mergeMap((availableOutputs: Output[]) => {
       // Order the available outputs from lowest to highest according to the amount of coins.
       const outputsToChoseFrom: Output[] = availableOutputs.map(output => output).sort((a, b) => a.coins.minus(b.coins).toNumber());
       // Calculate how many coins are going to be sent (without considering the fee).
       destinations.forEach(destination => amountToSend = amountToSend.plus(destination.coins));
 
       // Select the inputs for the operation.
-      inputs = this.recursivelySelectOutputs(outputsToChoseFrom, amountToSend, destinations.length, new BigNumber(fee));
+      const inputs: Output[] = this.recursivelySelectOutputs(outputsToChoseFrom, amountToSend, destinations.length, new BigNumber(fee));
       // Calculate how many coins the inputs have.
+      let coinsInInputs = new BigNumber(0);
       inputs.forEach(input => coinsInInputs = coinsInInputs.plus(input.coins));
 
       // If not specific change address was selected, select the one on the first input, which
       // is the one with most coins.
       if (!changeAddress) {
-        changeAddress = inputs[0].address;
+        if (!wallet || !wallet.isHardware) {
+          changeAddress = inputs[0].address;
+        } else {
+          changeAddress = wallet.addresses[0].address;
+        }
       }
 
       // Add the fee to the amount of coins needed. The calculation ignores the fee needed for
       // the change output, if the selected inputs have more coins than neeed. This is to avoid
       // overcomplicating the available balance calculation in the UI.
       calculatedFee = this.calculateFinalFee(inputs.length, destinations.length, new BigNumber(fee), null);
-      amountNeeded = amountToSend.plus(calculatedFee);
+      const amountNeeded = amountToSend.plus(calculatedFee);
 
       // Convert the inputs to the correct object type.
-      const processedInputs: Input[] = inputs.map(input => {
+      processedInputs = inputs.map(input => {
         return {
           hash: input.hash,
           address: input.address,
@@ -173,8 +176,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       calculatedFee = coinsInInputs;
 
       // Convert the outputs to the format needed. The coins of each output
-      // is removed from the fee.
-      const processedOutputs: Output[] = [];
+      // are removed from the fee.
       destinations.forEach(destination => {
         processedOutputs.push({
           hash: '',
@@ -192,6 +194,7 @@ export class BtcSpendingOperator implements SpendingOperator {
           hash: '',
           address: changeAddress,
           coins: coinsInInputs.minus(amountNeeded),
+          lockingScript: '',
         });
 
         calculatedFee = calculatedFee.minus(coinsInInputs.minus(amountNeeded));
@@ -205,6 +208,19 @@ export class BtcSpendingOperator implements SpendingOperator {
         if (processedOutputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
+      }
+
+      // If an extra output was created for the remaining coins, the script needed for that
+      // output is obtained.
+      if (coinsInInputs.minus(amountNeeded).isGreaterThan(0)) {
+        return this.recursivelyGetAddressesScripts([changeAddress]);
+      } else {
+        return of(null);
+      }
+    }), map((changeAddressData: Map<string, string>) => {
+      // Set the script for the output created for the remaining coins, if any.
+      if (changeAddressData) {
+        processedOutputs[processedOutputs.length - 1].lockingScript = changeAddressData.get(changeAddress);
       }
 
       // Create the transaction object.
@@ -224,7 +240,7 @@ export class BtcSpendingOperator implements SpendingOperator {
     }));
 
     // If required, append to the response the steps needed for signing the transaction.
-    if (!unsigned) {
+    if (wallet && !unsigned) {
       let unsignedTx: GeneratedTransaction;
 
       response = response.pipe(mergeMap(transaction => {
@@ -265,10 +281,10 @@ export class BtcSpendingOperator implements SpendingOperator {
     feePerUnit: BigNumber,
     currentlySelectedBalance = new BigNumber(0),
     currentlySelectedOutputs: Output[] = [],
-  ) {
+  ): Output[] {
 
     if (outputs.length < 1) {
-      return currentlySelectedBalance;
+      return currentlySelectedOutputs;
     }
 
     // Check the outputs in ascending order (according to the coins).
@@ -381,90 +397,113 @@ export class BtcSpendingOperator implements SpendingOperator {
     transaction: GeneratedTransaction,
     rawTransactionString = ''): Observable<string> {
 
-    const inputList = transaction.inputs.map(input => input);
+    if (rawTransactionString) {
+      throw new Error('Raw transactions not allowed.');
+    }
 
-    // Get the original info about each input, to known how each one has to be signed.
-    return this.recursivelyGetOriginalInputsInfo(inputList).pipe(map(rawInputs => {
-      // Convert the inputs to the format the encoder needs.
-      const inputs: BtcInput[] = [];
+    // Convert the inputs to the format the encoder needs.
+    const inputs: BtcInput[] = [];
+    transaction.inputs.forEach((input, i) => {
+      const processedInput = new BtcInput();
+      processedInput.transaction = input.transactionId;
+      processedInput.vout = input.indexInTransaction;
+      processedInput.script = '';
+
+      inputs.push(processedInput);
+    });
+
+    // Needed for converting the coin amounts to sats.
+    const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
+
+    // Convert the outputs to the format the encoder needs.
+    const outputs: BtcOutput[] = [];
+    transaction.outputs.forEach(output => {
+      const processedOutput = new BtcOutput();
+
+      if (!output.lockingScript) {
+        throw new Error('Locking script not found.');
+      }
+
+      processedOutput.satsValue = output.coins.multipliedBy(decimalsCorrector);
+      processedOutput.script = output.lockingScript;
+
+      outputs.push(processedOutput);
+    });
+
+    // Will return the signatures.
+    let signaturesGenerationProcedure: Observable<string[]>;
+
+    // Procedure for getting the signatures with a software wallet.
+    if (!wallet.isHardware) {
+      const signatures: string[] = [];
+
+      // Temporal test method.
       transaction.inputs.forEach((input, i) => {
-        const processedInput = new BtcInput();
-        processedInput.transaction = input.transactionId;
-        processedInput.vout = input.indexInTransaction;
-
-        // Add the script needed to unlock the input.
-        if (rawInputs.has(input.hash)) {
-          const rawInput = rawInputs.get(input.hash);
-
-          if (rawInput.scriptPubKey && rawInput.scriptPubKey.type === 'pubkeyhash') {
-            processedInput.script = this.getP2pkhScriptSig(i);
-          } else {
-            processedInput.script = '';
-          }
-        } else {
-          processedInput.script = '';
-        }
-
-        inputs.push(processedInput);
+        signatures.push(this.getP2pkhSignature(i));
       });
 
-      // Needed for converting the coin amounts to sats.
-      const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
+      signaturesGenerationProcedure = of(signatures);
 
-      // Convert the outputs to the format the encoder needs.
-      const outputs: BtcOutput[] = [];
+    // Procedure for getting the signatures with a software wallet.
+    } else {
+      const hwOutputs: HwBtcOutput[] = [];
+      const hwInputs: HwBtcInput[] = [];
+
+      const addressesMap: Map<string, number> = new Map<string, number>();
+      wallet.addresses.forEach((address, i) => addressesMap.set(address.address, i));
+
+      // Convert all inputs and outputs to the format used by the hw wallet.
       transaction.outputs.forEach(output => {
-        const processedOutput = new BtcOutput();
-
-        if (!output.lockingScript) {
-          throw new Error('Locking script not found.');
-        }
-
-        processedOutput.satsValue = output.coins.multipliedBy(decimalsCorrector);
-        processedOutput.script = output.lockingScript;
-
-        outputs.push(processedOutput);
+        hwOutputs.push({
+          address: output.address,
+          coins: output.coins.decimalPlaces(6).toString(10),
+        });
+      });
+      transaction.inputs.forEach(input => {
+        hwInputs.push({
+          prev_hash: input.transactionId,
+          index: addressesMap.get(input.address),
+        });
       });
 
-      // Encode the transaction and return it.
+      if (hwOutputs.length > 1) {
+        // Try to find the return address assuming that it is the first address of the device and that
+        // it should be at the end of the outputs list.
+        for (let i = hwOutputs.length - 1; i >= 0; i--) {
+          if (hwOutputs[i].address === wallet.addresses[0].address) {
+            // This makes de device consider the output as the one used for returning the remaining coins.
+            hwOutputs[i].address_index = 0;
+            break;
+          }
+        }
+      }
+
+      // Make the device sign the transaction.
+      signaturesGenerationProcedure = this.hwWalletService.signTransaction(hwInputs, hwOutputs).pipe(map((result: OperationResult) => (result.rawResponse as string[])));
+    }
+
+    return signaturesGenerationProcedure.pipe(map(signatures => {
+      if (signatures.length !== inputs.length) {
+        throw new Error('Invalid number of signatures.');
+      }
+
+      transaction.inputs.forEach((input, i) => {
+        // TODO: currently the signature is added as the script, but more data may be needed
+        // after the changes for making the hw wallet return valid signatures are made.
+        inputs[i].script = signatures[i];
+      });
+
       return BtcTxEncoder.encode(inputs, outputs);
     }));
   }
 
   /**
-   * Temporal function, only for testing, for getting the script for unlocking an input. For
+   * Temporal function, only for testing, for getting the signature for unlocking an input. For
    * using it, you must add the script inside the code.
    * @param index Index of the input inside the transaction that is being created.
    */
-  private getP2pkhScriptSig(index: number) {
+  private getP2pkhSignature(index: number) {
     return '';
-  }
-
-  /**
-   * Gets the original data inside the node about the inputs in the provided list.
-   * @param inputs inputs to check. The list will be altered by the function.
-   * @param currentElements Already obtained inputs. For internal use.
-   * @returns Map with the data, accessible via the provided input hashes.
-   */
-  private recursivelyGetOriginalInputsInfo(inputs: Input[], currentElements = new Map<string, any>()): Observable<Map<string, any>> {
-    if (inputs.length === 0) {
-      return of(currentElements);
-    }
-
-    // Get the data of the last output.
-    this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'gettxout', [inputs[inputs.length - 1].transactionId, inputs[inputs.length - 1].indexInTransaction]).pipe(mergeMap(response => {
-      // Add the output to the map.
-      currentElements.set(inputs[inputs.length - 1].hash, response);
-
-      inputs.pop();
-
-      if (inputs.length === 0) {
-        return of(currentElements);
-      }
-
-      // Continue to the next step.
-      return this.recursivelyGetOriginalInputsInfo(inputs, currentElements);
-    }));
   }
 
   injectTransaction(encodedTx: string, note: string|null): Observable<boolean> {

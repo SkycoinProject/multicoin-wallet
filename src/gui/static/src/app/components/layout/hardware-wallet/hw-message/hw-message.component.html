@@ -20,7 +20,9 @@
     <div *ngIf="outputsList" class="list">
       <div *ngFor="let output of outputsList" class="list-element">
         <span>• {{ output.coins | amount }}</span>
-        <span>{{ 'hardware-wallet.create-tx.separator-for-coins-and-hours' | translate }} {{ output.hours | amount:false }}</span>
+        <ng-container *ngIf="output.hours">
+          <span>{{ 'hardware-wallet.create-tx.separator-for-coins-and-hours' | translate }} {{ output.hours | amount:false }}</span>
+        </ng-container>
         <span>{{ 'hardware-wallet.create-tx.separator-to-destination' | translate }} {{ output.address }}</span>
       </div>
     </div>

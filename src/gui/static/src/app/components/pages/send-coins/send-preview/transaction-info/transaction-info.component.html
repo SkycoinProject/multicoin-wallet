@@ -102,7 +102,12 @@
             <mat-icon [matTooltip]="'tx.balance-to-send-info' | translate" [inline]="true" class="-balance-help">help</mat-icon>
           </h4>
           <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
-            {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
+            <ng-container *ngIf="coinHasHours || !isPreview">
+              {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
+            </ng-container>
+            <ng-container *ngIf="!coinHasHours && isPreview">
+              {{ balanceToShow.plus(transaction.fee).multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
+            </ng-container>
           </p>
         </ng-container>
       </div>
