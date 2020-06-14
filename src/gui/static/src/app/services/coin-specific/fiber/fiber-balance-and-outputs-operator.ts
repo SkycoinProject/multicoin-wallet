@@ -371,7 +371,8 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
           this.walletsWithBalanceList = temporalWallets;
           this.informDataUpdated();
         } else {
-          // Update only the balances with changes.
+          // Update only the balances with changes. This allows to show updated data without
+          // having to completelly replace the wallet array.
           this.walletsWithBalanceList.forEach((currentWallet, i) => {
             if (
               !currentWallet.coins.isEqualTo(temporalWallets[i].coins) ||
@@ -379,10 +380,20 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
               !currentWallet.hours.isEqualTo(temporalWallets[i].hours) ||
               !currentWallet.confirmedHours.isEqualTo(temporalWallets[i].confirmedHours)
             ) {
+              currentWallet.coins = temporalWallets[i].coins;
+              currentWallet.confirmedCoins = temporalWallets[i].confirmedCoins;
+              currentWallet.availableCoins = temporalWallets[i].availableCoins;
+              currentWallet.hours = temporalWallets[i].hours;
+              currentWallet.confirmedHours = temporalWallets[i].confirmedHours;
+              currentWallet.availableHours = temporalWallets[i].availableHours;
+              currentWallet.hasPendingCoins = temporalWallets[i].hasPendingCoins;
+              currentWallet.hasPendingHours = temporalWallets[i].hasPendingHours;
+
               changeDetected = true;
             }
 
             if (currentWallet.addresses.length !== temporalWallets[i].addresses.length) {
+              currentWallet.addresses = temporalWallets[i].addresses;
               changeDetected = true;
             } else {
               currentWallet.addresses.forEach((currentAddress, j) => {
@@ -392,6 +403,15 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
                   !currentAddress.hours.isEqualTo(temporalWallets[i].addresses[j].hours) ||
                   !currentAddress.confirmedHours.isEqualTo(temporalWallets[i].addresses[j].confirmedHours)
                 ) {
+                  currentAddress.coins = temporalWallets[i].addresses[j].coins;
+                  currentAddress.confirmedCoins = temporalWallets[i].addresses[j].confirmedCoins;
+                  currentAddress.availableCoins = temporalWallets[i].addresses[j].availableCoins;
+                  currentAddress.hours = temporalWallets[i].addresses[j].hours;
+                  currentAddress.confirmedHours = temporalWallets[i].addresses[j].confirmedHours;
+                  currentAddress.availableHours = temporalWallets[i].addresses[j].availableHours;
+                  currentAddress.hasPendingCoins = temporalWallets[i].addresses[j].hasPendingCoins;
+                  currentAddress.hasPendingHours = temporalWallets[i].addresses[j].hasPendingHours;
+
                   changeDetected = true;
                 }
               });
@@ -400,7 +420,6 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
 
           // If any of the balances changed, inform that there were changes.
           if (changeDetected) {
-            this.walletsWithBalanceList = temporalWallets;
             this.informDataUpdated();
           }
         }

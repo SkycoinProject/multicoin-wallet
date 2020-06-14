@@ -43,6 +43,7 @@ export class TopBarComponent implements OnInit, OnDestroy {
   showNetworkOption: boolean;
   showBackupOption: boolean;
   showOutputsOption: boolean;
+  showPendingTxsOption: boolean;
 
   private subscriptionsGroup: Subscription[] = [];
 
@@ -59,6 +60,7 @@ export class TopBarComponent implements OnInit, OnDestroy {
     this.showNetworkOption = this.coinService.currentCoinInmediate.coinTypeFeatures.networkingStats;
     this.showBackupOption = this.coinService.currentCoinInmediate.coinTypeFeatures.softwareWallets;
     this.showOutputsOption = this.coinService.currentCoinInmediate.coinTypeFeatures.outputs;
+    this.showPendingTxsOption = this.coinService.currentCoinInmediate.coinTypeFeatures.showAllPendingTransactions;
   }
 
   ngOnInit() {

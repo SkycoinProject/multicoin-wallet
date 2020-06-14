@@ -14,6 +14,7 @@ import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
 import { NodeService } from '../../../../../services/node.service';
 import { CoinService } from '../../../../../services/coin.service';
 import { CoinTypes } from '../../../../../coins/coin-types';
+import { MsgBarService } from '../../../../../services/msg-bar.service';
 
 /**
  * Info about the balance which is available with the selections the user has
@@ -151,6 +152,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private coinService: CoinService,
+    private msgBarService: MsgBarService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.coinHasOutputs = coinService.currentCoinInmediate.coinTypeFeatures.outputs;
@@ -291,6 +293,20 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     }));
 
     this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
+      if (this.allWallets) {
+        // balanceAndOutputsService returns the same array unless some important changes in the
+        // wallets were detected. If that happens, this part of the form is cleaned, to
+        // avoid problems.
+        if (this.allWallets !== wallets) {
+          this.msgBarService.showWarning('send.wallets-updated-warning');
+          this.allWallets = null;
+          this.resetForm();
+        } else {
+          // Inform about the changes in the available balance and loading status.
+          this.onSelectionChanged.emit();
+        }
+      }
+
       this.allWallets = wallets;
       if (wallets.length === 1) {
         setTimeout(() => {
@@ -306,11 +322,12 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     this.closeGetOutputsSubscription();
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     this.onSelectionChanged.complete();
+    this.msgBarService.hide();
   }
 
   resetForm() {
     // If there is only one wallet, there is no need for restarting the value.
-    if (this.allWallets.length !== 1) {
+    if (!this.allWallets || this.allWallets.length !== 1) {
       this.form.get('wallet').setValue('');
     }
 

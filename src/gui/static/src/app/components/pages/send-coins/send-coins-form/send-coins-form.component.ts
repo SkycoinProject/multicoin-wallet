@@ -362,9 +362,13 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
           new BigNumber(this.form.get('gasLimit').value),
         );
         reportedAvailable.availableCoins = reportedAvailable.availableCoins.minus(this.feeForSendingAll);
-
-        this.availableBalance = reportedAvailable;
+        if (reportedAvailable.availableCoins.isLessThanOrEqualTo(0)) {
+          reportedAvailable.availableCoins = new BigNumber(0);
+          this.feeForSendingAll = new BigNumber(0);
+        }
       }
+
+      this.availableBalance = reportedAvailable;
     }
   }
 
@@ -732,6 +736,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       if (this.coinFeeType === FeeTypes.Btc) {
         if (!this.recommendedFeesMap) {
           warningMsg = 'send.fee-unknown-warning';
+        } else if (this.recommendedFees.thereWereProblems) {
+          warningMsg = 'send.fee-problem-warning2';
         } else if (new BigNumber(this.form.get('fee').value).isLessThan(this.recommendedFeesMap.get(4))) {
           warningMsg = 'send.fee-low-warning';
         } else if (new BigNumber(this.form.get('fee').value).isGreaterThan(this.recommendedFeesMap.get(0))) {
@@ -740,6 +746,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       } else if (this.coinFeeType === FeeTypes.Eth) {
         if (!this.recommendedFees) {
           warningMsg = 'send.fee-unknown-warning';
+        } else if (this.recommendedFees.thereWereProblems) {
+          warningMsg = 'send.fee-problem-warning2';
         } else if (new BigNumber(this.form.get('gasPrice').value).isLessThan(this.recommendedFees.recommendedEthFees.gasPrice.dividedBy(2))) {
           warningMsg = 'send.fee-low-warning';
         } else if (new BigNumber(this.form.get('gasPrice').value).isGreaterThan(this.recommendedFees.recommendedEthFees.gasPrice.multipliedBy(2))) {

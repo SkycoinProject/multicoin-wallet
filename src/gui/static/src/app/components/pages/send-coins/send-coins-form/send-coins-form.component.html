@@ -66,6 +66,7 @@
     (onBulkRequested)="openMultipleDestinationsPopup()"
     [availableBalance]="availableBalance"
     [busy]="busy"
+    [validFeeNeeded]="validFeeNeeded"
     [showHourFields]="coinHasHours && !autoHours"
     [showSimpleForm]="showSimpleForm"
     >
@@ -94,13 +95,16 @@
     <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <app-arrow-link
-    *ngIf="coinFeeType !== feeTypes.None"
-    [text]="'send.fee-options'"
-    (pressed)="toggleFeeOptions()"
-    [pointDown]="!showFeeOptions"
-    [noPadding]="true">
-  </app-arrow-link>
+  <div class="fee-link-copntainer" *ngIf="coinFeeType !== feeTypes.None">
+    <app-arrow-link
+      [text]="'send.fee-options'"
+      (pressed)="toggleFeeOptions()"
+      [pointDown]="!showFeeOptions"
+      [noPadding]="true">
+    </app-arrow-link>
+
+    <div class="fee-spinner fee-spinner-external" *ngIf="!showFeeOptions && showFeesLoading"><mat-spinner></mat-spinner></div>
+  </div>
 
   <!-- BTC fee area. -->
   <div class="form-field -options-wrapper" *ngIf="coinFeeType === feeTypes.Btc && showFeeOptions">
@@ -110,7 +114,7 @@
     <div class="row">
       <!-- Fee type. -->
       <div class="col-8">
-        <div class="fee-spinner" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
+        <div class="fee-spinner fee-spinner-internal" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
         <div class="-select">
           <select formControlName="feeType" id="feeType" [attr.disabled]="busy || showFeesLoading || !recommendedFees || recommendedFees.thereWereProblems ? 'true' : null">
             <!-- Recommended values. -->
@@ -143,7 +147,7 @@
       <div class="row">
         <!-- Fee type. -->
         <div class="col-8">
-          <div class="fee-spinner" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
+          <div class="fee-spinner fee-spinner-internal" *ngIf="showFeesLoading"><mat-spinner></mat-spinner></div>
           <div class="-select">
             <select formControlName="ethFeeType" id="ethFeeType" [attr.disabled]="busy || showFeesLoading || !recommendedFees || recommendedFees.thereWereProblems ? 'true' : null">
               <!-- Recommended value. -->

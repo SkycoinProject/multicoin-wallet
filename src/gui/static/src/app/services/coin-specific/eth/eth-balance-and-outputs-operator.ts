@@ -281,17 +281,29 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
           this.walletsWithBalanceList = temporalWallets;
           this.informDataUpdated();
         } else {
-          // Update only the balances with changes.
+          // Update only the balances with changes. This allows to show updated data without
+          // having to completelly replace the wallet array.
           this.walletsWithBalanceList.forEach((currentWallet, i) => {
             if (!currentWallet.coins.isEqualTo(temporalWallets[i].coins) || !currentWallet.confirmedCoins.isEqualTo(temporalWallets[i].confirmedCoins)) {
+              currentWallet.coins = temporalWallets[i].coins;
+              currentWallet.confirmedCoins = temporalWallets[i].confirmedCoins;
+              currentWallet.availableCoins = temporalWallets[i].availableCoins;
+              currentWallet.hasPendingCoins = temporalWallets[i].hasPendingCoins;
+
               changeDetected = true;
             }
 
             if (currentWallet.addresses.length !== temporalWallets[i].addresses.length) {
+              currentWallet.addresses = temporalWallets[i].addresses;
               changeDetected = true;
             } else {
               currentWallet.addresses.forEach((currentAddress, j) => {
                 if (!currentAddress.coins.isEqualTo(temporalWallets[i].addresses[j].coins) || !currentAddress.confirmedCoins.isEqualTo(temporalWallets[i].addresses[j].confirmedCoins)) {
+                  currentAddress.coins = temporalWallets[i].addresses[j].coins;
+                  currentAddress.confirmedCoins = temporalWallets[i].addresses[j].confirmedCoins;
+                  currentAddress.availableCoins = temporalWallets[i].addresses[j].availableCoins;
+                  currentAddress.hasPendingCoins = temporalWallets[i].addresses[j].hasPendingCoins;
+
                   changeDetected = true;
                 }
               });
@@ -300,7 +312,6 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
           // If any of the balances changed, inform that there were changes.
           if (changeDetected) {
-            this.walletsWithBalanceList = temporalWallets;
             this.informDataUpdated();
           }
         }

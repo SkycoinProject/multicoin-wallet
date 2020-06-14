@@ -39,7 +39,11 @@ export class BalanceAndOutputsService {
 
   /**
    * Gets the wallet list, with the balance of each wallet and address. It emits when the
-   * wallet list is updated and when the balance changes. Please note that the list will
+   * wallet list is updated and when the balance changes. Every time this observable emits,
+   * the wallet array is returned, but in fact, if there are not important changes in the
+   * structure of the wallets, if the only change was in the balance, the service will try
+   * to always update the values in the same array, this means that in most cases you will have
+   * the updated balance even if not listening to new events. Please note that the list will
    * tell all the wallets have balance 0 util the service finishes connecting to the
    * backend node for the first time. Also note that if any value of the returned wallets
    * is modified, the changes must be notified to the wallets service or the behavior will

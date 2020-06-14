@@ -56,6 +56,9 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // Allows to deactivate the form while the system is busy.
   @Input() busy: boolean;
+  // If the form is still waiting for a valid fee for being able to calculate the
+  // available balance.
+  @Input() validFeeNeeded: boolean;
   // Emits when there have been changes in the contents of the component, so the validation
   // status could have changed.
   @Output() onChanges = new EventEmitter<void>();
@@ -331,6 +334,14 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   // Assigns all the remaining coins to the destination corresponding to the provided index.
   assignAll(index: number) {
     this.msgBarService.hide();
+
+    // If the form is still waiting for a valid fee for being able to calculate the
+    // available balance, show an error msg.
+    if (this.validFeeNeeded || this.availableBalance.loading) {
+      this.msgBarService.showError(this.translate.instant('send.no-available-balance-error'));
+
+      return;
+    }
 
     // If there are no available coins on the selected sources, show an error msg.
     if (this.availableBalance.availableCoins.isEqualTo(0)) {

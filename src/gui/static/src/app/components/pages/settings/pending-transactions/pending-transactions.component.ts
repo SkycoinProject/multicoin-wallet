@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay, mergeMap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
@@ -41,6 +42,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     private navBarSwitchService: NavBarSwitchService,
     private historyService: HistoryService,
     private coinService: CoinService,
+    private router: Router,
   ) {
     // Intervals for updating the data must be longer if connecting to a remote node.
     if (!coinService.currentCoinInmediate.isLocal) {
@@ -51,23 +53,19 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     this.showConfirmations = coinService.currentCoinInmediate.coinType !== CoinTypes.Fiber;
     this.confirmationsNeeded = coinService.currentCoinInmediate.confirmationsNeeded;
 
-    if (this.coinService.currentCoinInmediate.coinTypeFeatures.showAllPendingTransactions) {
-      this.navbarSubscription = this.navBarSwitchService.activeComponent.subscribe(value => {
-        this.selectedNavbarOption = value;
-        this.transactions = null;
-        this.startDataRefreshSubscription(0);
-      });
-    } else {
-      this.selectedNavbarOption = DoubleButtonActive.LeftButton;
+    this.navbarSubscription = this.navBarSwitchService.activeComponent.subscribe(value => {
+      this.selectedNavbarOption = value;
       this.transactions = null;
       this.startDataRefreshSubscription(0);
+    });
+
+    if (!this.coinService.currentCoinInmediate.coinTypeFeatures.showAllPendingTransactions) {
+      this.router.navigate([''], {replaceUrl: true});
     }
   }
 
   ngOnInit() {
-    if (this.coinService.currentCoinInmediate.coinTypeFeatures.showAllPendingTransactions) {
-      this.navBarSwitchService.showSwitch('pending-txs.my-transactions-button', 'pending-txs.all-transactions-button');
-    }
+    this.navBarSwitchService.showSwitch('pending-txs.my-transactions-button', 'pending-txs.all-transactions-button');
   }
 
   ngOnDestroy() {
