@@ -20,8 +20,9 @@
                 [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)"
                 [ngValue]="wallet"
               >
-                {{ wallet.label }} - {{ (wallet.coins ? wallet.coins : 0) | amount }}
-                {{ !coinHasHours ? '' : ' (' + ((wallet.hours ? wallet.hours : 0) | amount:false) + ')' }}
+                {{ wallet.label }} - {{ (wallet.availableCoins ? wallet.availableCoins : 0) | amount }}
+                {{ !coinHasHours ? '' : ' - ' + ((wallet.availableHours ? wallet.availableHours : 0) | amount:false) }}
+                <ng-container *ngIf="wallet.hasPendingCoins">({{ 'send.available-balance-indication' | translate }})</ng-container>
               </option>
             </ng-container>
           </ng-container>
@@ -44,13 +45,15 @@
         [attr.disabled]="(busy || (addresses && addresses.length === 0)) ? 'true' : null"
         [ngClass]="{'element-disabled' : (busy || (addresses && addresses.length === 0))}">
         <mat-option *ngFor="let addr of addresses" [value]="addr">
-          {{ addr.address }} - {{ (addr.coins ? addr.coins : 0) | amount }}
-          {{ !coinHasHours ? '' : ' (' + (addr.hours | amount:false) + ')' }}
+          {{ addr.address }} - {{ (addr.availableCoins ? addr.availableCoins : 0) | amount }}
+          {{ !coinHasHours ? '' : ' - ' + (addr.availableHours | amount:false) }}
+          <ng-container *ngIf="wallet.hasPendingCoins">({{ 'send.available-balance-indication' | translate }})</ng-container>
         </mat-option>
         <mat-select-trigger>
           <div *ngFor="let address of form.get('addresses').value">
-            {{ address.address }} - {{ (address.coins ? address.coins : 0) | amount }}
-            {{ !coinHasHours ? '' : ' (' + (address.hours | amount:false) + ')' }}
+            {{ address.address }} - {{ (address.availableCoins ? address.availableCoins : 0) | amount }}
+            {{ !coinHasHours ? '' : ' - ' + (address.availableHours | amount:false) }}
+            <ng-container *ngIf="wallet.hasPendingCoins">({{ 'send.available-balance-indication' | translate }})</ng-container>
           </div>
         </mat-select-trigger>
       </mat-select>
@@ -74,12 +77,12 @@
         [ngClass]="{'element-disabled' : (busy || (unspentOutputs && unspentOutputs.length === 0))}">
         <mat-option *ngFor="let out of unspentOutputs" [value]="out">
           {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
-          {{ !coinHasHours ? '' : ' (' + (out.hours | amount:false) + ')' }}
+          {{ !coinHasHours ? '' : ' - ' + (out.hours | amount:false) }}
         </mat-option>
         <mat-select-trigger>
           <div *ngFor="let out of form.get('outputs').value">
             {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
-            {{ !coinHasHours ? '' : ' (' + (out.hours | amount:false) + ')' }}
+            {{ !coinHasHours ? '' : ' - ' + (out.hours | amount:false) }}
           </div>
         </mat-select-trigger>
       </mat-select>

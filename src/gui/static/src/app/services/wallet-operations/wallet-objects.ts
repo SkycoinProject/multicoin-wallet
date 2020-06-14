@@ -153,10 +153,22 @@ function removeAdditionalProperties(useWalletBaseAsReference: boolean, objectToC
  * Object with the basic data of a wallet and data about its balance.
  */
 export class WalletWithBalance extends WalletBase {
+  /**
+   * Balance taking into account all transactions.
+   */
   coins = new BigNumber(0);
   hours = new BigNumber(0);
+  /**
+   * Balance taking into account only the confirmed transactions.
+   */
   confirmedCoins = new BigNumber(0);
   confirmedHours = new BigNumber(0);
+  /**
+   * Balance taking into account the confirmed transactions, minus all coins sent in
+   * pending transacions.
+   */
+  availableCoins = new BigNumber(0);
+  availableHours = new BigNumber(0);
   hasPendingCoins = false;
   hasPendingHours = false;
   addresses: AddressWithBalance[] = [];
@@ -170,6 +182,8 @@ export class AddressWithBalance extends AddressBase {
   hours = new BigNumber(0);
   confirmedCoins = new BigNumber(0);
   confirmedHours = new BigNumber(0);
+  availableCoins = new BigNumber(0);
+  availableHours = new BigNumber(0);
   hasPendingCoins = false;
   hasPendingHours = false;
 }

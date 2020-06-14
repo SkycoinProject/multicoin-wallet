@@ -141,7 +141,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
       const addresses = wallets.map(wallet => wallet.addresses.map(address => address.address).join(',')).join(',');
 
       // Get the unspent outputs of the list of addresses.
-      return this.getOutputs(addresses);
+      return this.obtainOutputsList(addresses, false);
     }), map(outputs => {
       // Build the response.
       const walletsList: WalletWithOutputs[] = [];
@@ -159,13 +159,31 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
   }
 
   getOutputs(addresses: string): Observable<Output[]> {
+    return this.obtainOutputsList(addresses, true);
+  }
+
+  /**
+   * Gets the list of unspent outputs owned by any of the addresses passed in the addresses param.
+   * @param addresses List of addresses, comma separated.
+   * @param confirmedOnly If true, only confirmed outputs will be returned.
+   * @returns Array with all the unspent outputs owned by any of the provide addresses.
+   */
+  private obtainOutputsList(addresses: string, confirmedOnly: boolean): Observable<Output[]> {
     if (!addresses) {
       return of([]);
     } else {
       // Get the outputs from the node and process the response.
       return this.fiberApiService.post(this.currentCoin.nodeUrl, 'outputs', { addrs: addresses }).pipe(map((response) => {
         const outputs: Output[] = [];
-        response.head_outputs.forEach(output => {
+
+        let outputsToUse: any[];
+        if (confirmedOnly) {
+          outputsToUse = response.head_outputs;
+        } else {
+          outputsToUse = (response.head_outputs as any[]).concat(response.incoming_outputs);
+        }
+
+        outputsToUse.forEach(output => {
           const processedOutput: Output = {
             address: output.address,
             coins: new BigNumber(output.coins),
@@ -184,7 +202,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
   getWalletUnspentOutputs(wallet: WalletBase): Observable<Output[]> {
     const addresses = wallet.addresses.map(a => a.address).join(',');
 
-    return this.getOutputs(addresses);
+    return this.obtainOutputsList(addresses, true);
   }
 
   refreshBalance() {
@@ -431,11 +449,16 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
     return query.pipe(map(balance => {
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
+      // TODO: the available balance should be all the confirmed coins or hours minus all
+      // coins or hours going out.
+
       if (balance.confirmed) {
         wallet.coins = new BigNumber(balance.predicted.coins).dividedBy(1000000);
         wallet.hours = new BigNumber(balance.predicted.hours);
         wallet.confirmedCoins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
         wallet.confirmedHours = new BigNumber(balance.confirmed.hours);
+        wallet.availableCoins = wallet.coins;
+        wallet.availableHours = wallet.hours;
         wallet.hasPendingCoins = !wallet.coins.isEqualTo(wallet.confirmedCoins);
         wallet.hasPendingHours = !wallet.hours.isEqualTo(wallet.confirmedHours);
       } else {
@@ -443,6 +466,8 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
         wallet.hours = new BigNumber(0);
         wallet.confirmedCoins = new BigNumber(0);
         wallet.confirmedHours = new BigNumber(0);
+        wallet.availableCoins = wallet.coins;
+        wallet.availableHours = wallet.hours;
         wallet.hasPendingCoins = false;
         wallet.hasPendingHours = false;
       }
@@ -453,6 +478,8 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
           address.hours = new BigNumber(balance.addresses[address.address].predicted.hours);
           address.confirmedCoins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
           address.confirmedHours = new BigNumber(balance.addresses[address.address].confirmed.hours);
+          address.availableCoins = address.coins;
+          address.availableHours = address.hours;
           address.hasPendingCoins = !address.coins.isEqualTo(address.confirmedCoins);
           address.hasPendingHours = !address.hours.isEqualTo(address.confirmedHours);
         } else {
@@ -460,6 +487,8 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
           address.hours = new BigNumber(0);
           address.confirmedCoins = new BigNumber(0);
           address.confirmedHours = new BigNumber(0);
+          address.availableCoins = address.coins;
+          address.availableHours = address.hours;
           address.hasPendingCoins = false;
           address.hasPendingHours = false;
         }

@@ -84,15 +84,16 @@ export class BalanceAndOutputsService {
    * Gets the wallet list, with the unspent outputs of each address. It emits when the
    * wallet list is updated and when the balance changes. Please note that if any value
    * of the returned wallets is modified, the changes must be notified to the wallets
-   * service or the behavior will be indeterminate.
+   * service or the behavior will be indeterminate. The response will include confirmed and
+   * unconfirmed outputs.
    */
   get outputsWithWallets(): Observable<WalletWithOutputs[]> {
     return this.operator.outputsWithWallets;
   }
 
   /**
-   * Gets the list of unspent outputs of a list of addresses. The data is not automatically
-   * updated.
+   * Gets the list of confirmed unspent outputs of a list of addresses. The data is not
+   * automatically updated.
    * @param addresses List of addresses, comma separated.
    * @returns Array with all the unspent outputs owned by any of the provide addresses.
    */
@@ -101,8 +102,8 @@ export class BalanceAndOutputsService {
   }
 
   /**
-   * Gets the list of unspent outputs owned by a wallet. The data is not automatically
-   * updated.
+   * Gets the list of confirmed unspent outputs owned by a wallet. The data is not
+   * automatically updated.
    * @param wallet Wallet to check.
    * @returns Array with all the unspent outputs owned by any of the addresses of the wallet.
    */

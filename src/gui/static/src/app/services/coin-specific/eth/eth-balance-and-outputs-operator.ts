@@ -17,6 +17,7 @@ import { BlockbookApiService } from '../../api/blockbook-api.service';
 class WalletBalance {
   current = new BigNumber(0);
   predicted = new BigNumber(0);
+  available = new BigNumber(0);
   addresses = new Map<string, AddressBalance>();
 }
 
@@ -26,6 +27,7 @@ class WalletBalance {
 class AddressBalance {
   current = new BigNumber(0);
   predicted = new BigNumber(0);
+  available = new BigNumber(0);
 }
 
 /**
@@ -342,6 +344,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
           response.addresses.set(address, addressBalance);
           response.current = response.current.plus(addressBalance.current);
           response.predicted = response.predicted.plus(addressBalance.predicted);
+          response.available = response.available.plus(addressBalance.available);
         });
 
         return of(response);
@@ -361,16 +364,19 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
       wallet.coins = balance.predicted;
       wallet.confirmedCoins = balance.current;
+      wallet.availableCoins = balance.available;
       wallet.hasPendingCoins = !wallet.coins.isEqualTo(wallet.confirmedCoins);
 
       wallet.addresses.forEach(address => {
         if (balance.addresses.has(address.address)) {
           address.coins = balance.addresses.get(address.address).predicted;
           address.confirmedCoins = balance.addresses.get(address.address).current;
+          address.availableCoins = balance.addresses.get(address.address).available;
           address.hasPendingCoins = !address.coins.isEqualTo(address.confirmedCoins);
         } else {
           address.coins = new BigNumber(0);
           address.confirmedCoins = new BigNumber(0);
+          address.availableCoins = new BigNumber(0);
           address.hasPendingCoins = false;
         }
       });
@@ -433,6 +439,15 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       // Calculate the currently confirmed balance.
       const balance = predicted.minus(unconfirmed);
 
+      // Calculate how many coins are entering the address in the pending transactions.
+      const incomingBalance = this.calculateBalanceFromTransactions(response.transactions, addresses[addresses.length - 1], true);
+      // The available balance is all the confirmed coins minus all coins going out.
+      let available = predicted.minus(incomingBalance);
+      // This prevents problems if the address sends coins to itself.
+      if (available.isLessThan(0)) {
+        available = new BigNumber(0);
+      }
+
       // Value which will allow to get the balances in coins, instead of wei.
       const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as EthCoinConfig).decimals);
 
@@ -440,6 +455,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       currentElements.set(addresses[addresses.length - 1], {
         current: balance.dividedBy(decimalsCorrector),
         predicted: predicted.dividedBy(decimalsCorrector),
+        available: available.dividedBy(decimalsCorrector),
       });
 
       addresses.pop();
@@ -459,14 +475,16 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param transactions Transactions to check. Must be the array returned by Blockbook when
    * calling the "address/" API endpoint. Can be null, as the api may not return any value.
    * @param address Address to check.
+   * @param onlyIncoming If true, only the balance entering the address will be taken
+   * into account.
    */
-  private calculateBalanceFromTransactions(transactions: any[], address: string): BigNumber {
+  private calculateBalanceFromTransactions(transactions: any[], address: string, onlyIncoming = false): BigNumber {
     let balance = new BigNumber(0);
 
     if (transactions && transactions.length > 0) {
       transactions.forEach(transaction => {
         // If the input is from the current address, consider the output and fee as outgoing coins.
-        if (transaction.vin && (transaction.vin as any[]).length === 1 && (transaction.vin as any[])[0].isAddress) {
+        if (!onlyIncoming && transaction.vin && (transaction.vin as any[]).length === 1 && (transaction.vin as any[])[0].isAddress) {
           if ((transaction.vin as any[])[0].addresses.length === 1 && (transaction.vin as any[])[0].addresses[0] === address) {
             balance = balance.minus(this.getOutputValue(transaction));
 

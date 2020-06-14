@@ -19,6 +19,7 @@ import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
 class WalletBalance {
   current = new BigNumber(0);
   predicted = new BigNumber(0);
+  available = new BigNumber(0);
   addresses = new Map<string, AddressBalance>();
 }
 
@@ -28,6 +29,7 @@ class WalletBalance {
 class AddressBalance {
   current = new BigNumber(0);
   predicted = new BigNumber(0);
+  available = new BigNumber(0);
 }
 
 /**
@@ -162,7 +164,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       wallets.forEach(wallet => wallet.addresses.forEach(address => addresses.push(address.address)));
 
       // Get the unspent outputs of the list of addresses.
-      return this.recursivelyGetOutputs(addresses);
+      return this.recursivelyGetOutputs(addresses, false);
     }), map(outputs => {
       // Build the response.
       const walletsList: WalletWithOutputs[] = [];
@@ -185,16 +187,17 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       addressesArray[i] = addressesArray[i].trim();
     }
 
-    return this.recursivelyGetOutputs(addressesArray);
+    return this.recursivelyGetOutputs(addressesArray, true);
   }
 
   /**
    * Gets the unspent outputs of the addresses in the provided address list.
    * @param addresses Addresses to check. The list will be altered by the function.
+   * @param confirmedOnly If true, only confirmed outputs will be returned.
    * @param currentElements Already obtained outputs. For internal use.
    * @returns Array with all the unspent outputs related to the provided address list.
    */
-  private recursivelyGetOutputs(addresses: string[], currentElements: Output[] = []): Observable<Output[]> {
+  private recursivelyGetOutputs(addresses: string[], confirmedOnly: boolean, currentElements: Output[] = []): Observable<Output[]> {
     if (addresses.length === 0) {
       return of(currentElements);
     }
@@ -203,21 +206,23 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
 
     // Get the outputs of the address.
-    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'utxo/' + addresses[addresses.length - 1])
+    return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'utxo/' + addresses[addresses.length - 1], {confirmed: confirmedOnly})
       .pipe(mergeMap((response) => {
 
         // Process the outputs.
         (response as any[]).forEach(output => {
-          const processedOutput: Output = {
-            address: addresses[addresses.length - 1],
-            coins: new BigNumber(output.value).dividedBy(decimalsCorrector),
-            hash: getOutputId(output.txid, output.vout),
-            confirmations: output.confirmations ? output.confirmations : 0,
-            transactionId: output.txid,
-            indexInTransaction: output.vout,
-          };
+          if (!confirmedOnly || (output.confirmations && output.confirmations >= this.currentCoin.confirmationsNeeded)) {
+            const processedOutput: Output = {
+              address: addresses[addresses.length - 1],
+              coins: new BigNumber(output.value).dividedBy(decimalsCorrector),
+              hash: getOutputId(output.txid, output.vout),
+              confirmations: output.confirmations ? output.confirmations : 0,
+              transactionId: output.txid,
+              indexInTransaction: output.vout,
+            };
 
-          currentElements.push(processedOutput);
+            currentElements.push(processedOutput);
+          }
         });
 
         addresses.pop();
@@ -227,7 +232,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         }
 
         // Continue to the next step.
-        return this.recursivelyGetOutputs(addresses, currentElements);
+        return this.recursivelyGetOutputs(addresses, confirmedOnly, currentElements);
       }));
   }
 
@@ -235,7 +240,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
     const addresses: string[] = [];
     wallet.addresses.forEach(address => addresses.push(address.address));
 
-    return this.recursivelyGetOutputs(addresses);
+    return this.recursivelyGetOutputs(addresses, true);
   }
 
   refreshBalance() {
@@ -423,6 +428,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
           response.addresses.set(address, addressBalance);
           response.current = response.current.plus(addressBalance.current);
           response.predicted = response.predicted.plus(addressBalance.predicted);
+          response.available = response.available.plus(addressBalance.available);
 
           if (!addressBalance.current.isEqualTo(addressBalance.predicted)) {
             hasUnconfirmedTxs = true;
@@ -446,16 +452,19 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
       wallet.coins = balance.predicted;
       wallet.confirmedCoins = balance.current;
+      wallet.availableCoins = balance.available;
       wallet.hasPendingCoins = !wallet.coins.isEqualTo(wallet.confirmedCoins);
 
       wallet.addresses.forEach(address => {
         if (balance.addresses.has(address.address)) {
           address.coins = balance.addresses.get(address.address).predicted;
           address.confirmedCoins = balance.addresses.get(address.address).current;
+          address.availableCoins = balance.addresses.get(address.address).available;
           address.hasPendingCoins = !address.coins.isEqualTo(address.confirmedCoins);
         } else {
           address.coins = new BigNumber(0);
           address.confirmedCoins = new BigNumber(0);
+          address.availableCoins = new BigNumber(0);
           address.hasPendingCoins = false;
         }
       });
@@ -511,6 +520,15 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       // Calculate the currently confirmed balance.
       const balance = predicted.minus(unconfirmed);
 
+      // Calculate how many coins are entering the address in the pending transactions.
+      const incomingBalance = this.calculateBalanceFromTransactions(response.transactions, addresses[addresses.length - 1], true);
+      // The available balance is all the confirmed coins minus all coins going out.
+      let available = predicted.minus(incomingBalance);
+      // This prevents problems if the address sends coins to itself.
+      if (available.isLessThan(0)) {
+        available = new BigNumber(0);
+      }
+
       // Value which will allow to get the value in coins, instead of sats.
       const decimalsCorrector = new BigNumber(10).exponentiatedBy((this.currentCoin.config as BtcCoinConfig).decimals);
 
@@ -518,6 +536,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       currentElements.set(addresses[addresses.length - 1], {
         current: balance.dividedBy(decimalsCorrector),
         predicted: predicted.dividedBy(decimalsCorrector),
+        available: available.dividedBy(decimalsCorrector),
       });
 
       addresses.pop();
@@ -537,13 +556,15 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param transactions Transactions to check. Must be the array returned by Blockbook when
    * calling the "address/" API endpoint. Can be null, as the api may not return any value.
    * @param address Address to check.
+   * @param onlyIncoming If true, only the balance entering the address will be taken
+   * into account.
    */
-  private calculateBalanceFromTransactions(transactions: any[], address: string): BigNumber {
+  private calculateBalanceFromTransactions(transactions: any[], address: string, onlyIncoming = false): BigNumber {
     let balance = new BigNumber(0);
     if (transactions && transactions.length > 0) {
       transactions.forEach(transaction => {
-        // Set the balance in the inputs related to the current address as pending.
-        if (transaction.vin && (transaction.vin as any[]).length > 0) {
+        // Remove the balance in the inputs related to the current address.
+        if (!onlyIncoming && transaction.vin && (transaction.vin as any[]).length > 0) {
           (transaction.vin as any[]).forEach(input => {
             if (input.isAddress && input.addresses && (input.addresses as any[]).length === 1 && (input.addresses as any[])[0] === address) {
               if (input.value) {
@@ -553,7 +574,7 @@ export class BtcBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
           });
         }
 
-        // Set the balance in the outputs related to the current address as pending.
+        // Add the balance in the outputs related to the current address.
         if (transaction.vout && (transaction.vout as any[]).length > 0) {
           (transaction.vout as any[]).forEach(output => {
             if (output.isAddress && output.addresses && (output.addresses as any[]).length === 1 && (output.addresses as any[])[0] === address) {

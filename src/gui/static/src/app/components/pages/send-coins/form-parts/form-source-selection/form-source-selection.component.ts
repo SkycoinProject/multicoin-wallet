@@ -271,7 +271,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       }
 
       if (wallet) {
-        this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
+        this.addresses = wallet.addresses.filter(addr => addr.availableCoins > 0);
       } else {
         this.addresses = [];
       }
@@ -448,9 +448,9 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
         }
       } else if (addresses && addresses.length > 0) {
         addresses.map(control => {
-          response.availableCoins = response.availableCoins.plus(control.coins);
+          response.availableCoins = response.availableCoins.plus(control.availableCoins);
           if (this.coinHasHours) {
-            response.availableHours = response.availableHours.plus(control.hours);
+            response.availableHours = response.availableHours.plus(control.availableHours);
           }
         });
 
@@ -459,9 +459,9 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
         }
       } else if (this.form.get('wallet').value) {
         const wallet: WalletWithBalance = this.form.get('wallet').value;
-        response.availableCoins = wallet.coins;
+        response.availableCoins = wallet.availableCoins;
         if (this.coinHasHours) {
-          response.availableHours = wallet.hours;
+          response.availableHours = wallet.availableHours;
         }
 
         if (this.coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
