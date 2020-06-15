@@ -402,7 +402,6 @@
   },
 
   "tx": {
-    "transaction-title": "Transaction",
     "confirm-transaction-title": "Confirm Transaction",
     "from-small-label": "From:",
     "to-small-label": "To:",
@@ -514,9 +513,9 @@
     "moving-wallet": "Moving {{ coinName }} between wallets",
     "moved-wallet": "{{ coinName }} moved between wallets",
     "sending": "Sending {{ coinName }}",
-    "sent": "{{ coinName }} Sent",
+    "sent": "{{ coinName }} sent",
     "receiving": "Receiving {{ coinName }}",
-    "received": "{{ coinName }} Received",
+    "received": "{{ coinName }} received",
     "pending-indication": "Pending ({{currentConfirmations}} / {{confirmationsNeeded}})",
     "confirmations-help": "The transaction only has {{currentConfirmations}} of {{confirmationsNeeded}} confirmations needed for being considered completed.",
     "transaction-note-small-label": "Note:",

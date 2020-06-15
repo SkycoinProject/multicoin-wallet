@@ -2,7 +2,23 @@
   <div class="col-md-12">
     <!-- Title. -->
     <h4 *ngIf="isPreview">{{ 'tx.confirm-transaction-title' | translate }}</h4>
-    <h4 *ngIf="!isPreview">{{ 'tx.transaction-title' | translate }}</h4>
+    <h4 *ngIf="!isPreview">
+      <ng-container *ngIf="oldTransaction.type === oldTransactionTypes.Outgoing">
+        {{ ('history.' + (oldTransaction.confirmed ? 'sent' : 'sending')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+      </ng-container>
+      <ng-container *ngIf="oldTransaction.type === oldTransactionTypes.Incoming">
+        {{ ('history.' + (oldTransaction.confirmed ? 'received' : 'receiving')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+      </ng-container>
+      <ng-container *ngIf="oldTransaction.type === oldTransactionTypes.MovedBetweenAddresses">
+        {{ ('history.' + (oldTransaction.confirmed ? 'moved' : 'moving')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+      </ng-container>
+      <ng-container *ngIf="oldTransaction.type === oldTransactionTypes.MovedBetweenWallets">
+        {{ ('history.' + (oldTransaction.confirmed ? 'moved-wallet' : 'moving-wallet')) | translate:{coinName: ('coinSymbol' | commonText)} }}
+      </ng-container>
+      <ng-container *ngIf="oldTransaction.type === oldTransactionTypes.MixedOrUnknown">
+        {{ 'history.complex-oldTransaction' | translate }}
+      </ng-container>
+    </h4>
     <div class="row">
       <!-- List with the basic transaction data. The data shown depends on the transaction type. -->
       <div class="col-md-9 -tx-meta">

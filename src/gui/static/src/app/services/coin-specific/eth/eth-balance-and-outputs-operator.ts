@@ -244,11 +244,14 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
     let procedure: Observable<boolean[]>;
     if (wallets.length > 0) {
-      // Get the balance of each wallet.
-      procedure = this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api').pipe(mergeMap(response => {
-        // Get the balance of each wallet.
-        return forkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, response.blockbook.bestHeight, forceQuickCompleteArrayUpdate)));
-      }));
+      if (!forceQuickCompleteArrayUpdate) {
+        procedure = this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api').pipe(mergeMap(response => {
+          // Get the balance of each wallet.
+          return forkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, response.blockbook.bestHeight, forceQuickCompleteArrayUpdate)));
+        }));
+      } else {
+        procedure = forkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, 0, forceQuickCompleteArrayUpdate)));
+      }
     } else {
       // Create a fake response, as there are no wallets.
       procedure = of([false]);
@@ -334,7 +337,8 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * Gets from the backend the balance of a wallet and uses the retrieved data to update an
    * instamce of WalletWithBalance. It also saves the retrieved data on temporalSavedBalanceData.
    * @param wallet Wallet to update.
-   * @param lastBlock Number of the last block on the blockchain.
+   * @param lastBlock Number of the last block on the blockchain. Used only if
+   * useSavedBalanceData is true.
    * @param useSavedBalanceData If true, the balance data saved on savedBalanceData
    * will be used instead of retrieving the data from the backend.
    * @returns True if there are one or more pending transactions that will affect the balance of

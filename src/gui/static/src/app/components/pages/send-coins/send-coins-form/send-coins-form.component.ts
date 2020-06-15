@@ -27,6 +27,8 @@ import { WalletsAndAddressesService } from '../../../../services/wallet-operatio
 import { GetNextAddressComponent } from '../../../layout/get-next-address/get-next-address.component';
 import { CoinService } from '../../../../services/coin.service';
 import { CoinTypes } from '../../../../coins/coin-types';
+import { BtcCoinConfig } from '../../../../coins/config/btc.coin-config';
+import { EthCoinConfig } from '../../../../coins/config/eth.coin-config';
 
 /**
  * Data returned when SendCoinsFormComponent asks to show the preview of a transaction. Useful
@@ -176,8 +178,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   recommendedFees: RecommendedFees;
   // Map for getting the recommended fee for each option of the fee types control.
   recommendedFeesMap: Map<number, string>;
-  // If true, the node returned that it is valid to send a transaction without fees.
-  zeroFeeAllowed = false;
+  // Minimum fee the node accepts.
+  minimumfee: BigNumber;
   // If true, the hours are distributed automatically. If false, the user can manually
   // enter how many hours to send to each destination. Must be true if the coin does not have
   // hours.
@@ -234,8 +236,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     if (!this.coinHasHours) {
       if (coinService.currentCoinInmediate.coinType === CoinTypes.BTC) {
         this.coinFeeType = FeeTypes.Btc;
+        this.minimumfee = (coinService.currentCoinInmediate.config as BtcCoinConfig).minFee;
       } else if (coinService.currentCoinInmediate.coinType === CoinTypes.ETH) {
         this.coinFeeType = FeeTypes.Eth;
+        this.minimumfee = (coinService.currentCoinInmediate.config as EthCoinConfig).minFee;
       } else {
         this.coinFeeType = FeeTypes.None;
       }
@@ -600,7 +604,6 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Populates the vars with the recommended fees and zeroFeeAllowed.
   private populateRecommendedFees(recommendedFees: RecommendedFees) {
     this.recommendedFees = recommendedFees;
-    this.zeroFeeAllowed = false;
 
     if (this.coinFeeType === FeeTypes.Btc) {
       this.recommendedFeesMap = new Map<number, string>();
@@ -609,12 +612,6 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.recommendedFeesMap.set(2, recommendedFees.recommendedBtcFees.normal.decimalPlaces(this.maxFeeDecimals).toString(10));
       this.recommendedFeesMap.set(3, recommendedFees.recommendedBtcFees.low.decimalPlaces(this.maxFeeDecimals).toString(10));
       this.recommendedFeesMap.set(4, recommendedFees.recommendedBtcFees.veryLow.decimalPlaces(this.maxFeeDecimals).toString(10));
-
-      this.recommendedFeesMap.forEach(fee => {
-        if (fee === '0') {
-          this.zeroFeeAllowed = true;
-        }
-      });
     }
   }
 
@@ -692,8 +689,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         return { Invalid: true };
       }
 
-      // Only accept zero if allowed.
-      if (!this.zeroFeeAllowed && fee.isLessThanOrEqualTo(0)) {
+      // Check if it is more than the minimum.
+      if (fee.isLessThan(this.minimumfee)) {
         return { Invalid: true };
       }
     } else if (this.coinFeeType === FeeTypes.Eth) {
@@ -703,8 +700,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         return { Invalid: true };
       }
 
-      // Only accept zero if allowed.
-      if (!this.zeroFeeAllowed && gasPrice.isLessThanOrEqualTo(0)) {
+      // Check if it is more than the minimum.
+      if (gasPrice.isLessThan(this.minimumfee)) {
         return { Invalid: true };
       }
 

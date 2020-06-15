@@ -94,15 +94,6 @@ export class EthSpendingOperator implements SpendingOperator {
       senderString = addresses[0];
     }
 
-    // Select a change address.
-    if (!changeAddress) {
-      if (wallet) {
-        changeAddress = wallet.addresses[0].address;
-      } else if (addresses) {
-        changeAddress = addresses[0];
-      }
-    }
-
     const txInputs: Input[] = [{
       address: addresses ? addresses[0] : wallet.addresses[0].address,
       coins: new BigNumber(0),
@@ -206,10 +197,15 @@ export class EthSpendingOperator implements SpendingOperator {
   getCurrentRecommendedFees(): Observable<RecommendedFees> {
     // Get the recommended fee from the node.
     return this.ethApiService.callRpcMethod(this.currentCoin.nodeUrl, 'eth_gasPrice').pipe(map(result => {
+      let gasPrice = new BigNumber((result as string).substr(2), 16).dividedBy(1000000000);
+      if (gasPrice.isLessThan((this.currentCoin.config as EthCoinConfig).minFee)) {
+        gasPrice = (this.currentCoin.config as EthCoinConfig).minFee;
+      }
+
       return {
         recommendedEthFees: {
           // The response is converted from Wei to Gwei.
-          gasPrice: new BigNumber((result as string).substr(2), 16).dividedBy(1000000000),
+          gasPrice: gasPrice,
           // Default gas limit for normal coin sending transactions.
           gasLimit: new BigNumber(21000),
         },

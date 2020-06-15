@@ -1,3 +1,5 @@
+import BigNumber from 'bignumber.js';
+
 /**
  * Configuration for all coins with the CoinTypes.BTC type. It includes default values for
  * each property.
@@ -24,4 +26,11 @@ export class BtcCoinConfig {
    * Max amount of coins that will be created
    */
   totalSupply = 21000000;
+  /**
+   * Minimum fee (in sats per byte) the node accepts. In Bitcoin Core it is the value of the
+   * -minrelaytxfee param multiplied by 100,000. IMPORTANT: as the code may calculate a size
+   * different than the one the node will take into account, it is recommended to use a value
+   * greater than the one set in the node.
+   */
+  minFee = new BigNumber(1.5);
 }

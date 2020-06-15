@@ -535,27 +535,27 @@ export class BtcSpendingOperator implements SpendingOperator {
     return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [20]).pipe(mergeMap(result => {
       // The node returns the recommended sats per kb (using 1000 bytes instead of 1024 per kb).
       if (!result.errors) {
-        veryLow = new BigNumber(result).dividedBy(1000);
+        veryLow = this.returnUsableFee(new BigNumber(result).dividedBy(1000));
       } else {
-        veryLow = new BigNumber(1);
+        veryLow = this.returnUsableFee(new BigNumber(1));
         thereWereProblems = true;
       }
 
       return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [10]);
     }), mergeMap(result => {
       if (!result.errors) {
-        low = new BigNumber(result).dividedBy(1000);
+        low = this.returnUsableFee(new BigNumber(result).dividedBy(1000));
       } else {
-        low = new BigNumber(1);
+        low = this.returnUsableFee(new BigNumber(1));
         thereWereProblems = true;
       }
 
       return this.btcApiService.callRpcMethod(this.currentCoin.nodeUrl, 'estimatesmartfee', [5]);
     }), mergeMap(result => {
       if (!result.errors) {
-        normal = new BigNumber(result).dividedBy(1000);
+        normal = this.returnUsableFee(new BigNumber(result).dividedBy(1000));
       } else {
-        normal = new BigNumber(1);
+        normal = this.returnUsableFee(new BigNumber(1));
         thereWereProblems = true;
       }
 
@@ -564,11 +564,11 @@ export class BtcSpendingOperator implements SpendingOperator {
       let high: BigNumber;
       let veryHigh: BigNumber;
       if (!result.errors) {
-        high = new BigNumber(result).dividedBy(1000);
+        high = this.returnUsableFee(new BigNumber(result).dividedBy(1000));
         veryHigh = high.multipliedBy(1.1);
       } else {
-        high = new BigNumber(1);
-        veryHigh = new BigNumber(1);
+        high = this.returnUsableFee(new BigNumber(1));
+        veryHigh = this.returnUsableFee(new BigNumber(1));
         thereWereProblems = true;
       }
 
@@ -585,5 +585,18 @@ export class BtcSpendingOperator implements SpendingOperator {
         thereWereProblems: thereWereProblems,
       };
     }), retryWhen(errors => errors.pipe(delay(5000))));
+  }
+
+  /**
+   * Checks if the provided fee is lower than the minimum accepted by the node. If the fee is
+   * lower, the minimum fee is returned, otherwise the provided fee is returned.
+   * @param fee Fee to check.
+   */
+  private returnUsableFee(fee: BigNumber) {
+    if (fee.isLessThan((this.currentCoin.config as BtcCoinConfig).minFee)) {
+      return (this.currentCoin.config as BtcCoinConfig).minFee;
+    }
+
+    return fee;
   }
 }

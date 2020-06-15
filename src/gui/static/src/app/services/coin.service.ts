@@ -91,6 +91,9 @@ export class CoinService {
       if (Names[value.coinName]) {
         throw new Error('Invalid configuration: more than one coin with the same name.');
       }
+      if (value.confirmationsNeeded < 1) {
+        throw new Error('Invalid configuration: coins must request at least one confirmation.');
+      }
       Names[value.coinName] = true;
     });
 
