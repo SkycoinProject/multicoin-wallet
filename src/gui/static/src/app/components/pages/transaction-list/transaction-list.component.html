@@ -90,7 +90,12 @@
         </div>
         <div class="-address">
           <!-- First line. -->
-          <h4>
+          <h4 [ngClass]="{'red-text': transaction.failed}">
+            <ng-container *ngIf="transaction.failed">
+              <span>{{ 'history.failed' | translate }}</span>
+              <mat-icon [matTooltip]="'history.failed-info' | translate" [inline]="true">help</mat-icon>
+              <span> - </span>
+            </ng-container>
             <ng-container *ngIf="transaction.type === oldTransactionTypes.Outgoing">
               {{ ('history.' + (transaction.confirmed ? 'sent' : 'sending')) | translate:{coinName: ('coinSymbol' | commonText)} }}
             </ng-container>
@@ -107,7 +112,7 @@
               {{ 'history.complex-transaction' | translate }}
             </ng-container>
             <!-- Involved wallets, if the addresses are being shown. -->
-            <span *ngIf="showAddresses && userHasMultipleWallets">
+            <span class="wallets-text" *ngIf="showAddresses && userHasMultipleWallets">
               {{ ('history.involved-wallet' + (transaction.numberOfInvolvedLocalWallets !== 1 ? 's' : '') + '-small-label') | translate }}
               <span>{{ transaction.involvedLocalWallets }}</span>
             </span>

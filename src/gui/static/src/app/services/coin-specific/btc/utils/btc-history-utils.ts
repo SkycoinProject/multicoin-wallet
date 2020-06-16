@@ -101,6 +101,7 @@ export function getTransactionsHistory(
         involvedLocalWallets: '',
         numberOfInvolvedLocalWallets: 0,
         type: OldTransactionTypes.MixedOrUnknown,
+        failed: false,
       };
 
       // Calculate the fee.

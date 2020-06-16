@@ -33,15 +33,21 @@
         <ng-container *ngIf="!isPreview">
           <div class="-data" [ngClass]="{'green-text': transaction.confirmed, 'red-text': !transaction.confirmed}">
             <span>{{ 'tx.status-small-label' | translate }}</span>
-            <span>{{ (transaction.confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded} }}</span>
-            <span *ngIf="!transaction.confirmed">
-              <mat-icon
-                [matTooltip]="'history.confirmations-help' | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded}"
-                [inline]="true"
-              >
-                help
-              </mat-icon>
-            </span>
+            <ng-container *ngIf="transaction.failed">
+              <span>{{ 'history.failed' | translate }}</span>
+              <mat-icon [matTooltip]="'history.failed-info' | translate" [inline]="true">help</mat-icon>
+            </ng-container>
+            <ng-container *ngIf="!transaction.failed">
+              <span>{{ (transaction.confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded} }}</span>
+              <span *ngIf="!transaction.confirmed">
+                <mat-icon
+                  [matTooltip]="'history.confirmations-help' | translate:{currentConfirmations: transaction.confirmations, confirmationsNeeded: confirmationsNeeded}"
+                  [inline]="true"
+                >
+                  help
+                </mat-icon>
+              </span>
+            </ng-container>
           </div>
           <div class="-data">
             <span>{{ ('tx.wallet' + (oldTransaction.numberOfInvolvedLocalWallets > 1 ? 's' : '') + '-small-label') | translate }}</span>

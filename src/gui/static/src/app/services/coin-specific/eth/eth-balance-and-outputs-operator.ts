@@ -501,7 +501,10 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         // If the input is from the current address, consider the output and fee as outgoing coins.
         if (!onlyIncoming && transaction.vin && (transaction.vin as any[]).length === 1 && (transaction.vin as any[])[0].isAddress) {
           if ((transaction.vin as any[])[0].addresses.length === 1 && (transaction.vin as any[])[0].addresses[0] === address) {
-            balance = balance.minus(this.getOutputValue(transaction));
+            // Only compute the balance is the transaction did not fail.
+            if (transaction.ethereumSpecific.status !== 0) {
+              balance = balance.minus(this.getOutputValue(transaction));
+            }
 
             // gasUsed is not available if the transaction is still in the mempool.
             const gas = transaction.ethereumSpecific.gasUsed ? transaction.ethereumSpecific.gasUsed : transaction.ethereumSpecific.gasLimit;
@@ -512,7 +515,10 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         }
 
         // If the output is for the current address, consider the output as incoming coins.
-        balance = balance.plus(this.getOutputValue(transaction, address));
+        // Only compute the balance is the transaction did not fail.
+        if (transaction.ethereumSpecific.status !== 0) {
+          balance = balance.plus(this.getOutputValue(transaction, address));
+        }
       });
     }
 

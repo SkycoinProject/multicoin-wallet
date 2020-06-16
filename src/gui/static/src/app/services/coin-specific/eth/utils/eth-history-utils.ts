@@ -97,6 +97,7 @@ export function getTransactionsHistory(
         involvedLocalWallets: '',
         numberOfInvolvedLocalWallets: 0,
         type: OldTransactionTypes.MixedOrUnknown,
+        failed: transaction.ethereumSpecific.status === 0,
       };
 
       return processedTx;

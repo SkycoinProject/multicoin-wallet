@@ -92,6 +92,7 @@ export function getTransactionsHistory(currentCoin: Coin, wallets: WalletBase[],
       involvedLocalWallets: '',
       numberOfInvolvedLocalWallets: 0,
       type: OldTransactionTypes.MixedOrUnknown,
+      failed: false,
     }));
 
     // Get the transaction notes.

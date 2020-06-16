@@ -176,4 +176,8 @@ export interface OldTransaction extends TransactionBase {
    * How many local wallets were involved in the transaction.
    */
   numberOfInvolvedLocalWallets: number;
+  /**
+   * Indicates if the transaction failed. For eth-like coins only.
+   */
+  failed: boolean;
 }

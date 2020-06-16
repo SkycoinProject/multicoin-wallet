@@ -507,6 +507,8 @@
   "history": {
     "title-and-button": "History",
     "tx-detail-title": "Transaction Detail",
+    "failed": "Failed",
+    "failed-info": "The transaction fee was paid but the funds were not sent.",
     "complex-transaction": "Complex transaction",
     "moving": "Moving {{ coinName }} between addresses",
     "moved": "{{ coinName }} moved between addresses",
