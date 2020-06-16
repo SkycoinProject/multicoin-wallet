@@ -90,11 +90,6 @@ export class FiberSpendingOperator implements SpendingOperator {
       addresses = null;
     }
 
-    if (wallet && wallet.isHardware && !changeAddress) {
-      // Use the first address of the hw wallet as return address.
-      changeAddress = wallet.addresses[0].address;
-    }
-
     const useUnsignedTxEndpoint = !wallet || !!wallet.isHardware;
 
     const params = {
@@ -170,6 +165,12 @@ export class FiberSpendingOperator implements SpendingOperator {
         innerHash: data.transaction.inner_hash,
       };
 
+      if (wallet && wallet.isHardware && tx.outputs.length !== destinations.length) {
+        // If the transaction has an output for returning any remaining coins, the node puts it
+        // at the end. This helps to avoid asking for confirmation for the returning coins.
+        tx.outputs[tx.outputs.length - 1].returningCoins = true;
+      }
+
       return tx;
     }));
 
@@ -237,6 +238,11 @@ export class FiberSpendingOperator implements SpendingOperator {
           coins: new BigNumber(output.coins).toString(),
           hours: new BigNumber(output.hours).toFixed(0),
         });
+
+        // This makes de device consider the output as the one used for returning the remaining coins.
+        if (output.returningCoins && addressesMap.has(output.address)) {
+          hwOutputs[hwOutputs.length - 1].address_index = addressesMap.get(output.address);
+        }
       });
       transaction.inputs.forEach(input => {
         hwInputs.push({
@@ -244,18 +250,6 @@ export class FiberSpendingOperator implements SpendingOperator {
           index: addressesMap.get(input.address),
         });
       });
-
-      if (hwOutputs.length > 1) {
-        // Try to find the return address assuming that it is the first address of the device and that
-        // it should be at the end of the outputs list.
-        for (let i = hwOutputs.length - 1; i >= 0; i--) {
-          if (hwOutputs[i].address === wallet.addresses[0].address) {
-            // This makes de device consider the output as the one used for returning the remaining coins.
-            hwOutputs[i].address_index = 0;
-            break;
-          }
-        }
-      }
 
       // Make the device sign the transaction.
       return this.hwWalletService.signTransaction(hwInputs, hwOutputs).pipe(map(signatures => {

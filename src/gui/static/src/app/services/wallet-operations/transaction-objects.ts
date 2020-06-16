@@ -45,6 +45,11 @@ export interface Output {
    * Index of the output in the transaction where it was created. Only for Btc-like coins.
    */
   indexInTransaction?: number;
+  /**
+   * If true, the output was created for returning unused coins. NOTE: only for internal
+   * processing in the operators when the transaction was created by the app.
+   */
+  returningCoins?: boolean;
 }
 
 /**

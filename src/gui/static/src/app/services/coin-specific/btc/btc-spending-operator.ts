@@ -149,11 +149,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       // If not specific change address was selected, select the one on the first input, which
       // is the one with most coins.
       if (!changeAddress) {
-        if (!wallet || !wallet.isHardware) {
-          changeAddress = inputs[0].address;
-        } else {
-          changeAddress = wallet.addresses[0].address;
-        }
+        changeAddress = inputs[0].address;
       }
 
       // Add the fee to the amount of coins needed. The calculation ignores the fee needed for
@@ -195,6 +191,7 @@ export class BtcSpendingOperator implements SpendingOperator {
           address: changeAddress,
           coins: coinsInInputs.minus(amountNeeded),
           lockingScript: '',
+          returningCoins: true,
         });
 
         calculatedFee = calculatedFee.minus(coinsInInputs.minus(amountNeeded));
@@ -458,6 +455,11 @@ export class BtcSpendingOperator implements SpendingOperator {
           address: output.address,
           coins: output.coins.decimalPlaces(6).toString(10),
         });
+
+        // This makes de device consider the output as the one used for returning the remaining coins.
+        if (output.returningCoins && addressesMap.has(output.address)) {
+          hwOutputs[hwOutputs.length - 1].address_index = addressesMap.get(output.address);
+        }
       });
       transaction.inputs.forEach(input => {
         hwInputs.push({
@@ -465,18 +467,6 @@ export class BtcSpendingOperator implements SpendingOperator {
           index: addressesMap.get(input.address),
         });
       });
-
-      if (hwOutputs.length > 1) {
-        // Try to find the return address assuming that it is the first address of the device and that
-        // it should be at the end of the outputs list.
-        for (let i = hwOutputs.length - 1; i >= 0; i--) {
-          if (hwOutputs[i].address === wallet.addresses[0].address) {
-            // This makes de device consider the output as the one used for returning the remaining coins.
-            hwOutputs[i].address_index = 0;
-            break;
-          }
-        }
-      }
 
       // Make the device sign the transaction.
       signaturesGenerationProcedure = this.hwWalletService.signTransaction(hwInputs, hwOutputs).pipe(map((result: OperationResult) => (result.rawResponse as string[])));
