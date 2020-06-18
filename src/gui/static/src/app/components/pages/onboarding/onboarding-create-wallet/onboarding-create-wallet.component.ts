@@ -10,6 +10,7 @@ import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../layout/confirmation/confirmation.component';
 import { WalletTypes } from '../../../../services/wallet-operations/wallet-objects';
+import { CoinService } from '../../../../services/coin.service';
 
 /**
  * Shows the first step of the wizard, which allows the user to create a new wallet or load
@@ -33,6 +34,10 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   currentFormSelection = DoubleButtonActive.LeftButton;
   // If the option for adding a hw wallet must be shown.
   hwCompatibilityActivated = false;
+  // If the currently selected coin is compatible with the hw wallet.
+  hardwareWalletsAllowedForCoin = true;
+  // If the currently selected coin is compatible with software wallets.
+  softwareWalletsAllowedForCoin = true;
 
   doubleButtonActive = DoubleButtonActive;
 
@@ -45,8 +50,11 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
     private router: Router,
     hwWalletService: HwWalletService,
     blockchainService: BlockchainService,
+    coinService: CoinService,
   ) {
     this.hwCompatibilityActivated = hwWalletService.hwWalletCompatibilityActivated;
+    this.hardwareWalletsAllowedForCoin = !!coinService.currentCoinInmediate.skywalletCoinType;
+    this.softwareWalletsAllowedForCoin = !!coinService.currentCoinInmediate.coinTypeFeatures.softwareWallets;
     this.blockchainSubscription = blockchainService.progress.subscribe(response => this.synchronized = response.synchronized);
   }
 

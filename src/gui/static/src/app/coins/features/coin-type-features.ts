@@ -4,9 +4,21 @@
  */
 export interface CoinTypeFeatures {
   /**
-   * If the app can manage software wallets for the coin type.
+   * If the app can manage any type of software wallets for the coin type.
    */
   softwareWallets: boolean;
+  /**
+   * If the app can manage legacy software wallets for the coin type.
+   */
+  legacySoftwareWallets: boolean;
+  /**
+   * If the app can manage bip44 software wallets for the coin type.
+   */
+  bip44SoftwareWallets: boolean;
+  /**
+   * If the app can manage xpub software wallets for the coin type.
+   */
+  xPubSoftwareWallets: boolean;
   /**
    * If the coin type uses outputs for managing the balances.
    */

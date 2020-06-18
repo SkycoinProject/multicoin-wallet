@@ -133,6 +133,7 @@ import { OperatorService } from './services/operators.service';
 import { BtcApiService } from './services/api/btc-api.service';
 import { EthApiService } from './services/api/eth-api.service';
 import { BlockbookApiService } from './services/api/blockbook-api.service';
+import { SelectCoinComponent } from './components/layout/select-coin/select-coin.component';
 
 @NgModule({
   declarations: [
@@ -215,6 +216,7 @@ import { BlockbookApiService } from './services/api/blockbook-api.service';
     AddressHistoryComponent,
     GetNextAddressComponent,
     SelectCoinOverlayComponent,
+    SelectCoinComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

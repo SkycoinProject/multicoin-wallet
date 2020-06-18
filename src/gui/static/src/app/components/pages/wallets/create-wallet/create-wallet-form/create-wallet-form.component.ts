@@ -12,6 +12,7 @@ import { processServiceError } from '../../../../../utils/errors';
 import { WalletTypes } from '../../../../../services/wallet-operations/wallet-objects';
 import { AppConfig } from '../../../../../app.config';
 import { WalletUtilsService } from '../../../../../services/wallet-operations/wallet-utils.service';
+import { CoinService } from '../../../../../services/coin.service';
 
 /**
  * Data entered in an instance of CreateWalletFormComponent.
@@ -92,6 +93,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   @Output() createRequested = new EventEmitter<void>();
 
   form: FormGroup;
+  // If true, there are many coins to select from.
+  hasManyCoins: boolean;
   // If true, the user must enter the ssed using the asisted mode.
   enterSeedWithAssistance = true;
   // If the user confirmed the seed using the asisted mode, while creating a new wallet.
@@ -117,6 +120,15 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   // If the user entered a passphrase and confirmed the desire to use it.
   passphraseWarningAccepted = false;
 
+  // Vars with the wallet types the currently selected coin is compatible with.
+  hardwareWalletsAllowedForCoin = true;
+  softwareWalletsAllowedForCoin = true;
+  legacyAllowedForCoin = true;
+  bip44AllowedForCoin = true;
+  xPubAllowedForCoin = true;
+  // If the wallet type options must be shown in the form.
+  showWalletTypeOptions = true;
+
   bip44Enabled = AppConfig.bip44Enabled;
   xPubEnabled = AppConfig.xPubEnabled;
 
@@ -127,6 +139,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   private defaultWalletType: WalletTypes = this.create && this.bip44Enabled ? WalletTypes.Bip44 : WalletTypes.Deterministic;
 
+  private coinSubscription: SubscriptionLike;
   private seedValiditySubscription: SubscriptionLike;
   private formSubscriptions: SubscriptionLike[] = [];
 
@@ -138,7 +151,28 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private changeDetector: ChangeDetectorRef,
-  ) { }
+    coinService: CoinService,
+  ) {
+    this.hasManyCoins = coinService.coins.length > 1;
+
+    // Check the wallet types the currently selected coin is compatible with.
+    this.coinSubscription = coinService.currentCoin.subscribe(currentCoin => {
+      this.hardwareWalletsAllowedForCoin = !!currentCoin.skywalletCoinType;
+      this.softwareWalletsAllowedForCoin = currentCoin.coinTypeFeatures.softwareWallets;
+
+      let availableTypes = 0;
+      this.legacyAllowedForCoin = currentCoin.coinTypeFeatures.legacySoftwareWallets;
+      availableTypes += currentCoin.coinTypeFeatures.legacySoftwareWallets ? 1 : 0;
+      this.bip44AllowedForCoin = currentCoin.coinTypeFeatures.bip44SoftwareWallets;
+      availableTypes += currentCoin.coinTypeFeatures.bip44SoftwareWallets && this.bip44Enabled ? 1 : 0;
+      this.xPubAllowedForCoin = currentCoin.coinTypeFeatures.xPubSoftwareWallets;
+      availableTypes += currentCoin.coinTypeFeatures.xPubSoftwareWallets && this.xPubEnabled ? 1 : 0;
+
+      this.showWalletTypeOptions = availableTypes > 1;
+
+      this.updateSoftwareWalletTypes(false);
+    });
+  }
 
   ngOnInit() {
     if (!this.onboarding) {
@@ -150,6 +184,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.msgBarService.hide();
+    this.coinSubscription.unsubscribe();
     this.seedValiditySubscription.unsubscribe();
     this.removeFormSubscriptions();
     this.createRequested.complete();
@@ -337,6 +372,34 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Updates the value of defaultWalletType, taking into account the wallet types
+   * compatible with the currently selected coin. After that, the fields in the advanced
+   * options panel are resetted.
+   * @param updateDefaultOnly If true, the fields in the advanced options panel
+   * are not resetted.
+   */
+  private updateSoftwareWalletTypes(updateDefaultOnly: boolean) {
+    if (this.form) {
+      // find a valid default.
+      if (this.legacyAllowedForCoin && this.bip44AllowedForCoin) {
+        this.defaultWalletType = this.create && this.bip44Enabled ? WalletTypes.Bip44 : WalletTypes.Deterministic;
+      } else {
+        if (this.bip44AllowedForCoin && this.bip44Enabled) {
+          this.defaultWalletType = WalletTypes.Bip44;
+        } else {
+          this.defaultWalletType = WalletTypes.Deterministic;
+        }
+      }
+
+      // Update the form.
+      if (!updateDefaultOnly) {
+        this.showAdvancedOptions = true;
+        this.finishTogglingAdvancedOptions();
+      }
+    }
+  }
+
+  /**
    * Inits or resets the form.
    * @param create If the form is for creating a new wallet (true) or loading a walled using
    * a seed (false). Use null to avoid changing the value set using the html tag.
@@ -346,8 +409,6 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.msgBarService.hide();
 
     create = create !== null ? create : this.create;
-
-    this.defaultWalletType = create && this.bip44Enabled ? WalletTypes.Bip44 : WalletTypes.Deterministic;
 
     this.lastAssistedSeed = '';
     this.enterSeedWithAssistance = true;
@@ -361,13 +422,14 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       validators.push(this.validatePasswords.bind(this));
     }
     validators.push(this.mustHaveSeed.bind(this));
+    validators.push(this.canCreateSoftwareWallets.bind(this));
 
     this.form = new FormGroup({}, validators);
     this.form.addControl('label', new FormControl(data ? data.label : '', [Validators.required]));
     this.form.addControl('seed', new FormControl(data ? data.lastCustomSeed : ''));
     this.form.addControl('confirm_seed', new FormControl(data ? data.lastCustomSeed : ''));
     this.form.addControl('xpub', new FormControl(data ? data.xPub : ''));
-    this.form.addControl('type', new FormControl(data ? data.type : this.defaultWalletType, [Validators.required]));
+    this.form.addControl('type', new FormControl(data ? data.type : '', [Validators.required]));
     this.form.addControl('passphrase', new FormControl(data ? data.passphrase : ''));
     this.form.addControl('password', new FormControl());
     this.form.addControl('confirm_password', new FormControl());
@@ -399,6 +461,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         this.numberOfAutogeneratedWords = data.numberOfWords;
       }
     }
+
+    this.updateSoftwareWalletTypes(!!data);
 
     this.removeFormSubscriptions();
 
@@ -545,6 +609,15 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       } else {
         return { Required: true };
       }
+    }
+
+    return null;
+  }
+
+  // Validator that checks if the currently selected coin is compatible with software wallets.
+  private canCreateSoftwareWallets() {
+    if (!this.softwareWalletsAllowedForCoin) {
+      return { invalid: true };
     }
 
     return null;
