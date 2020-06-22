@@ -1,0 +1,14 @@
+{
+  "name": "skycoin-multicoin-electron",
+  "author": "skycoin",
+  "main": "electron-main.js",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Specific Electron code for the Skycoin multicoin wallet",
+  "private": true,
+  "dependencies": {
+    "axios": "^0.18.1",
+    "electron-context-menu": "^0.9.1",
+    "electron-debug": "^1.5.0"
+  }
+}

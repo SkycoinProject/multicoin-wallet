@@ -5,6 +5,7 @@ import { Coin } from '../coins/coin';
 import { environment } from '../../environments/environment';
 import { AppConfig } from '../app.config';
 import { CoinTypes } from '../coins/coin-types';
+import { withLatestFrom } from 'rxjs/operators';
 
 /**
  * Allows to know which coins the wallet can work with and to change the currently selected coin.
@@ -86,6 +87,10 @@ export class CoinService {
           throw new Error('Invalid configuration: the local node can be used by one coin only.');
         } else {
           localFound = true;
+          // If using electron, get the local node URL from it.
+          if (window['electron']) {
+            value.nodeUrl = window['electron'].getLocalServerUrl() + '/api/';
+          }
         }
       }
       if (Names[value.coinName]) {

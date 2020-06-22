@@ -1,7 +1,7 @@
 // This file is for the e2e tests ony.
 
 export const environment = {
-  nodeUrl: '/api/',
+  nodeUrl: window['electron'] ? window['electron'].getLocalServerUrl() : '/api/',
   production: true,
   tellerUrl: '/teller/',
   isInE2eMode: true,

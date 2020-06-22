@@ -1,5 +1,5 @@
 export const environment = {
-  nodeUrl: '/api/',
+  nodeUrl: window['electron'] ? window['electron'].getLocalServerUrl() : '/api/',
   production: true,
   tellerUrl: 'https://event.skycoin.com/api/',
   isInE2eMode: false,
