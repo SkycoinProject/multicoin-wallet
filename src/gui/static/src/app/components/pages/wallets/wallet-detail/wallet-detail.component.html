@@ -25,8 +25,8 @@
         <app-qr-code-button [address]="address.address"></app-qr-code-button>
         <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
           {{ address.address }}
-          <mat-spinner *ngIf="confirmingIndex === i"></mat-spinner>
-          <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+          <mat-spinner appMainColorFormElement *ngIf="confirmingIndex === i"></mat-spinner>
+          <span appMainColorText [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
             {{ 'wallet.address.copy' | translate }}
           </span>
         </p>
@@ -35,9 +35,9 @@
       <ng-container *ngIf="wallet.isHardware && !address.confirmed">
         <p class="click-to-copy" (click)="confirmAddress(wallet, i, true)">
           <span class="small-preview">{{ address.address }}</span>
-          <span class="copy-label unconfirmed-label">
+          <span appMainColorText class="copy-label unconfirmed-label">
             {{ 'wallet.address.show' | translate }}
-            <mat-spinner *ngIf="confirmingIndex === i"></mat-spinner>
+            <mat-spinner appMainColorFormElement *ngIf="confirmingIndex === i"></mat-spinner>
           </span>
         </p>
       </ng-container>
@@ -61,7 +61,7 @@
     </div>
     <!-- Options. -->
     <div class="-width-85 options-column">
-      <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
+      <mat-icon [appMainColorText]="true" [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
       <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
         <button mat-menu-item (click)="copyAddress($event, address, 1000)" *ngIf="!wallet.isHardware || address.confirmed">
           {{ 'wallet.address.' + (copying.has(address.address) ? 'copied': 'copy-address') | translate }}

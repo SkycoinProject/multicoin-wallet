@@ -2,6 +2,7 @@ import { Coin } from './coin';
 import { CoinTypes } from './coin-types';
 import { BtcCoinConfig } from './config/btc.coin-config';
 import { SkywalletSupportedCoinTypes } from './skywallet-supported-coin-types';
+import { CoinStyleBase } from './coin-style-base';
 
 export class BtcCoin extends Coin {
   coinType = CoinTypes.BTC;
@@ -18,4 +19,11 @@ export class BtcCoin extends Coin {
   confirmationsNeeded = 3;
   skywalletCoinType = SkywalletSupportedCoinTypes.BTC;
   config = new BtcCoinConfig();
+  styleConfig = new CoinStyleBase();
+
+  constructor() {
+    super();
+
+    this.styleConfig.mainColor = 'orange';
+  }
 }

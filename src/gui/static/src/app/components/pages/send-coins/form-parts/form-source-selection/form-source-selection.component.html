@@ -44,7 +44,7 @@
         [placeholder]="addressessPlaceholder | translate"
         [attr.disabled]="(busy || (addresses && addresses.length === 0)) ? 'true' : null"
         [ngClass]="{'element-disabled' : (busy || (addresses && addresses.length === 0))}">
-        <mat-option *ngFor="let addr of addresses" [value]="addr">
+        <mat-option appMainColorFormElement *ngFor="let addr of addresses" [value]="addr">
           {{ addr.address }} - {{ (addr.availableCoins ? addr.availableCoins : 0) | amount }}
           {{ !coinHasHours ? '' : ' - ' + (addr.availableHours | amount:false) }}
           <ng-container *ngIf="addr.hasPendingCoins">({{ 'send.available-balance-indication' | translate }})</ng-container>
@@ -65,7 +65,7 @@
       {{ 'send.outputs-label' | translate }}
       <mat-icon class="help-icon" [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
       <mat-icon *ngIf="errorLoadingManualOutputs" [matTooltip]="'send.outputs-error' | translate" class="help-icon red-text">error</mat-icon>
-      <mat-spinner *ngIf="loadingUnspentOutputs"></mat-spinner>
+      <mat-spinner appMainColorFormElement *ngIf="loadingUnspentOutputs"></mat-spinner>
     </label>
     <div class="-select">
       <mat-select
@@ -75,7 +75,7 @@
         [placeholder]="outputsPlaceholder | translate"
         [attr.disabled]="(busy || (unspentOutputs && unspentOutputs.length === 0)) ? 'true' : null"
         [ngClass]="{'element-disabled' : (busy || (unspentOutputs && unspentOutputs.length === 0))}">
-        <mat-option *ngFor="let out of unspentOutputs" [value]="out">
+        <mat-option appMainColorFormElement *ngFor="let out of unspentOutputs" [value]="out">
           {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
           {{ !coinHasHours ? '' : ' - ' + (out.hours | amount:false) }}
         </mat-option>

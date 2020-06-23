@@ -1,4 +1,4 @@
-<span class="link" [ngClass]="{'pl-0' : noPadding, 'white-text': whiteText}" (click)="onClick($event)">
+<span class="link" appMainColorText [ngClass]="{'pl-0' : noPadding, 'white-text': whiteText}" (click)="onClick($event)">
   {{ text | translate }}
   <mat-icon>{{ pointForward ? 'keyboard_arrow_right' : (pointDown ? 'keyboard_arrow_down' : 'keyboard_arrow_up') }}</mat-icon>
 </span>

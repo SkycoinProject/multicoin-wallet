@@ -48,10 +48,6 @@
     mat-icon {
       cursor: pointer;
       color: lighten($grey, 30%);
-
-      &:hover {
-        color: $main-color;
-      }
     }
   }
 }
@@ -138,7 +134,6 @@
 }
 
 .copy-label {
-  color: $main-color;
   opacity: 0;
   font-size: $font-size-standard-minus;
   position: relative;
@@ -183,10 +178,6 @@
     ::ng-deep svg {
       height: 12px !important;
       width: 12px !important;
-
-      circle {
-        stroke: $main-color;
-      }
     }
   }
 }

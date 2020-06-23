@@ -4,6 +4,7 @@ import { CoinTypeFeatures } from './features/coin-type-features';
 import { FiberFeatures } from './features/fiber-features';
 import { BtcFeatures } from './features/btc-features';
 import { EthFeatures } from './features/eth-features';
+import { CoinStyleBase } from './coin-style-base';
 
 /**
  * Base class with the properties of the coins this wallet can work with.
@@ -88,6 +89,10 @@ export abstract class Coin {
    * this property must have an instance of BtcCoinConfig.
    */
   config: any;
+  /**
+   * Styling configuration for the coin.
+   */
+  abstract styleConfig: CoinStyleBase;
 
   /**
    * Returns an object indicating which features of the app or general properties are compatible

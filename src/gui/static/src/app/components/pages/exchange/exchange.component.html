@@ -26,21 +26,21 @@
     <!-- History link. -->
     <div>
       <span *ngIf="hasHistory" class="history">
-        <a class="link" href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
+        <a class="link" appMainColorText href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
       </span>
     </div>
     <!-- Contact links. -->
     <div>
       <span>
         {{ 'exchange.need-help' | translate }}
-        <a class="link" href="https://swaplabcc.freshdesk.com/support/home" target="_blank" rel="noreferrer nofollow">
+        <a class="link" appMainColorText href="https://swaplabcc.freshdesk.com/support/home" target="_blank" rel="noreferrer nofollow">
           {{ 'exchange.support-portal' | translate }}
         </a>
       </span>
       <span>|</span>
       <span>
         {{ 'exchange.powered-by' | translate }}
-        <a class="link" href="https://swaplab.cc" target="_blank" rel="noreferrer nofollow">SWAPLAB.CC</a>
+        <a class="link" appMainColorText href="https://swaplab.cc" target="_blank" rel="noreferrer nofollow">SWAPLAB.CC</a>
       </span>
     </div>
   </div>

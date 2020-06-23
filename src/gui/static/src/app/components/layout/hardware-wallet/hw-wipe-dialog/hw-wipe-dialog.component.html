@@ -8,6 +8,7 @@
 
     <div class="-check-container" *ngIf="showDeleteFromList">
       <mat-checkbox type="checkbox"
+                    appMainColorFormElement
                     class="-check"
                     [checked]="deleteFromList"
                     (change)="setDeleteFromList($event)">{{ 'hardware-wallet.wipe.confirm-delete-check' | translate }}

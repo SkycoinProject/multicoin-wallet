@@ -1,9 +1,10 @@
 <app-modal [useRedTitle]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   {{ data.text | translate }}
-  <span *ngIf="data.linkText && data.linkFunction" class="link" (click)="data.linkFunction(); closeModal(false);">{{ data.linkText | translate }}</span>
+  <span *ngIf="data.linkText && data.linkFunction" class="link" appMainColorText (click)="data.linkFunction(); closeModal(false);">{{ data.linkText | translate }}</span>
 
   <div class="-check-container" *ngIf="data.checkboxText">
     <mat-checkbox type="checkbox"
+                  appMainColorFormElement
                   class="-check e2e-confirm-checkbox"
                   id="terms"
                   [checked]="accepted"

@@ -1,6 +1,7 @@
 import { Coin } from './coin';
 import { CoinTypes } from './coin-types';
 import { EthCoinConfig } from './config/eth.coin-config';
+import { CoinStyleBase } from './coin-style-base';
 
 export class EthCoin extends Coin {
   coinType = CoinTypes.ETH;
@@ -16,4 +17,5 @@ export class EthCoin extends Coin {
   assetsFolderName = 'ethereum';
   confirmationsNeeded = 30;
   config = new EthCoinConfig('32576');
+  styleConfig = new CoinStyleBase();
 }

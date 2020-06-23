@@ -57,10 +57,6 @@
     margin-left: 20px;
     font-size: 22px;
     align-self: baseline;
-
-    &:hover {
-      color: $main-color;
-    }
   }
 }
 
@@ -187,7 +183,6 @@
 .view-all-button {
   display: block;
   text-decoration: none;
-  color: $main-color;
   font-size: $font-size-standard;
   text-align: center;
   padding: 20px;
@@ -224,9 +219,5 @@ mat-spinner {
   ::ng-deep svg {
     height: 12px !important;
     width: 12px !important;
-
-    circle {
-      stroke: $main-color;
-    }
   }
 }

@@ -49,12 +49,17 @@ button.enabled {
   mat-spinner {
     flex-shrink: 0;
     margin-left: 10px;
-    height: 24px !important;
-    width: 24px !important;
+    height: 18px !important;
+    width: 18px !important;
 
     ::ng-deep svg {
-      height: 24px !important;
-      width: 24px !important;
+      height: 18px !important;
+      width: 18px !important;
+
+      circle {
+        stroke: white;
+        opacity: 0.5;
+      }
     }
   }
 }

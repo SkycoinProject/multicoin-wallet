@@ -23,10 +23,10 @@
         {{ wallet.label }} - {{ wallet.coins | amount }}
         {{ !coinHasHours ? '' : ' (' + (wallet.hours | amount:false) + ')' }}
       ">
-        <mat-option *ngIf="wallet.addresses.length > 1" [value]="wallet">
+        <mat-option appMainColorFormElement *ngIf="wallet.addresses.length > 1" [value]="wallet">
           {{ 'history.all-addresses' | translate }}
         </mat-option>
-        <mat-option *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
+        <mat-option appMainColorFormElement *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
           {{ address.address }} - {{ address.coins | amount }}
           {{ !coinHasHours ? '' : ' (' + (address.hours | amount:false) + ')' }}
         </mat-option>
@@ -37,7 +37,7 @@
         [label]="('history.' + (walletsShowingAllAddresses.length > 0 ? 'other-wallets' : 'wallets') + '-title') | translate"
       >
         <ng-container *ngFor="let wallet of walletsNotShowingAddresses">
-          <mat-option [value]="wallet">
+          <mat-option appMainColorFormElement [value]="wallet">
             {{ wallet.label }} - {{ wallet.coins | amount }}
             {{ !coinHasHours ? '' : ' (' + (wallet.hours | amount:false) + ')' }}
           </mat-option>
@@ -45,7 +45,7 @@
       </mat-optgroup>
       <!-- Filter group for all the addresses shown independently. -->
       <mat-optgroup *ngIf="addresses.length > 0" [label]="'history.addresses' | translate">
-        <mat-option *ngFor="let address of addresses" [value]="address" [disabled]="address.showingWholeWallet">
+        <mat-option appMainColorFormElement *ngFor="let address of addresses" [value]="address" [disabled]="address.showingWholeWallet">
           {{ address.walletName }} - {{ address.address }} - {{ address.coins | amount }}
           {{ !coinHasHours ? '' : ' (' + (address.hours | amount:false) + ')' }}
         </mat-option>
@@ -66,7 +66,7 @@
       </mat-select-trigger>
     </mat-select>
     <img class="x-button image-button" src="assets/img/delete-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
-    <mat-icon class="options-button" [inline]="true" [matMenuTriggerFor]="optionsMenu" *ngIf="userHasMultipleWallets">more_vert</mat-icon>
+    <mat-icon [appMainColorText]="true" class="options-button" [inline]="true" [matMenuTriggerFor]="optionsMenu" *ngIf="userHasMultipleWallets">more_vert</mat-icon>
     <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
       <button mat-menu-item (click)="switchAddressesVisibility()">
         {{ ('history.' + (showAddresses ? 'hide' : 'show') + '-addresses') | translate }}
@@ -168,15 +168,16 @@
         </div></div>
       </div>
     </ng-container>
-    <div *ngIf="viewingTruncatedList && !someTransactionsWereIgnored" class="view-all-button" (click)="showAll()">
+    <div appMainColorText *ngIf="viewingTruncatedList && !someTransactionsWereIgnored" class="view-all-button" (click)="showAll()">
       {{ 'history.view-all' | translate:{ number:totalElements } }}
     </div>
-    <div *ngIf="someTransactionsWereIgnored && showingStep !== showingSteps.All" class="view-all-button" (click)="loadMore()">
+    <div appMainColorText *ngIf="someTransactionsWereIgnored && showingStep !== showingSteps.All" class="view-all-button" (click)="loadMore()">
       {{ 'history.load-more' | translate }}
-      <mat-spinner *ngIf="loadingTransactions"></mat-spinner>
+      <mat-spinner appMainColorFormElement *ngIf="loadingTransactions"></mat-spinner>
     </div>
 
     <a
+      appMainColorText
       *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && currentCoin.explorerUrl"
       class="view-all-button"
       [href]="currentCoin.explorerUrl"
@@ -185,7 +186,7 @@
     >
       {{ 'history.use-explorer' | translate }}
     </a>
-    <div *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && !currentCoin.explorerUrl" class="view-all-button no-selectable">
+    <div appMainColorText *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && !currentCoin.explorerUrl" class="view-all-button no-selectable">
       {{ 'history.use-explorer' | translate }}
     </div>
   </div>

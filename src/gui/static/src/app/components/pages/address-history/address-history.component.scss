@@ -17,10 +17,6 @@
     font-size: 18px;
     width: unset;
     vertical-align: text-bottom;
-
-    &:hover {
-      color: $main-color;
-    }
   }
 }
 
@@ -30,7 +26,6 @@ app-qr-code-button {
 }
 
 .view-all-button {
-  color: $main-color;
   font-size: $font-size-standard;
   text-align: center;
   padding: 20px;

@@ -2,6 +2,7 @@ import { Coin } from './coin';
 import { environment } from '../../environments/environment';
 import { CoinTypes } from './coin-types';
 import { SkywalletSupportedCoinTypes } from './skywallet-supported-coin-types';
+import { CoinStyleBase } from './coin-style-base';
 
 export class SkycoinCoin extends Coin {
   coinType = CoinTypes.Fiber;
@@ -18,4 +19,5 @@ export class SkycoinCoin extends Coin {
   assetsFolderName = 'skycoin';
   confirmationsNeeded = 1;
   skywalletCoinType = SkywalletSupportedCoinTypes.SKY;
+  styleConfig = new CoinStyleBase();
 }

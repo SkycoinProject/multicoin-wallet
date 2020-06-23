@@ -134,6 +134,8 @@ import { BtcApiService } from './services/api/btc-api.service';
 import { EthApiService } from './services/api/eth-api.service';
 import { BlockbookApiService } from './services/api/blockbook-api.service';
 import { SelectCoinComponent } from './components/layout/select-coin/select-coin.component';
+import { MainColorTextDirective } from './directives/styling/main-color-text.directive';
+import { MainColorFormElementDirective } from './directives/styling/main-color-form-element.directive';
 
 @NgModule({
   declarations: [
@@ -217,6 +219,8 @@ import { SelectCoinComponent } from './components/layout/select-coin/select-coin
     GetNextAddressComponent,
     SelectCoinOverlayComponent,
     SelectCoinComponent,
+    MainColorTextDirective,
+    MainColorFormElementDirective,
   ],
   entryComponents: [
     AddDepositAddressComponent,

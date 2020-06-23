@@ -51,13 +51,13 @@
 
     <!-- Agreement. -->
     <div class="-buttons">
-      <mat-checkbox class="-check" (change)="setAgreement($event)" type="checkbox" [ngClass]="{'element-disabled' : busy}">
+      <mat-checkbox appMainColorFormElement class="-check" (change)="setAgreement($event)" type="checkbox" [ngClass]="{'element-disabled' : busy}">
         {{ 'exchange.agree-part1' | translate }}
-        <a class="link" href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow">
+        <a class="link" appMainColorText href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow">
           {{ 'exchange.agree-part2' | translate }}
         </a>
         {{ 'exchange.agree-part3' | translate }}
-        <a class="link" href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow">
+        <a class="link" appMainColorText href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow">
           {{ 'exchange.agree-part4' | translate }}
         </a>
       </mat-checkbox>

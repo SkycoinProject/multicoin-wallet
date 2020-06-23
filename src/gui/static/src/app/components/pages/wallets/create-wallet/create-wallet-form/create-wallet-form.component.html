@@ -45,11 +45,11 @@
     <label for="seed">
       <span>{{ 'wallet.new.seed-label' | translate }}</span>
       <span class="generators" [ngClass]="{'-white-text': onboarding, 'element-disabled' : busy}" *ngIf="create">
-        <span class="link" (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
+        <span class="link" appMainColorText (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
           {{ 'wallet.new.12-words' | translate }}
         </span>
         <span class="divider">|</span>
-        <span class="link" (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
+        <span class="link" appMainColorText (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
           {{ 'wallet.new.24-words' | translate }}
         </span>
       </span>
@@ -73,7 +73,7 @@
 
     <!-- First seed field for the manual mode. -->
     <ng-container *ngIf="!enterSeedWithAssistance">
-      <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
+      <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner appMainColorFormElement></mat-spinner></div>
       <textarea formControlName="seed" id="seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
       <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
@@ -154,7 +154,7 @@
         <div class="title">{{ 'wallet.new.passphrase-warning-title' | translate}}</div>
         <div>{{ 'wallet.new.passphrase-warning' | translate}}</div>
         <mat-checkbox #seedCheck
-          type="checkbox" class="-check"
+          type="checkbox" class="-check" appMainColorFormElement
           [checked]="passphraseWarningAccepted" (change)="onPassphraseWarningAcceptance($event)" [ngClass]="{'element-disabled' : busy}"
         >
           {{ 'common.generic-confirmation-check' | translate}}
@@ -166,7 +166,7 @@
   <div *ngIf="!onboarding">
     <div>
       <!-- Password usage selector. -->
-      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true" [ngClass]="{'element-disabled' : busy}">
+      <mat-checkbox class="-check" appMainColorFormElement (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true" [ngClass]="{'element-disabled' : busy}">
         <span class="img-label-container"><img src="assets/img/lock-gold.png"> {{ 'wallet.new.encrypt-check' | translate }}</span>
       </mat-checkbox>
     </div>
@@ -201,7 +201,7 @@
     <div class="title">{{ 'wallet.new.unconventional-seed-title' | translate}}</div>
     <div>{{ 'wallet.new.unconventional-seed-text' | translate}}</div>
     <mat-checkbox #seedCheck
-      type="checkbox" class="-check"
+      type="checkbox" class="-check" appMainColorFormElement
       [checked]="customSeedAccepted" (change)="onCustomSeedAcceptance($event)" [ngClass]="{'element-disabled' : busy}"
     >
       {{ 'wallet.new.unconventional-seed-check' | translate}}
