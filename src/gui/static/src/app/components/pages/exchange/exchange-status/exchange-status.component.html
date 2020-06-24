@@ -157,7 +157,7 @@
 
 <!-- Button. -->
 <div class="text-center">
-  <app-button class="primary-button" (action)="close()">
+  <app-button [useMainGradient]="true" (action)="close()">
     {{ 'common.back-button' | translate }}
   </app-button>
 </div>

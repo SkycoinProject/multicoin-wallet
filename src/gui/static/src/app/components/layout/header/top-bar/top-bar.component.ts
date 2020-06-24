@@ -1,7 +1,8 @@
-import { Component, Input, OnInit, OnDestroy, NgZone, Renderer2 } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, NgZone, Renderer2, ViewChild } from '@angular/core';
 import { Subscription, interval } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { Overlay } from '@angular/cdk/overlay';
+import { MatSpinner } from '@angular/material/progress-spinner';
 
 import { LanguageData, LanguageService } from '../../../../services/language.service';
 import { SelectLanguageComponent } from '../../select-language/select-language.component';
@@ -20,6 +21,7 @@ import { SelectCoinOverlayComponent } from '../../select-coin-overlay/select-coi
   styleUrls: ['./top-bar.component.scss'],
 })
 export class TopBarComponent implements OnInit, OnDestroy {
+  @ViewChild('balanceSpinner', { static: false }) balanceSpinner: MatSpinner;
   @Input() headline: string;
 
   // Currently selected language.
@@ -45,6 +47,10 @@ export class TopBarComponent implements OnInit, OnDestroy {
   showOutputsOption: boolean;
   showPendingTxsOption: boolean;
 
+  // Params for the style of some UI elements.
+  textColor = '';
+  buttonBorder = '';
+
   private subscriptionsGroup: Subscription[] = [];
 
   constructor(
@@ -68,6 +74,9 @@ export class TopBarComponent implements OnInit, OnDestroy {
 
     this.subscriptionsGroup.push(this.coinService.currentCoin.subscribe(coin => {
       this.currentCoin = coin;
+
+      this.textColor = coin.styleConfig.headerTextColor;
+      this.buttonBorder = coin.styleConfig.headerTextColor + ' 1px solid';
     }));
 
     this.hasManyCoins = this.coinService.coins.length > 1;
@@ -86,7 +95,19 @@ export class TopBarComponent implements OnInit, OnDestroy {
     );
 
     this.subscriptionsGroup.push(
-      this.balanceAndOutputsService.refreshingBalance.subscribe(response => this.refreshingBalance = response),
+      this.balanceAndOutputsService.refreshingBalance.subscribe(response => {
+        this.refreshingBalance = response;
+
+        if (response) {
+          // Update the color of the spinner.
+          setTimeout(() => {
+            const circle = this.balanceSpinner._elementRef.nativeElement.querySelector('circle');
+            if (circle) {
+              this.renderer.setStyle(circle, 'stroke', this.textColor);
+            }
+          });
+        }
+      }),
     );
 
     this.subscriptionsGroup.push(

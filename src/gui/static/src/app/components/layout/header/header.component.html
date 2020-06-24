@@ -10,7 +10,7 @@
       [ngStyle]="{'background-image': currentCoin.headerHasGradient ? ('url(assets/coins/' + currentCoin.assetsFolderName + '/gradient.png)') : ''}"
     >
       <app-top-bar [headline]="headline"></app-top-bar>
-      <div class="balance-container">
+      <div class="balance-container" [ngStyle]="{'color': textColor}">
         <div class="balance">
           <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)" class="loading-header">{{ 'common.loading' | translate }}</p>
           <p *ngIf="synchronizationInfoObtained && !synchronized && showBlockchainSyncProgress" class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
@@ -27,14 +27,14 @@
         </div>
       </div>
       <!-- Hours area. -->
-      <div *ngIf="coinHasHours" class="hour-balance">
-        <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)">{{ 'common.loading' | translate }}</p>
-        <p *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
-        <p *ngIf="synchronized && balanceObtained">{{ hours | amount:false }}</p>
+      <div *ngIf="coinHasHours" class="hour-balance" [ngStyle]="{'color': hoursTextColor}">
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)">{{ 'common.loading' | translate }}</p>
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="synchronized && balanceObtained">{{ hours | amount:false }}</p>
       </div>
       <!-- Elements for coins without hours. -->
-      <div *ngIf="!coinHasHours && synchronizationInfoObtained && !synchronized" class="hour-balance">
-        <p *ngIf="synchronizationInfoObtained && !synchronized">
+      <div *ngIf="!coinHasHours && synchronizationInfoObtained && !synchronized" class="hour-balance" [ngStyle]="{'color': hoursTextColor}">
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="synchronizationInfoObtained && !synchronized">
           {{ 'header.syncing-blocks' | translate }}
           <ng-container *ngIf="showBlockchainSyncProgress">
             {{ '(' + currentBlock + '/'  + highestBlock + ')' }}

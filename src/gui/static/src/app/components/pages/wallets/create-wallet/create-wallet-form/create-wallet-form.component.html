@@ -44,15 +44,28 @@
     <!-- Seed label and buttons for creating another seed. -->
     <label for="seed">
       <span>{{ 'wallet.new.seed-label' | translate }}</span>
-      <span class="generators" [ngClass]="{'-white-text': onboarding, 'element-disabled' : busy}" *ngIf="create">
-        <span class="link" appMainColorText (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
-          {{ 'wallet.new.12-words' | translate }}
+      <ng-container *ngIf="onboarding">
+        <span class="generators -white-text" [ngClass]="{'element-disabled' : busy}" *ngIf="create">
+          <span class="link" (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
+            {{ 'wallet.new.12-words' | translate }}
+          </span>
+          <span class="divider">|</span>
+          <span class="link" (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
+            {{ 'wallet.new.24-words' | translate }}
+          </span>
         </span>
-        <span class="divider">|</span>
-        <span class="link" appMainColorText (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
-          {{ 'wallet.new.24-words' | translate }}
+      </ng-container>
+      <ng-container *ngIf="!onboarding">
+        <span class="generators" [ngClass]="{'element-disabled' : busy}" *ngIf="create">
+          <span class="link" appMainColorText (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
+            {{ 'wallet.new.12-words' | translate }}
+          </span>
+          <span class="divider">|</span>
+          <span class="link" appMainColorText (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
+            {{ 'wallet.new.24-words' | translate }}
+          </span>
         </span>
-      </span>
+      </ng-container>
     </label>
 
     <!-- First seed field for the assisted mode. -->
@@ -61,7 +74,7 @@
         <span class="normal-seed-field" *ngIf="create || lastAssistedSeed">{{ lastAssistedSeed }}</span>
         <div *ngIf="!create && lastAssistedSeed" [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.change-seed' | translate }}</div>
         <div *ngIf="!create && !lastAssistedSeed" class="text-with-icon-container">
-          <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
+          <mat-icon [ngClass]="{'yellow-text': !onboarding, 'white-text': onboarding}">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
         </div>
       </div>
       <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
@@ -92,10 +105,10 @@
     <ng-container *ngIf="enterSeedWithAssistance">
       <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !assistedSeedConfirmed, 'element-disabled' : busy}" (click)="confirmSeed()">
         <div *ngIf="!assistedSeedConfirmed" class="text-with-icon-container">
-          <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirm-seed' | translate }}</span>
+          <mat-icon [ngClass]="{'yellow-text': !onboarding, 'white-text': onboarding}">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirm-seed' | translate }}</span>
         </div>
         <div *ngIf="assistedSeedConfirmed" class="text-with-icon-container">
-          <mat-icon class="green-text">done</mat-icon> <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirmed-seed' | translate }}</span>
+          <mat-icon [ngClass]="{'green-text': !onboarding, 'white-text': onboarding}">done</mat-icon> <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirmed-seed' | translate }}</span>
         </div>
       </div>
     </ng-container>

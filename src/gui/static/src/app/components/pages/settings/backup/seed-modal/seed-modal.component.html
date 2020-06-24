@@ -12,7 +12,7 @@
     <input id="passphrase" readonly [value]="data.passphrase" />
   </div>
   <div class="-buttons">
-    <app-button (action)="dialogRef.close()" class="primary-button">
+    <app-button (action)="dialogRef.close()" [useMainGradient]="true">
       {{ 'common.close-button' | translate }}
     </app-button>
   </div>

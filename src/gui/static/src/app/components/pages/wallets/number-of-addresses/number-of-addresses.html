@@ -11,7 +11,7 @@
     <app-button (action)="closePopup()">
       {{ 'common.cancel-button' | translate }}
     </app-button>
-    <app-button (action)="continue()" class="primary-button" [disabled]="!form.valid">
+    <app-button (action)="continue()" [useMainGradient]="true" [disabled]="!form.valid">
       {{ 'common.create-button' | translate }}
     </app-button>
   </div>

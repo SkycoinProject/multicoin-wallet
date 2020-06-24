@@ -19,7 +19,7 @@
       <app-button (action)="closeModal()">
         {{ 'common.cancel-button' | translate }}
       </app-button>
-      <app-button (action)="startUpdating()" class="primary-button" [disabled]="deviceHasFirmware && !confirmed">
+      <app-button (action)="startUpdating()" [useMainGradient]="true" [disabled]="deviceHasFirmware && !confirmed">
         {{ 'common.continue-button' | translate }}
       </app-button>
     </div>
@@ -46,7 +46,7 @@
 
     <!-- Buttons area. -->
     <div class="-buttons" *ngIf="currentState !== states.Processing">
-      <app-button (action)="closeModal()" class="primary-button" #closeButton>
+      <app-button (action)="closeModal()" [useMainGradient]="true" #closeButton>
         {{ 'common.close-button' | translate }}
       </app-button>
     </div>

@@ -1,12 +1,10 @@
 @import '../../../../../theme/variables';
-@import '../../../../../customize/styling';
 
 $side-containers-width: 230px;
 $bar-height: 50px;
 
 :host {
   display: flex;
-  color: $header-text-color;
   width: 100%;
 }
 
@@ -18,7 +16,6 @@ $bar-height: 50px;
 
 .round-button {
   border-radius: 1000px;
-  border: $header-text-color 1px solid;
   overflow: hidden;
   margin-bottom: 10px;
   min-width: 0px !important;

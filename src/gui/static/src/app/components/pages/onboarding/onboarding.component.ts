@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, Renderer2, AfterViewInit, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,6 +10,7 @@ import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/on
 import { SelectLanguageComponent } from '../../layout/select-language/select-language.component';
 import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
 import { CreateWalletArgs } from '../../../services/coin-specific/wallets-and-addresses-operator';
+import { CoinService } from '../../../services/coin.service';
 
 /**
  * Wizard for creating the first wallet.
@@ -19,8 +20,9 @@ import { CreateWalletArgs } from '../../../services/coin-specific/wallets-and-ad
   templateUrl: './onboarding.component.html',
   styleUrls: ['./onboarding.component.scss'],
 })
-export class OnboardingComponent implements OnInit, OnDestroy {
+export class OnboardingComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('encryptForm', { static: false }) encryptForm: OnboardingEncryptWalletComponent;
+  @ViewChild('container', { static: false }) container: ElementRef;
 
   // Current stept to show.
   step = 1;
@@ -29,6 +31,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // Currently selected language.
   language: LanguageData;
 
+  private coinSubscription: SubscriptionLike;
   private subscription: SubscriptionLike;
 
   constructor(
@@ -37,13 +40,24 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private coinService: CoinService,
+    private renderer: Renderer2,
   ) { }
 
   ngOnInit() {
     this.subscription = this.languageService.currentLanguage.subscribe(lang => this.language = lang);
   }
 
+  ngAfterViewInit() {
+    // Update the background.
+    this.coinSubscription = this.coinService.currentCoin.subscribe(coin => {
+      const background = 'linear-gradient(to bottom right, ' + coin.styleConfig.onboardingGradientDark + ', ' + coin.styleConfig.onboardingGradientLight + ')';
+      this.renderer.setStyle(this.container.nativeElement, 'background', background);
+    });
+  }
+
   ngOnDestroy() {
+    this.coinSubscription.unsubscribe();
     this.subscription.unsubscribe();
   }
 

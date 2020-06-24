@@ -63,7 +63,7 @@
       </mat-checkbox>
 
       <!-- Button. -->
-      <app-button class="primary-button" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
+      <app-button [useMainGradient]="true" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
         {{ 'exchange.exchange-button' | translate }}
       </app-button>
     </div>

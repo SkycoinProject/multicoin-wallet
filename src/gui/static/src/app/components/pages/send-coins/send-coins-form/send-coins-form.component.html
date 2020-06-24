@@ -217,10 +217,10 @@
 
 <!-- Buttons. -->
 <div class="text-center">
-  <app-button #previewButton (action)="preview()" [disabled]="!form.valid" [ngClass]="{'primary-button': showSimpleForm}">
+  <app-button #previewButton (action)="preview()" [disabled]="!form.valid" [useMainGradient]="showSimpleForm">
     {{ 'send.preview-button' | translate }}
   </app-button>
-  <app-button #sendButton (action)="send()" class="primary-button" [disabled]="!form.valid" *ngIf="!showSimpleForm">
+  <app-button #sendButton (action)="send()" [useMainGradient]="true" [disabled]="!form.valid" *ngIf="!showSimpleForm">
     {{ ('send.' + (showForManualUnsigned ? 'show' : 'send') + '-button') | translate }}
   </app-button>
 </div>

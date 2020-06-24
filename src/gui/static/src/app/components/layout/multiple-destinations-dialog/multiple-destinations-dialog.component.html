@@ -11,7 +11,7 @@
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="processData()" class="primary-button">
+    <app-button (action)="processData()" [useMainGradient]="true">
       {{ 'send.bulk-send.process-button' | translate }}
     </app-button>
   </div>

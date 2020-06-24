@@ -16,7 +16,7 @@
 
   <!-- Buttons area. -->
   <div class="-buttons" *ngIf="currentState !== states.Initial">
-    <app-button (action)="closeModal()" class="primary-button" #closeButton>
+    <app-button (action)="closeModal()" [useMainGradient]="true" #closeButton>
       {{ 'common.close-button' | translate }}
     </app-button>
   </div>

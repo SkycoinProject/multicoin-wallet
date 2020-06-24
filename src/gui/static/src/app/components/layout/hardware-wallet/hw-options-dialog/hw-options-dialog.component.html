@@ -85,13 +85,13 @@
   </div>
 
   <div class="-buttons" *ngIf="currentState === states.Finished" [ngClass]="{'disabled' : refreshingWarnings}">
-    <app-button (action)="closeModal()" class="primary-button">
+    <app-button (action)="closeModal()" [useMainGradient]="true">
       {{ 'common.close-button' | translate }}
     </app-button>
   </div>
 
   <div class="-buttons" *ngIf="currentState !== states.Finished">
-    <app-button (action)="closeModal()" class="primary-button" #closeButton>
+    <app-button (action)="closeModal()" [useMainGradient]="true" #closeButton>
       {{ 'common.close-button' | translate }}
     </app-button>
   </div>

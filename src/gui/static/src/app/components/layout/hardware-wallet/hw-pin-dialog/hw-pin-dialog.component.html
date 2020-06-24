@@ -45,7 +45,7 @@
 
   <!-- Buttons area. -->
   <div class="-buttons">
-    <app-button (action)="sendPin()" class="primary-button" [disabled]="!form.valid">
+    <app-button (action)="sendPin()" [useMainGradient]="true" [disabled]="!form.valid">
       {{ 'common.continue-button' | translate }}
     </app-button>
   </div>

@@ -1,5 +1,4 @@
 @import '../../../../theme/variables';
-@import '../../../../customize/styling';
 
 .-container {
   background-color: $white;
@@ -23,7 +22,6 @@
 
 .balance-container {
   align-items: center;
-  color: $header-text-color;
   display: flex;
   flex: 1 1 auto;
   font-size: $font-size-standard-minus;
@@ -55,9 +53,7 @@
   text-align: center;
 
   p {
-    background-color: $header-hours-background-color;
     border-radius: 1000px;
-    color: $header-hours-text-color;
     display: inline-block;
     font-size: $font-size-standard-minus;
     line-height: 1.8;

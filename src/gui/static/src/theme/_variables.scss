@@ -1,8 +1,3 @@
-/*********************
-* Centralized repository of variables that allow changing the appearance of the application.
-*********************/
-@import 'customize/styling.scss';
-
 /**
 General values
 **/
@@ -10,17 +5,11 @@ General values
 // Font family used in the whole app.
 $font-family: Skycoin, Roboto, 'Helvetica Neue', sans-serif;
 
-// Colors for the gradients, used mainly as background on the wizard and big buttons.
-$gradient-dark: $app-gradient-dark;
-$gradient-light: $app-gradient-light;
-
 
 /**
 Colors
 **/
 
-// Main color, used for links and some other UI elements.
-$main-color: $app-main-color;
 $black: #1e2227;
 $white: #fafafa;
 // Used to highlight items on some lists.

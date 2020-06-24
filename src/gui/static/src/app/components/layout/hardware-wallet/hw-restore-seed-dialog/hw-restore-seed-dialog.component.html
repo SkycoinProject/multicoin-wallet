@@ -26,7 +26,7 @@
       <app-button (action)="closeModal()">
         {{ 'common.cancel-button' | translate }}
       </app-button>
-      <app-button (action)="startOperation()" class="primary-button">
+      <app-button (action)="startOperation()" [useMainGradient]="true">
         {{ 'common.continue-button' | translate }}
       </app-button>
     </div>
@@ -46,7 +46,7 @@
 
   <!-- Buttons area. -->
   <div class="-buttons" *ngIf="currentState !== states.Initial && currentState !== states.Processing">
-    <app-button (action)="closeModal()" class="primary-button" #closeButton>
+    <app-button (action)="closeModal()" [useMainGradient]="true" #closeButton>
       {{ 'common.close-button' | translate }}
     </app-button>
   </div>

@@ -14,7 +14,7 @@
     <app-button (action)="closePopup()">
       {{ 'common.cancel-button' | translate }}
     </app-button>
-    <app-button (action)="changeNote()" class="primary-button" #button>
+    <app-button (action)="changeNote()" [useMainGradient]="true" #button>
       {{ 'edit-note.change-button' | translate }}
     </app-button>
   </div>

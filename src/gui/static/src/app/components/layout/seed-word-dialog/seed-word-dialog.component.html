@@ -22,7 +22,7 @@
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="sendWord()" class="primary-button" [disabled]="!form.valid">
+    <app-button (action)="sendWord()" [useMainGradient]="true" [disabled]="!form.valid">
       {{ 'common.continue-button' | translate }}
     </app-button>
   </div>

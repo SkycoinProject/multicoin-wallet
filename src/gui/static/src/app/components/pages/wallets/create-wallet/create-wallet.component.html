@@ -12,7 +12,7 @@
     <app-button (action)="closePopup()" #cancelButton>
       {{ 'common.cancel-button' | translate }}
     </app-button>
-    <app-button (action)="checkAndCreateWallet()" class="primary-button" [disabled]="!formControl.isValid" #createButton>
+    <app-button (action)="checkAndCreateWallet()" [useMainGradient]="true" [disabled]="!formControl.isValid" #createButton>
       {{ 'common.' + (data.create ? 'create' : 'load') + '-button' | translate }}
     </app-button>
   </div>

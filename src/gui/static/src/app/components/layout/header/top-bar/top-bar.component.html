@@ -1,26 +1,28 @@
-<div class="buttons-left">
+<div class="buttons-left" [ngStyle]="{'color': textColor}">
   <!-- Coin button. -->
   <div class="very-light-button-theme" *ngIf="hasManyCoins">
     <button
       mat-button
       color="primary"
       class="round-button"
+      [ngStyle]="{'border': buttonBorder, 'color': textColor}"
       (click)="changeCoin()">
-      <img class="coin-icon" [src]="'assets/coins/' + currentCoin.assetsFolderName + '/icon.png'" />
-      <span class="coin-name -not-on-very-small">{{ currentCoin.coinSymbol }}</span>
-      <mat-icon [inline]="true">expand_more</mat-icon>
+        <img class="coin-icon" [src]="'assets/coins/' + currentCoin.assetsFolderName + '/icon.png'" />
+        <span class="coin-name -not-on-very-small">{{ currentCoin.coinSymbol }}</span>
+        <mat-icon [inline]="true">expand_more</mat-icon>
     </button>
   </div>
   <!-- Update button. -->
   <div class="very-light-button-theme">
     <button
       class="round-button"
+      [ngStyle]="{'border': buttonBorder, 'color': textColor}"
       mat-button
       color="primary"
       [matTooltip]="this.problemRefreshingBalance ? ('header.top-bar.connection-error-info' | translate) : null"
       (click)="refresBalance()">
       <div class="main-container">
-        <div class="spinner-container" *ngIf="refreshingBalance"><mat-spinner></mat-spinner></div>
+        <div class="spinner-container" *ngIf="refreshingBalance"><mat-spinner #balanceSpinner></mat-spinner></div>
         <mat-icon *ngIf="!this.problemRefreshingBalance && !refreshingBalance">refresh</mat-icon>
         <mat-icon *ngIf="this.problemRefreshingBalance && !refreshingBalance" class="blinking-warning-icon">warning</mat-icon>
         <div class="text-container" *ngIf="balanceObtained">
@@ -39,10 +41,10 @@
   </div>
 </div>
 <!-- Headline. -->
-<div class="title">
+<div class="title" [ngStyle]="{'color': textColor}">
   {{ headline }}
 </div>
-<div class="buttons-right">
+<div class="buttons-right" [ngStyle]="{'color': textColor}">
   <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
     <button *ngIf="showNetworkOption" mat-menu-item [routerLink]="['/settings/network']">{{ 'network.title' | translate }}</button>
     <button mat-menu-item [routerLink]="['/settings/blockchain']">{{ 'blockchain.title' | translate }}</button>

@@ -25,5 +25,9 @@ export class BtcCoin extends Coin {
     super();
 
     this.styleConfig.mainColor = 'orange';
+    this.styleConfig.gradientDark = '#ff7600';
+    this.styleConfig.gradientLight = '#ff9900';
+    this.styleConfig.onboardingGradientDark = '#ff6a00';
+    this.styleConfig.onboardingGradientLight = '#ff8d00';
   }
 }

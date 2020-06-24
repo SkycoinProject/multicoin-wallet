@@ -39,6 +39,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   currentBlock: number;
   highestBlock: number;
 
+  // Params for the style of some UI elements.
+  textColor = '';
+  hoursTextColor = '';
+  hoursBackgroundColor = '';
+
   // Data about the balance.
   coins: string;
   hours: string;
@@ -79,6 +84,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.subscriptionsGroup.push(this.coinService.currentCoin.subscribe((coin: Coin) => {
       this.showPrice = !!coin.priceTickerId;
       this.currentCoin = coin;
+
+      this.textColor = coin.styleConfig.headerTextColor;
+      this.hoursTextColor = coin.styleConfig.headerHoursTextColor;
+      this.hoursBackgroundColor = coin.styleConfig.headerHoursBackgroundColor;
     }));
 
     // Get the synchronization status.

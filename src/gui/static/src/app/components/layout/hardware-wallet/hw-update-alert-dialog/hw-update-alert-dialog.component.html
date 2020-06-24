@@ -8,7 +8,7 @@
     <app-button (action)="closeModal()">
       {{ 'common.cancel-button' | translate }}
     </app-button>
-    <app-button (action)="update()" class="primary-button">
+    <app-button (action)="update()" [useMainGradient]="true">
       {{ 'hardware-wallet.update-firmware-warning.update' | translate }}
     </app-button>
   </div>

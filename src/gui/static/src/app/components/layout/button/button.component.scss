@@ -55,11 +55,11 @@ button.enabled {
     ::ng-deep svg {
       height: 18px !important;
       width: 18px !important;
-
-      circle {
-        stroke: white;
-        opacity: 0.5;
-      }
     }
+  }
+
+  .white-spinner ::ng-deep circle {
+    stroke: white;
+    opacity: 0.5;
   }
 }
