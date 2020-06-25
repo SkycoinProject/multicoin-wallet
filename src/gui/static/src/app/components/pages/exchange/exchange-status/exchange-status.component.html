@@ -77,7 +77,7 @@
         <div class="-value">
           {{ order.toTx }}
           <a
-            appMainColorText
+            appThemeColorText
             *ngIf="currentCoin.explorerUrl"
             [href]="currentCoin.explorerUrl + '/transaction/' + order.toTx"
             class="-external"

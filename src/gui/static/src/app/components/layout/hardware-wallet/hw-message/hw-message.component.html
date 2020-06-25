@@ -5,9 +5,9 @@
     <i *ngIf="icon == icons.Success" class="material-icons green-text">done</i>
     <i *ngIf="icon == icons.Error" class="material-icons red-text">error_outline</i>
     <i *ngIf="icon == icons.Usb" class="material-icons grey-light-text">usb</i>
-    <i *ngIf="icon == icons.HardwareWallet" class="material-icons yellow-text">memory</i>
+    <i *ngIf="icon == icons.HardwareWallet" class="material-icons" [appThemeColorText]="true">memory</i>
     <i *ngIf="icon == icons.Warning" class="material-icons red-text -blinking">error</i>
-    <i *ngIf="icon == icons.Confirm" class="material-icons yellow-text">touch_app</i>
+    <i *ngIf="icon == icons.Confirm" class="material-icons" [appThemeColorText]="true">touch_app</i>
   </div>
   <!-- Texts. -->
   <div class="text-container">
@@ -15,8 +15,8 @@
       <span class="big-text">{{ upperBigText }}</span>
     </div>
     <span *ngIf="text">{{ text }}</span>
-    <span *ngIf="linkText && !linkIsUrl" class="link" appMainColorText (click)="activateLink()">{{ linkText }}</span>
-    <span *ngIf="linkText && linkIsUrl"><a class="link" appMainColorText [href]="linkText" target="_blank" rel="noreferrer nofollow">{{ linkText }}</a></span>
+    <span *ngIf="linkText && !linkIsUrl" class="link" appThemeColorText (click)="activateLink()">{{ linkText }}</span>
+    <span *ngIf="linkText && linkIsUrl"><a class="link" appThemeColorText [href]="linkText" target="_blank" rel="noreferrer nofollow">{{ linkText }}</a></span>
     <div *ngIf="outputsList" class="list">
       <div *ngFor="let output of outputsList" class="list-element">
         <span>• {{ output.coins | amount }}</span>

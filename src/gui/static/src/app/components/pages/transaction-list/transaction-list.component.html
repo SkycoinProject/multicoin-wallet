@@ -66,7 +66,7 @@
       </mat-select-trigger>
     </mat-select>
     <img class="x-button image-button" src="assets/img/delete-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
-    <mat-icon [appMainColorText]="true" class="options-button" [inline]="true" [matMenuTriggerFor]="optionsMenu" *ngIf="userHasMultipleWallets">more_vert</mat-icon>
+    <mat-icon appThemeColorText [showOnlyIfMouseOver]="true" class="options-button" [inline]="true" [matMenuTriggerFor]="optionsMenu" *ngIf="userHasMultipleWallets">more_vert</mat-icon>
     <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
       <button mat-menu-item (click)="switchAddressesVisibility()">
         {{ ('history.' + (showAddresses ? 'hide' : 'show') + '-addresses') | translate }}
@@ -86,7 +86,8 @@
       <div class="-transaction-container" (click)="showTransaction(transaction)"><div class="-transaction" [ngClass]="{ '-pending': !transaction.confirmed }">
         <!-- Icon. -->
         <div class="-icon">
-          <img [src]="'assets/img/' + getTransactionIconName(transaction) + '-blue.png'" [ngClass]="{ '-pending -grey': !transaction.confirmed }">
+          <img *ngIf="transaction.confirmed" appImageColor [src]="'assets/img/' + getTransactionIconName(transaction) + '-configurable.png'">
+          <img *ngIf="!transaction.confirmed" [src]="'assets/img/' + getTransactionIconName(transaction) + '-configurable.png'" class="-pending">
         </div>
         <div class="-address">
           <!-- First line. -->
@@ -168,16 +169,16 @@
         </div></div>
       </div>
     </ng-container>
-    <div appMainColorText *ngIf="viewingTruncatedList && !someTransactionsWereIgnored" class="view-all-button" (click)="showAll()">
+    <div appThemeColorText *ngIf="viewingTruncatedList && !someTransactionsWereIgnored" class="view-all-button" (click)="showAll()">
       {{ 'history.view-all' | translate:{ number:totalElements } }}
     </div>
-    <div appMainColorText *ngIf="someTransactionsWereIgnored && showingStep !== showingSteps.All" class="view-all-button" (click)="loadMore()">
+    <div appThemeColorText *ngIf="someTransactionsWereIgnored && showingStep !== showingSteps.All" class="view-all-button" (click)="loadMore()">
       {{ 'history.load-more' | translate }}
       <mat-spinner appMainColorFormElement *ngIf="loadingTransactions"></mat-spinner>
     </div>
 
     <a
-      appMainColorText
+      appThemeColorText
       *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && currentCoin.explorerUrl"
       class="view-all-button"
       [href]="currentCoin.explorerUrl"
@@ -186,7 +187,7 @@
     >
       {{ 'history.use-explorer' | translate }}
     </a>
-    <div appMainColorText *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && !currentCoin.explorerUrl" class="view-all-button no-selectable">
+    <div appThemeColorText *ngIf="someTransactionsWereIgnored && showingStep === showingSteps.All && !currentCoin.explorerUrl" class="view-all-button no-selectable">
       {{ 'history.use-explorer' | translate }}
     </div>
   </div>

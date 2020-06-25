@@ -95,14 +95,14 @@
           <span>{{ 'tx.note-small-label' | translate }}</span>
           <span *ngIf="transaction.note">{{ transaction.note }}</span>
           <span *ngIf="!transaction.note" class="grey-text">{{ 'tx.without-note' | translate }}</span>
-          <mat-icon appMainColorText class="edit-button image-button" (click)="editNote()" *ngIf="!isPreview">edit</mat-icon>
+          <mat-icon appThemeColorText class="edit-button image-button" (click)="editNote()" *ngIf="!isPreview">edit</mat-icon>
         </div>
       </div>
 
       <!-- Transaction balance. -->
       <div class="col-md-3 -tx-price" *ngIf="isPreview || oldTransaction.type !== oldTransactionTypes.MixedOrUnknown">
         <div class="-icon">
-          <img [src]="'/assets/img/' + getTransactionIconName(transaction) + '-blue.png'">
+          <img appImageColor [src]="'/assets/img/' + getTransactionIconName(transaction) + '-configurable.png'">
         </div>
         <ng-container>
           <h4 *ngIf="coinHasHours || !isPreview">
@@ -160,7 +160,7 @@
               {{ input.address }}
             </ng-container>
             <!-- Label shown if the user owns the address. -->
-            <div appMainColorText class="-internal-label" *ngIf="internalAddressesMap.has(input.address)">
+            <div appThemeColorText class="-internal-label" *ngIf="internalAddressesMap.has(input.address)">
               <span *ngIf="!userHasMultipleWallets">
                 {{ 'tx.internal' | translate }}
               </span>
@@ -194,7 +194,7 @@
           <div class="-address">
             {{ output.address }}
             <!-- Label shown if the user owns the address. -->
-            <div appMainColorText class="-internal-label" *ngIf="internalAddressesMap.has(output.address)">
+            <div appThemeColorText class="-internal-label" *ngIf="internalAddressesMap.has(output.address)">
               <span *ngIf="!userHasMultipleWallets">
                 {{ 'tx.internal' | translate }}
               </span>

@@ -52,7 +52,7 @@
             <span *ngIf="price && values[i].isGreaterThanOrEqualTo(0) && selectedCurrency === doubleButtonActive.RightButton">
               &#x007e; {{ values[i] | amount }}
             </span>
-            <div class="link" appMainColorText [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins-link' | translate }})</div>
+            <div class="link" appThemeColorText [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins-link' | translate }})</div>
           </div>
         </div>
         <!-- Hours. -->

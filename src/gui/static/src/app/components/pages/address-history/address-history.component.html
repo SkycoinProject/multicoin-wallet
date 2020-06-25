@@ -12,7 +12,7 @@
     <!-- Button for adding addresses. -->
     <div class="button-container">
       <button mat-button class="icon-button" (click)="addAddress()">
-        <img src="assets/img/plus-gold.png"> {{ 'address-history.add-button' | translate }}
+        <img [appImageColor]="true" src="assets/img/plus-configurable.png"> {{ 'address-history.add-button' | translate }}
       </button>
     </div>
 
@@ -60,7 +60,7 @@
               <mat-icon class="help-icon" [matTooltip]="('address-history.' + (address.alreadyUsed ? 'used-no-info' : 'used-yes-info')) | translate">help</mat-icon>
             </div>
             <div class="options-cell">
-              <mat-icon [appMainColorText]="true" [matMenuTriggerFor]="optionsMenu" [inline]="true">more_vert</mat-icon>
+              <mat-icon appThemeColorText [showOnlyIfMouseOver]="true" [matMenuTriggerFor]="optionsMenu" [inline]="true">more_vert</mat-icon>
               <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
                 <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address.address }">
                   {{ 'address-history.history' | translate }}
@@ -72,7 +72,7 @@
             </div>
           </div>
           <!-- Button for showing all results. -->
-          <div appMainColorText class="view-all-button" *ngIf="(i === 0 && externalAddressesTruncated) || (i === 1 && changeAddressesTruncated)" (click)="showAll(i === 0)">
+          <div appThemeColorText class="view-all-button" *ngIf="(i === 0 && externalAddressesTruncated) || (i === 1 && changeAddressesTruncated)" (click)="showAll(i === 0)">
             {{ 'address-history.view-all' | translate:{ current:maxInitialElements, total:allAddresses[i].length } }}
           </div>
         </div>

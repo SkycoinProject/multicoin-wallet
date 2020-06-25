@@ -57,11 +57,11 @@
       </ng-container>
       <ng-container *ngIf="!onboarding">
         <span class="generators" [ngClass]="{'element-disabled' : busy}" *ngIf="create">
-          <span class="link" appMainColorText (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
+          <span class="link" appThemeColorText (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
             {{ 'wallet.new.12-words' | translate }}
           </span>
           <span class="divider">|</span>
-          <span class="link" appMainColorText (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
+          <span class="link" appThemeColorText (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
             {{ 'wallet.new.24-words' | translate }}
           </span>
         </span>
@@ -74,12 +74,14 @@
         <span class="normal-seed-field" *ngIf="create || lastAssistedSeed">{{ lastAssistedSeed }}</span>
         <div *ngIf="!create && lastAssistedSeed" [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.change-seed' | translate }}</div>
         <div *ngIf="!create && !lastAssistedSeed" class="text-with-icon-container">
-          <mat-icon [ngClass]="{'yellow-text': !onboarding, 'white-text': onboarding}">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
+          <mat-icon *ngIf="onboarding" class="white-text">touch_app</mat-icon>
+          <mat-icon *ngIf="!onboarding" [appThemeColorText]="true">touch_app</mat-icon>
+          <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
         </div>
       </div>
       <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed-help' | translate">
+          <img [appImageColor]="true" src="assets/img/lock-configurable.png" [matTooltip]="'wallet.new.seed.use-custom-seed-help' | translate">
         </div>
       </div>
     </ng-container>
@@ -105,7 +107,9 @@
     <ng-container *ngIf="enterSeedWithAssistance">
       <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !assistedSeedConfirmed, 'element-disabled' : busy}" (click)="confirmSeed()">
         <div *ngIf="!assistedSeedConfirmed" class="text-with-icon-container">
-          <mat-icon [ngClass]="{'yellow-text': !onboarding, 'white-text': onboarding}">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirm-seed' | translate }}</span>
+          <mat-icon *ngIf="onboarding" class="white-text">touch_app</mat-icon>
+          <mat-icon *ngIf="!onboarding" [appThemeColorText]="true">touch_app</mat-icon>
+          <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirm-seed' | translate }}</span>
         </div>
         <div *ngIf="assistedSeedConfirmed" class="text-with-icon-container">
           <mat-icon [ngClass]="{'green-text': !onboarding, 'white-text': onboarding}">done</mat-icon> <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirmed-seed' | translate }}</span>
@@ -180,7 +184,7 @@
     <div>
       <!-- Password usage selector. -->
       <mat-checkbox class="-check" appMainColorFormElement (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true" [ngClass]="{'element-disabled' : busy}">
-        <span class="img-label-container"><img src="assets/img/lock-gold.png"> {{ 'wallet.new.encrypt-check' | translate }}</span>
+        <span class="img-label-container"><img [appImageColor]="true" src="assets/img/lock-configurable.png"> {{ 'wallet.new.encrypt-check' | translate }}</span>
       </mat-checkbox>
     </div>
     <div class="row -passwords">

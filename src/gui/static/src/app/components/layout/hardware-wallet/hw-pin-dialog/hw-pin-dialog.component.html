@@ -15,7 +15,7 @@
         <span *ngIf="!data.signingTx && (!data.changingPin || data.changePinState !== changePinStates.RequestingNewPin)">
           {{ 'hardware-wallet.enter-pin.instructions-generic' | translate }}
         </span>
-        <span class="link" appMainColorText (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
+        <span class="link" appThemeColorText (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
       </div>
       <input formControlName="pin" id="pin" type="password" readonly>
     </div>

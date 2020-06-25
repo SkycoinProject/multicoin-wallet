@@ -39,15 +39,12 @@
               </div>
               <!-- Security icon. -->
               <div class="-flex-fill -encryption d-flex">
-                <img src="assets/img/lock-gold.png"
-                    [matTooltip]="'wallet.encryption-enabled' | translate"
-                    *ngIf="wallet.encrypted && !wallet.isHardware">
-                <img src="assets/img/unlock-grey.png"
-                    [matTooltip]="'wallet.encryption-disabled' | translate"
-                    *ngIf="!wallet.encrypted && !wallet.isHardware">
-                <img src="assets/img/alert-red.png"
-                    [matTooltip]="'wallet.warning-hw-security' | translate"
-                    *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware">
+                <div *ngIf="wallet.encrypted && !wallet.isHardware"><img [appImageColor]="true" src="assets/img/lock-configurable.png"
+                    [matTooltip]="'wallet.encryption-enabled' | translate"></div>
+                <div *ngIf="!wallet.encrypted && !wallet.isHardware"><img src="assets/img/unlock-grey.png"
+                    [matTooltip]="'wallet.encryption-disabled' | translate"></div>
+                <div *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware"><img src="assets/img/alert-red.png"
+                    [matTooltip]="'wallet.warning-hw-security' | translate"></div>
               </div>
               <!-- Coins and hours. -->
               <div class="-width-130 text-right" [ngClass]="{'yellow-text': wallet.hasPendingCoins}">
@@ -87,13 +84,13 @@
     <!-- Options at the bottom. -->
     <div class="action-buttons">
       <button class="icon-button" mat-button *ngIf="showSwWalletOptions" (click)="addWallet(true)">
-        <img src="assets/img/plus-gold.png"> {{ 'wallet.add-button' | translate }}
+        <img [appImageColor]="true" src="assets/img/plus-configurable.png"> {{ 'wallet.add-button' | translate }}
       </button>
       <button class="icon-button" mat-button *ngIf="showSwWalletOptions" (click)="addWallet(false)">
-        <img src="assets/img/load-gold.png"> {{ 'wallet.load-button' | translate }}
+        <img [appImageColor]="true" src="assets/img/load-configurable.png"> {{ 'wallet.load-button' | translate }}
       </button>
       <button class="icon-button" mat-button *ngIf="showHwWalletOptions" (click)="adminHwWallet()">
-        <img src="assets/img/hw-gold.png"> {{ 'wallet.hardware-wallet-button' | translate }}
+        <img [appImageColor]="true" src="assets/img/hw-configurable.png"> {{ 'wallet.hardware-wallet-button' | translate }}
       </button>
     </div>
   </div>

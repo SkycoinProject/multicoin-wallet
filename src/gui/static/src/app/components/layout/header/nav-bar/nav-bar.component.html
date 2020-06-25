@@ -14,11 +14,11 @@
     </a>
     <div class="flex-fill"></div>
     <a class="-button" routerLink="/exchange" routerLinkActive="full-opacity" *ngIf="exchangeEnabled">
-      <img src="assets/img/money-gold.png">
+      <img [appImageColor]="true" src="assets/img/money-configurable.png">
       <span>{{ 'exchange.title-and-button' | translate:{coinName: ('coinSymbol' | commonText)} }}</span>
     </a>
     <a class="-button" *ngIf="otcEnabled">
-      <img src="assets/img/money-gold.png">
+      <img [appImageColor]="true" src="assets/img/money-configurable.png">
       <span>{{ 'buy.title-and-button' | translate }}</span>
     </a>
     <app-double-button

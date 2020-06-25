@@ -53,7 +53,7 @@
     <button *ngIf="showBackupOption" mat-menu-item [routerLink]="['/settings/backup']">{{ 'backup.title' | translate }}</button>
     <a
       mat-menu-item
-      appMainColorText
+      appThemeColorText
       *ngIf="currentCoin.explorerUrl"
       [href]="currentCoin.explorerUrl"
       target="_blank"
