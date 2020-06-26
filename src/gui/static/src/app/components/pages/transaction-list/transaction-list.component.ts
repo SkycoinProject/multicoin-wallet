@@ -1,4 +1,4 @@
-import { delay, mergeMap } from 'rxjs/operators';
+import { delay, mergeMap, filter } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -222,7 +222,9 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
     // Maintain an updated list of the registered wallets and update the transactions every time
     // the wallets or their balances change.
-    this.walletsSubscription = balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
+    this.walletsSubscription = balanceAndOutputsService.firstFullUpdateMade.pipe(
+      filter(result => result), mergeMap(() => balanceAndOutputsService.walletsWithBalance),
+    ).subscribe(wallets => {
       if (wallets.length === 0) {
         this.userHasWallets = false;
 
@@ -254,11 +256,11 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
       const selectedWallets: Map<string, boolean> = new Map<string, boolean>();
       const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
-      selectedfilters.forEach(filter => {
-        if ((filter as Wallet).addresses) {
-          selectedWallets.set((filter as Wallet).id, true);
+      selectedfilters.forEach(currentFilter => {
+        if ((currentFilter as Wallet).addresses) {
+          selectedWallets.set((currentFilter as Wallet).id, true);
         } else {
-          selectedAddresses.set((filter as Address).walletID + '/' + (filter as Address).address, true);
+          selectedAddresses.set((currentFilter as Address).walletID + '/' + (currentFilter as Address).address, true);
         }
       });
       // As all wallets and address used as filters will be recreated, this array saves the list
@@ -400,9 +402,9 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     // Save a map with the addresses currently selected as filters.
     const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
     const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
-    selectedfilters.forEach(filter => {
-      if ((filter as Address).address) {
-        selectedAddresses.set((filter as Address).walletID + '/' + (filter as Address).address, true);
+    selectedfilters.forEach(currentFilter => {
+      if ((currentFilter as Address).address) {
+        selectedAddresses.set((currentFilter as Address).walletID + '/' + (currentFilter as Address).address, true);
       }
     });
 
@@ -487,10 +489,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
       // Save all the allowed addresses.
       const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
-      selectedfilters.forEach(filter => {
-        if ((filter as Wallet).addresses) {
+      selectedfilters.forEach(currentFilter => {
+        if ((currentFilter as Wallet).addresses) {
           // Update the selection status when a whole wallet was selected.
-          (filter as Wallet).addresses.forEach(address => {
+          (currentFilter as Wallet).addresses.forEach(address => {
             selectedAddresses.set(address.address, true);
             address.showingWholeWallet = true;
 
@@ -498,11 +500,11 @@ export class TransactionListComponent implements OnInit, OnDestroy {
               this.someTransactionsWereIgnored = true;
             }
           });
-          (filter as Wallet).allAddressesSelected = true;
+          (currentFilter as Wallet).allAddressesSelected = true;
         } else {
-          selectedAddresses.set((filter as Address).address, true);
+          selectedAddresses.set((currentFilter as Address).address, true);
 
-          if (this.addressesWitMoreTransactions.has((filter as Address).address)) {
+          if (this.addressesWitMoreTransactions.has((currentFilter as Address).address)) {
             this.someTransactionsWereIgnored = true;
           }
         }
@@ -544,16 +546,16 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       const filters: (Wallet|Address)[] = [];
 
       // Get the requested wallets and addesses.
-      this.requestedFilters.forEach(filter => {
+      this.requestedFilters.forEach(currentFilter => {
         // The first 2 characters are for knowing if the filter is a complete wallet or
         // an address.
-        const filterContent = filter.substr(2, filter.length - 2);
+        const filterContent = currentFilter.substr(2, currentFilter.length - 2);
         this.wallets.forEach(wallet => {
-          if (filter.startsWith('w-')) {
+          if (currentFilter.startsWith('w-')) {
             if (filterContent === wallet.id) {
               filters.push(wallet);
             }
-          } else if (filter.startsWith('a-')) {
+          } else if (currentFilter.startsWith('a-')) {
             wallet.addresses.forEach(address => {
               if (filterContent === address.address) {
                 filters.push(address);
