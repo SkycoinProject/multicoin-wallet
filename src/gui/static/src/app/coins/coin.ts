@@ -1,10 +1,10 @@
-import { CoinTypes } from './coin-types';
-import { SkywalletSupportedCoinTypes } from './skywallet-supported-coin-types';
+import { CoinTypes } from './settings/coin-types';
+import { SkywalletSupportedCoinTypes } from './settings/skywallet-supported-coin-types';
 import { CoinTypeFeatures } from './features/coin-type-features';
 import { FiberFeatures } from './features/fiber-features';
 import { BtcFeatures } from './features/btc-features';
 import { EthFeatures } from './features/eth-features';
-import { CoinStyleBase } from './coin-style-base';
+import { CoinStyleBase } from './settings/coin-style-base';
 
 /**
  * Base class with the properties of the coins this wallet can work with.

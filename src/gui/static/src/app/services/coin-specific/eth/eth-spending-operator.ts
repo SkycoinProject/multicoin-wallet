@@ -14,7 +14,7 @@ import { SpendingOperator } from '../spending-operator';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { EthApiService } from '../../api/eth-api.service';
-import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
+import { EthCoinConfig } from '../../../coins/coin-type-configs/eth.coin-config';
 import { EthTransactionData, EthTxEncoder } from './utils/eth-tx-encoder';
 
 /**

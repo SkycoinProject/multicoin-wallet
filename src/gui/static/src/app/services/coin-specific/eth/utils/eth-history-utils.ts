@@ -8,7 +8,7 @@ import { StorageService, StorageType } from '../../../storage.service';
 import { calculateGeneralData } from '../../../../utils/history-utils';
 import { Coin } from '../../../../coins/coin';
 import { BlockbookApiService } from '../../../../services/api/blockbook-api.service';
-import { EthCoinConfig } from '../../../../coins/config/eth.coin-config';
+import { EthCoinConfig } from '../../../../coins/coin-type-configs/eth.coin-config';
 import { TransactionHistory, TransactionLimits } from '../../../../services/wallet-operations/history.service';
 import { AppConfig } from '../../../../app.config';
 

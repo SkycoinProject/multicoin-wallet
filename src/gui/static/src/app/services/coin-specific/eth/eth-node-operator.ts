@@ -5,7 +5,7 @@ import { Injector } from '@angular/core';
 
 import { NodeOperator } from '../node-operator';
 import { Coin } from '../../../coins/coin';
-import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
+import { EthCoinConfig } from '../../../coins/coin-type-configs/eth.coin-config';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**

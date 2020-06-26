@@ -12,7 +12,7 @@ import { HistoryOperator } from '../history-operator';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { OperatorService } from '../../operators.service';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
-import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { BtcCoinConfig } from '../../../coins/coin-type-configs/btc.coin-config';
 import { AppConfig } from '../../../app.config';
 
 /**

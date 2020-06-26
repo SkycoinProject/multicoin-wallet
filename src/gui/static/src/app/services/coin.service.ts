@@ -4,8 +4,6 @@ import { ReplaySubject, Observable } from 'rxjs';
 import { Coin } from '../coins/coin';
 import { environment } from '../../environments/environment';
 import { AppConfig } from '../app.config';
-import { CoinTypes } from '../coins/coin-types';
-import { withLatestFrom } from 'rxjs/operators';
 
 /**
  * Allows to know which coins the wallet can work with and to change the currently selected coin.

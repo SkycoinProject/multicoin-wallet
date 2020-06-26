@@ -14,7 +14,7 @@ import { SpendingOperator } from '../spending-operator';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { BtcApiService } from '../../api/btc-api.service';
-import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { BtcCoinConfig } from '../../../coins/coin-type-configs/btc.coin-config';
 import { BtcInput, BtcOutput, BtcTxEncoder } from './utils/btc-tx-encoder';
 
 /**

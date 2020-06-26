@@ -7,7 +7,7 @@ import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { HistoryService, PendingTransactionData } from '../../../../services/wallet-operations/history.service';
 import { CoinService } from '../../../../services/coin.service';
-import { CoinTypes } from '../../../../coins/coin-types';
+import { CoinTypes } from '../../../../coins/settings/coin-types';
 
 /**
  * Allows to see the list of pending transactions. It uses the nav bar to know if it must show

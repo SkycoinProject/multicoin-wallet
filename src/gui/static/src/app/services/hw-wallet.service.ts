@@ -13,7 +13,7 @@ import { getErrorMsg } from '../utils/errors';
 import { WalletUtilsService } from './wallet-operations/wallet-utils.service';
 import { WalletBase } from './wallet-operations/wallet-objects';
 import { isEqualOrSuperiorVersion } from '../utils/semver';
-import { SkywalletSupportedCoinTypes } from '../coins/skywallet-supported-coin-types';
+import { SkywalletSupportedCoinTypes } from '../coins/settings/skywallet-supported-coin-types';
 import { CoinService } from './coin.service';
 
 /**

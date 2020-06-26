@@ -1,8 +1,8 @@
 import { Coin } from './coin';
-import { CoinTypes } from './coin-types';
-import { BtcCoinConfig } from './config/btc.coin-config';
-import { SkywalletSupportedCoinTypes } from './skywallet-supported-coin-types';
-import { CoinStyleBase } from './coin-style-base';
+import { CoinTypes } from './settings/coin-types';
+import { BtcCoinConfig } from './coin-type-configs/btc.coin-config';
+import { SkywalletSupportedCoinTypes } from './settings/skywallet-supported-coin-types';
+import { CoinStyleBase } from './settings/coin-style-base';
 
 export class BtcCoin extends Coin {
   coinType = CoinTypes.BTC;

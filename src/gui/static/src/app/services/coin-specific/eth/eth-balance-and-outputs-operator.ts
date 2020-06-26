@@ -8,7 +8,7 @@ import { Output } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
-import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
+import { EthCoinConfig } from '../../../coins/coin-type-configs/eth.coin-config';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
 
 /**

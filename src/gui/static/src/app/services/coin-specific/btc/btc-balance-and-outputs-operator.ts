@@ -11,7 +11,7 @@ import { OperatorService } from '../../operators.service';
 import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { getOutputId } from './utils/btc-history-utils';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
-import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { BtcCoinConfig } from '../../../coins/coin-type-configs/btc.coin-config';
 
 /**
  * Balance of a wallet, for internal use.

@@ -8,7 +8,7 @@ import { FiberWalletsAndAddressesOperator } from '../coin-specific/fiber/fiber-w
 import { WalletsAndAddressesOperator, LastAddress, CreateWalletArgs } from '../coin-specific/wallets-and-addresses-operator';
 import { redirectToErrorPage } from '../../utils/errors';
 import { OperatorService } from '../operators.service';
-import { CoinTypes } from '../../coins/coin-types';
+import { CoinTypes } from '../../coins/settings/coin-types';
 import { BtcWalletsAndAddressesOperator } from '../coin-specific/btc/btc-wallets-and-addresses-operator';
 import { EthWalletsAndAddressesOperator } from '../coin-specific/eth/eth-wallets-and-addresses-operator';
 

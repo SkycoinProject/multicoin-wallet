@@ -11,7 +11,7 @@ import { WalletsAndAddressesService } from '../../../../../services/wallet-opera
 import { getTransactionIconName } from '../../../../../utils/history-utils';
 import { WalletBase } from '../../../../../services/wallet-operations/wallet-objects';
 import { CoinService } from '../../../../../services/coin.service';
-import { CoinTypes } from '../../../../../coins/coin-types';
+import { CoinTypes } from '../../../../../coins/settings/coin-types';
 
 /**
  * Allows to view the details of a transaction which is about to be sent or a transaction

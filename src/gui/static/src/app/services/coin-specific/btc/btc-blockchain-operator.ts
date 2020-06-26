@@ -9,7 +9,7 @@ import { Coin } from '../../../coins/coin';
 import { ProgressEvent, BlockchainState } from '../../blockchain.service';
 import { BlockchainOperator } from '../blockchain-operator';
 import { environment } from '../../../../environments/environment';
-import { BtcCoinConfig } from '../../../coins/config/btc.coin-config';
+import { BtcCoinConfig } from '../../../coins/coin-type-configs/btc.coin-config';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';

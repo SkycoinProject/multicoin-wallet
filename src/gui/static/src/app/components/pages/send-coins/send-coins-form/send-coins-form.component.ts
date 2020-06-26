@@ -26,9 +26,9 @@ import { WalletWithBalance, AddressWithBalance, WalletTypes, WalletBase } from '
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 import { GetNextAddressComponent } from '../../../layout/get-next-address/get-next-address.component';
 import { CoinService } from '../../../../services/coin.service';
-import { CoinTypes } from '../../../../coins/coin-types';
-import { BtcCoinConfig } from '../../../../coins/config/btc.coin-config';
-import { EthCoinConfig } from '../../../../coins/config/eth.coin-config';
+import { CoinTypes } from '../../../../coins/settings/coin-types';
+import { BtcCoinConfig } from '../../../../coins/coin-type-configs/btc.coin-config';
+import { EthCoinConfig } from '../../../../coins/coin-type-configs/eth.coin-config';
 
 /**
  * Data returned when SendCoinsFormComponent asks to show the preview of a transaction. Useful

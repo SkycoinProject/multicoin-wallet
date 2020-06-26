@@ -1,7 +1,7 @@
 import { Coin } from './coin';
-import { CoinTypes } from './coin-types';
-import { EthCoinConfig } from './config/eth.coin-config';
-import { CoinStyleBase } from './coin-style-base';
+import { CoinTypes } from './settings/coin-types';
+import { EthCoinConfig } from './coin-type-configs/eth.coin-config';
+import { CoinStyleBase } from './settings/coin-style-base';
 
 export class EthCoin extends Coin {
   coinType = CoinTypes.ETH;

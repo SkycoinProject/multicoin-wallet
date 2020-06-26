@@ -13,7 +13,7 @@ import { OperationError } from '../../../../../utils/operation-error';
 import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
 import { NodeService } from '../../../../../services/node.service';
 import { CoinService } from '../../../../../services/coin.service';
-import { CoinTypes } from '../../../../../coins/coin-types';
+import { CoinTypes } from '../../../../../coins/settings/coin-types';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 
 /**

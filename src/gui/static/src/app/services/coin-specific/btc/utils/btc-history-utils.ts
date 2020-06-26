@@ -8,7 +8,7 @@ import { StorageService, StorageType } from '../../../storage.service';
 import { calculateGeneralData } from '../../../../utils/history-utils';
 import { Coin } from '../../../../coins/coin';
 import { BlockbookApiService } from '../../../../services/api/blockbook-api.service';
-import { BtcCoinConfig } from '../../../../coins/config/btc.coin-config';
+import { BtcCoinConfig } from '../../../../coins/coin-type-configs/btc.coin-config';
 import { TransactionHistory, TransactionLimits } from '../../../../services/wallet-operations/history.service';
 import { AppConfig } from '../../../../app.config';
 

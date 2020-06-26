@@ -12,7 +12,7 @@ import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 import { OperatorService } from '../../operators.service';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
 import { recursivelyGetTransactions, getTransactionsHistory } from './utils/eth-history-utils';
-import { EthCoinConfig } from '../../../coins/config/eth.coin-config';
+import { EthCoinConfig } from '../../../coins/coin-type-configs/eth.coin-config';
 import { AppConfig } from '../../../app.config';
 
 /**

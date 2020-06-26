@@ -12,7 +12,7 @@ import { WalletUtilsOperator } from './coin-specific/wallet-utils-operator';
 import { WalletsAndAddressesOperator } from './coin-specific/wallets-and-addresses-operator';
 import { CoinService } from './coin.service';
 import { OperatorsGenerator } from './coin-specific/operators-generator';
-import { CoinTypes } from '../coins/coin-types';
+import { CoinTypes } from '../coins/settings/coin-types';
 
 /**
  * Set will all the operators needed for a coin.
