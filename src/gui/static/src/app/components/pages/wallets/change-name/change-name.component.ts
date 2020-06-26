@@ -65,7 +65,7 @@ export class ChangeNameErrorResponse {
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
   // Confirmation button.
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
   currentState: States = States.Initial;
   states = States;

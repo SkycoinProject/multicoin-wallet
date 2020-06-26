@@ -43,7 +43,7 @@ export class ButtonComponent implements AfterViewInit, OnDestroy {
   @Input() forceEmitEvents = false;
   // Click event.
   @Output() action = new EventEmitter();
-  @ViewChild('button', { static: false }) button: MatButton;
+  @ViewChild('button') button: MatButton;
 
   state = ButtonStates.Normal;
   buttonStates = ButtonStates;

@@ -33,7 +33,7 @@ class Section {
 })
 export class SelectCoinOverlayComponent implements OnInit, OnDestroy {
   // Search field.
-  @ViewChild('searchInput', { static: false }) private searchInput: ElementRef;
+  @ViewChild('searchInput') private searchInput: ElementRef;
   private searchSuscription: Subscription;
   // Allows to know which coins have registered wallets.
   private coinsWithWallets = new Map<string, boolean>();

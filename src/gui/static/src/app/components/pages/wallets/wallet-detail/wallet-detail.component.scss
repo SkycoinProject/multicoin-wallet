@@ -85,15 +85,15 @@
       }
 
       &.-options::before {
-        background-image: url(assets/img/list-grey.png);
+        background-image: url('/assets/img/list-grey.png');
       }
 
       &.-hide-empty::before {
-        background-image: url(assets/img/minus-grey.png);
+        background-image: url('/assets/img/minus-grey.png');
       }
 
       &.-show-empty::before {
-        background-image: url(assets/img/plus-grey.png);
+        background-image: url('/assets/img/plus-grey.png');
       }
 
       &:active {
@@ -107,15 +107,15 @@
         opacity: 0.8;
 
         &.-options::before {
-          background-image: url(assets/img/list-blue.png);
+          background-image: url('/assets/img/list-blue.png');
         }
 
         &.-hide-empty::before {
-          background-image: url(assets/img/minus-red.png);
+          background-image: url('/assets/img/minus-red.png');
         }
 
         &.-show-empty::before {
-          background-image: url(assets/img/plus-green.png);
+          background-image: url('/assets/img/plus-green.png');
         }
       }
     }

@@ -32,7 +32,7 @@ import { EthOperatorsGenerator } from './services/coin-specific/eth/eth-operator
 })
 export class AppComponent implements OnInit {
   // Single MsgBarComponent instance used on the app.
-  @ViewChild('msgBar', { static: false }) msgBar: MsgBarComponent;
+  @ViewChild('msgBar') msgBar: MsgBarComponent;
 
   // If the app content must be shown. Used when the coin is changed, to remove the content
   // for a short moment to force the pages to be deleted and created again.

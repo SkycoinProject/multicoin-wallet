@@ -1,9 +1,11 @@
+import { Injectable } from '@angular/core';
 import { debounceTime, map } from 'rxjs/operators';
 import { Subject, Observable, from } from 'rxjs';
 
 /**
  * Allows to access the BIP39 word list.
  */
+@Injectable()
 export class Bip39WordListService {
 
   /**

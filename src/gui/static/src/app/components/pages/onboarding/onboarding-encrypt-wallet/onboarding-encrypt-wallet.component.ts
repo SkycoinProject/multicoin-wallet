@@ -12,7 +12,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
   styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
 })
 export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
   // Emits when the user presses the button for going to the next step of the wizard, after
   // filling the form. Includes the password entered by the user, or null, if the user
   // selected not to encrypt the wallet.

@@ -69,7 +69,7 @@ export interface QrDialogConfig {
   styleUrls: ['./qr-code.component.scss'],
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
-  @ViewChild('qrArea', { static: false }) qrArea: ElementRef;
+  @ViewChild('qrArea') qrArea: ElementRef;
 
   form: FormGroup;
   currentQrContent: string;

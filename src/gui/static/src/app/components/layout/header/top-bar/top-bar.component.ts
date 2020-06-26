@@ -21,7 +21,7 @@ import { SelectCoinOverlayComponent } from '../../select-coin-overlay/select-coi
   styleUrls: ['./top-bar.component.scss'],
 })
 export class TopBarComponent implements OnInit, OnDestroy {
-  @ViewChild('balanceSpinner', { static: false }) balanceSpinner: MatSpinner;
+  @ViewChild('balanceSpinner') balanceSpinner: MatSpinner;
   @Input() headline: string;
 
   // Currently selected language.

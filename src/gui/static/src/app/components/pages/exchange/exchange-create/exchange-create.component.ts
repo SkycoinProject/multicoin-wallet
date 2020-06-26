@@ -31,7 +31,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Coin the user will receive.
   readonly toCoin = 'SKY';
 
-  @ViewChild('exchangeButton', { static: false }) exchangeButton: ButtonComponent;
+  @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
   // Event emited when the order has been created.
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
 

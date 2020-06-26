@@ -24,8 +24,8 @@ import { WalletTypes } from '../../../../services/wallet-operations/wallet-objec
   styleUrls: ['./send-preview.component.scss'],
 })
 export class SendVerifyComponent implements OnDestroy {
-  @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
-  @ViewChild('backButton', { static: false }) backButton: ButtonComponent;
+  @ViewChild('sendButton') sendButton: ButtonComponent;
+  @ViewChild('backButton') backButton: ButtonComponent;
   // Transaction which is going to be shown.
   @Input() transaction: GeneratedTransaction;
   // Emits when the preview must be removed from the UI and the form must be shown again. The

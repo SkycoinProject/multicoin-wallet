@@ -20,7 +20,7 @@ import { WalletBase, WalletTypes } from '../../../services/wallet-operations/wal
   styleUrls: ['./reset-password.component.scss'],
 })
 export class ResetPasswordComponent implements OnDestroy {
-  @ViewChild('resetButton', { static: false }) resetButton: ButtonComponent;
+  @ViewChild('resetButton') resetButton: ButtonComponent;
 
   form: FormGroup;
   wallet: WalletBase;

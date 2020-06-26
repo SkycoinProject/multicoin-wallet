@@ -21,8 +21,8 @@ import { CoinService } from '../../../services/coin.service';
   styleUrls: ['./onboarding.component.scss'],
 })
 export class OnboardingComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('encryptForm', { static: false }) encryptForm: OnboardingEncryptWalletComponent;
-  @ViewChild('container', { static: false }) container: ElementRef;
+  @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;
+  @ViewChild('container') container: ElementRef;
 
   // Current stept to show.
   step = 1;
