@@ -18,7 +18,7 @@
 
     <!-- Tables, one for each address type. -->
     <ng-container *ngFor="let i of [0, 1]">
-      <div class="-table" *ngIf="i === 0 || addresses[i].length > 0">
+      <div class="-table" [ngClass]="{'-top-table-margin': i !== 0}" *ngIf="i === 0 || addresses[i].length > 0">
         <!-- Table header. -->
         <div class="-headers">
           <div class="number-cell">#</div>

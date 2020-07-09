@@ -57,7 +57,7 @@
       *ngIf="currentCoin.explorerUrl"
       [href]="currentCoin.explorerUrl"
       target="_blank"
-      rel="noreferrer nofollow"
+      rel="noreferrer nofollow noopener"
     >
       {{ 'header.explorer-link' | translate:{coinName: currentCoin.coinName} }}
     </a>

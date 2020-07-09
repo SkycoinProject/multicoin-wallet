@@ -14,7 +14,8 @@
     "close-button": "Cerrar",
     "generic-confirmation-check": "Entiendo los riesgos y deseo continuar",
     "copied": "El texto ha sido copiado al portapapeles.",
-    "confirmations": "Confirmaciones"
+    "confirmations": "Confirmaciones",
+    "unconfirmed-balance-info": "Este saldo será final después de que sus últimas transacciones reciban más confirmaciones de la red. El saldo confirmado actualmente es {{ balance }}. Para más información verifique sus transacciones pendientes."
   },
 
   "errors": {
@@ -41,9 +42,10 @@
       "update-part2": "Not used. The code adds the versión number of the lastest update here.",
       "update-part3": "está disponible.",
       "synchronizing": "La billetera está sincronizando. Los datos mostrados pueden estar desactualizados.",
-      "pending-txs-part1": "Hay una o más",
+      "pending-txs-part1": "Usted tiene",
       "pending-txs-part2": "transacciones pendientes.",
-      "pending-txs-part3": "Los datos mostrados pueden estar desactualizados.",
+      "pending-txs-part3": "Los saldos y algunos otros datos pueden no estar actualizados.",
+      "pending-link-error": "Usted ya está en el historial de transacciones.",
       "no-connections": "Sin conexiones activas, ¡el cliente no está conectado a otros nodos!",
       "no-backend-part1": "Sin acceso al servidor. Por favor, reinicie la aplicación y/o contáctenos vía",
       "no-backend-part2": "Telegram.",
@@ -83,10 +85,11 @@
 
   "wizard": {
     "create-title": "Crear Billetera",
-    "create-desc": "Si no tiene una billetera de {{ coinName }}, use la semilla generada automáticamente para crear una nueva. Si ya tiene una billetera, seleccione \"Cargar\" e introduzca su semilla.",
+    "create-desc": "Si no tiene una billetera, use la semilla generada automáticamente para crear una nueva. Si ya tiene una billetera, seleccione \"Cargar\" e introduzca su semilla.",
     "encrypt-title": "Encriptar Billetera",
     "encrypt-desc": "Incremente la seguridad de su billetera encriptándola. Al introducir una contraseña más abajo, su billetera será encriptada. Sólo quien tenga la contraseña podrá acceder a la billetera y retirar fondos.",
     "hardware-wallet-link": "¿Utilizando una Skywallet?",
+    "hardware-wallet-alt-link": "Utilizar una Skywallet",
     "new-button": "Nueva",
     "load-button": "Cargar",
     "finish-button": "Finalizar",
@@ -98,8 +101,17 @@
     }
   },
 
+  "change-coin": {
+    "title": "Cambiar moneda activa",
+    "search": "Buscar",
+    "with-wallet": "Monedas para las que ha creado billeteras:",
+    "without-wallet": "Monedas para las que no ha creado billeteras:",
+    "no-results": "Ninguna moneda coincide con el término de búsqueda"
+  },
+
   "wallet": {
     "title-and-button": "Billeteras",
+    "no-wallets": "Actualmente no hay billeteras",
     "show-empty-button": "Mostrar Vacías",
     "hide-empty-button": "Ocultar Vacías",
     "add-button": "Nueva Billetera",
@@ -123,9 +135,12 @@
     "new": {
       "create-title": "Crear Billetera",
       "load-title": "Cargar Billetera",
+      "not-available-warning": "Lo sentimos, no es posible crear billeteras para esta moneda en este momento.",
+      "skywallet-only-warning": "Solo puede crear billeteras para esta moneda usando una Skywallet.",
       "advanced-options-link": "Opciones avanzadas de billetera",
       "advanced-options-close-warning": "Los cambios que ha realizado se perderán. ¿Seguro que desea continuar?",
       "name-label": "Nombre",
+      "coin-label": "Moneda",
       "type-label": "Tipo",
       "type-deterministic": "Determinista (Antigua)",
       "type-bip44": "Bip44 (Nueva)",
@@ -235,10 +250,22 @@
     "signed-button": "Firmada",
     "unsigned-confirmation": "El formulario de transacciones sin firmar no permite enviar transacciones normalmente, sino que simplemente crea el texto de la transacción, el cual debe ser firmado antes de que pueda ser enviado a la red. Esto es útil para crear transacciones que serán firmadas en un equipo que siempre está fuera de línea, por razones de seguridad. ¿Desea continuar?",
     "synchronizing-warning": "La billetera todavía está sincronizando los datos, por lo que el saldo que se muestra puede ser incorrecto. ¿Seguro de que desea continuar?",
+    "available-balance-indication": "Excluyendo el saldo pendiente",
+    "wallets-updated-warning": "La lista de billeteras ha sido actualizada.",
     "from-label": "Enviar desde",
     "to-label": "Enviar a",
     "amount-label": "Cantidad",
     "personal-note-label": "Nota personal",
+    "gas-price-label": "Precio por gas",
+    "gas-limit-label": "Límite de gas",
+    "fee-options": "Opciones de comisión",
+    "fee-label": "Comisión aproximada",
+    "fee-measure": "{{ measure }} por byte",
+    "fee-problem-warning": "Hubo un problema al intentar obtener la comisión recomendada, por lo que deberá ser ingresada manualmente antes de enviar la transacción.",
+    "fee-low-warning": "La comisión que ingresó es inferior a la recomendada, la transacción podría demorar mucho tiempo en confirmarse.",
+    "fee-high-warning": "La comisión que ingresó es más alta que la recomendada, el costo por enviar la transacción podría ser más alto de lo deseado.",
+    "fee-unknown-warning": "El sistema aún está obteniendo la información de las comisiones recomendadas, por lo que no es posible determinar si la comisión que ingresó es conveniente.",
+    "fee-problem-warning2": "Hubo un problema al intentar obtener la comisión recomendada, por lo que no es posible determinar si la comisión que ingresó es conveniente.",
     "personal-note-help": "Use este campo para agregar un texto que le permita identificar la transacción en el futuro. Este texto se guarda localmente, por lo que solo será visible desde esta computadora.",
     "wallet-label": "Billetera",
     "invalid-amount": "Por favor introduzca una cantidad válida",
@@ -251,6 +278,7 @@
     "invaid-amounts-warning": "Se detectaron valores inválidos durante la conversión. Por favor verifique la cantidad que se enviará.",
     "multiple-problems-warning": "Algunos valores no se convirtieron por ser inválidos o podrían haberse convertido con errores de precisión. Por favor verifique la cantidad que se enviará.",
     "addresses-label": "Direcciones",
+    "no-available-balance-error": "No se ha calculado el saldo disponible.",
     "no-wallet-selected-error": "No hay monedas para enviar.",
     "no-coins-left-error": "No hay monedas restantes para enviar.",
     "addresses-help": "Limite las direcciones desde donde se podrían enviar las monedas y las horas.",
@@ -263,16 +291,23 @@
     "enter-addresses-for-outputs": "Debe ingresar direcciones válidas primero",
     "enter-wallet-for-outputs-and-addresses": "Debe seleccionar una billetera válida primero",
     "invalid-addresses-for-outputs": "No hay salidas disponibles",
+    "loading-available": "Cargando saldo disponible...",
+    "waiting-for-available": "Esperando una comisión válida para calcular el saldo disponible...",
+    "available-funds-without-hours-msg-part1": "Puede enviar hasta",
+    "available-funds-without-hours-msg-part2": "(al menos", 
+    "available-funds-without-hours-msg-part3": "deben usarse como comisión de transacción para enviar todas las monedas).",
     "available-funds-msg-part1": "Con su selección actual puede enviar hasta",
     "available-funds-msg-part2": "y",
     "available-funds-msg-part3": "(al menos",
-    "available-funds-msg-part4": "deben ser utilizadas como tarifa de transacción para enviar todas las monedas u horas).",
+    "available-funds-msg-part4": "deben ser utilizadas como comisión de transacción para enviar todas las monedas u horas).",
     "change-address-label": "Dirección de retorno personalizada",
     "change-address-select-from-list-link": "Seleccionar",
     "change-address-help": "Dirección para recibir el cambio. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras.",
     "destinations-label": "Destinos",
     "destinations-help1": "Direcciones de destino y sus monedas.",
     "destinations-help2": "Direcciones de destino, sus monedas y horas.",
+    "destination-label": "Destino",
+    "destination-help": "Dirección de destino y las monedas que se le enviarán.",
     "hours-allocation-check": "Usar una distribución automática de {{ coinHoursName }}",
     "options-link": "Opciones",
     "hours-share-factor-label": "Factor de distribución de {{ coinHoursName }}",
@@ -286,10 +321,27 @@
     "saving-note-error": "La transacción se envió correctamente, pero no fue posible guardar la nota.",
     "sent": "La transacción se envió correctamente.",
     "total-to-send": "Total:",
+    "invalid-address": "Dirección de destino inválida encontrada: ",
+    "invalid-addresses": "Direcciones de destino inválidas encontradas: ",
+
+    "fees": {
+      "very-high": "Muy alta",
+      "high": "Alta",
+      "Normal": "Normal",
+      "Low": "Baja",
+      "very-Low": "Muy baja",
+      "custom": "Personalizada"
+    },
+
+    "eth-fees": {
+      "Normal": "Recomendada",
+      "custom": "Personalizada"
+    },
 
     "bulk-send": {
       "title": "Envío Masivo",
       "indications": "Para enviar a múltiples destinos de forma rápida, escriba cada dirección, cantidad de monedas y cantidad de horas (opcional) en una línea, separadas por una coma. Ejemplo: si desea enviar 10 monedas y 5 horas a la dirección \"xyz\", escriba \"xyz,10,5\"; si desea que las horas se calculen automáticamente, escriba \"xyz,10\". Los valores decimales se deben separar con un punto.",
+      "indications-without-hours": "Para enviar a múltiples destinos de forma rápida, escriba cada dirección y cantidad de monedas en una línea, separadas por una coma. Ejemplo: si desea enviar 10 monedas a la dirección \"xyz\", escriba \"xyz,10\". Los valores decimales se deben separar con un punto.",
       "process-button": "Procesar",
       "no-data-error": "No hay texto para procesar.",
       "inconsistent-data-error": "Si establece cuántas horas desea enviar a un destino, debe hacerlo para todos los destinos.",
@@ -343,6 +395,7 @@
 
   "reset": {
     "title": "Restablecer Contraseña",
+    "invalid-wallet": "Billetera inválida",
     "wallet-label": "Billetera",
     "seed-label": "Semilla de la billetera",
     "passphrase-label": "Passphrase de la billetera (si tiene)",
@@ -353,7 +406,6 @@
   },
 
   "tx": {
-    "transaction-title": "Transacción",
     "confirm-transaction-title": "Confirmar Transacción",
     "from-small-label": "Desde:",
     "to-small-label": "A:",
@@ -361,9 +413,13 @@
     "wallets-small-label": "Billeteras:",
     "date-small-label": "Fecha:",
     "status-small-label": "Estatus:",
+    "amount-small-label": "Cantidad:",
     "coins-small-label": "Monedas:",
     "hours-small-label": "Horas:",
     "fee-small-label": "Comisión:",
+    "balance-to-send-info": "Incluye la comisión de transacción.",
+    "approximate-fee-warning": " / Aproximado",
+    "approximate-fee-info": "La comisión podría ser menor después de procesar la transacción. Cualquier cantidad no utilizada se devolverá a la dirección de origen.",
     "id-small-label": "Tx ID:",
     "note-small-label": "Nota:",
     "without-note": "Sin nota",
@@ -378,7 +434,7 @@
     "confirmed-transaction": "Confirmada",
     "pending-transaction": "Pendiente ({{currentConfirmations}} / {{confirmationsNeeded}})",
     "current-rate-help": "Calculado a la tasa actual.",
-    "coinbase": "COINBASE (nuevas monedas)"
+    "coinbase": "COINBASE (nuevas monedas y comisiones)"
   },
 
   "edit-note": {
@@ -443,7 +499,8 @@
     "txid-table-label": "ID de la transacción",
     "none": "Actualmente no hay transacciones pendientes",
     "my-transactions-button": "Mías",
-    "all-transactions-button": "Todas"
+    "all-transactions-button": "Todas",
+    "unknown-date": "Desconocida"
   },
 
   "outputs": {
@@ -454,6 +511,8 @@
   "history": {
     "title-and-button": "Historial",
     "tx-detail-title": "Detalles de la Transacción",
+    "failed": "Fallida",
+    "failed-info": "Se pagó la comisión de transacción pero no se enviaron los fondos.",
     "complex-transaction": "Transacción compleja",
     "moving": "Moviendo  {{ coinName }} entre direcciones",
     "moved": "{{ coinName }} movido entre direcciones",
@@ -477,16 +536,18 @@
     "other-wallets-title": "Otras Billeteras",
     "wallets-title": "Billeteras",
     "addresses": "Direcciones",
+    "load-more": "Cargar más",
     "view-all": "Ver todas las {{ number }} transacciones",
+    "use-explorer": "Use el explorador de blockchain para acceder al historial de transacciones completo",
     "show-addresses": "Mostrar las direcciones",
     "hide-addresses": "Ocultar las direcciones",
-    "balance-help": "No incluye {{ amount }} pagados como comisión."
+    "balance-help": "No incluye {{ amount }} pagados por usted como comisión."
   },
 
   "address-history": {
     "title": "Direcciones de la Billetera",
     "omited-addresses-warning": "Hubo un problema y se ignoraron algunas direcciones.",
-    "invalid wallet": "Billetera inválida",
+    "invalid-wallet": "Billetera inválida",
     "add-button": "Añadir direcciones",
     "normal-address-table-label": "Dirección normal",
     "normal-address-info": "Direcciones que normalmente usa para recibir monedas.",
@@ -540,8 +601,8 @@
       "incorrect-pin": "No se puede realizar la operación. El PIN que ha introducido no es correcto.",
       "refused": "La operación fue cancelada.",
       "too-many-inputs-outputs": "La transacción tiene demasiadas entradas o salidas para la Skywallet. Por favor vuelva a intentarlo creando varias transacciones más pequeñas, cada una con un número menor de destinatarios (si la transacción actual tiene muchos) o monedas.",
-      "daemon-connection": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde www.skycoin.com/downloads",
-      "daemon-connection-with-configurable-link": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde ",
+      "outdated-daemon": "No fue posible completar la operación porque el Skywallet Daemon está desactualizado. Puede descargar la última versión desde ",
+      "daemon-connection": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde ",
       "timeout": "La operación se canceló por inactividad. Por favor inténtelo de nuevo.",
       "invalid-address-generated": "Hubo un problema con el generador de direcciones y la operación tuvo que ser cancelada.",
       "invalid-address": "Dirección inválida.",

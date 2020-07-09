@@ -14,7 +14,8 @@
     "close-button": "Close",
     "generic-confirmation-check": "I understand the risks and want to continue",
     "copied": "The text has been copied to the clipboard.",
-    "confirmations": "Confirmations"
+    "confirmations": "Confirmations",
+    "unconfirmed-balance-info": "This balance will be final after your last transactions receive more confirmations from the network. The currently confirmed balance is {{ balance }}. For more information check your pending transactions."
   },
 
   "errors": {
@@ -41,9 +42,10 @@
       "update-part2": "Not used. The code adds the versión number of the lastest update here.",
       "update-part3": "available.",
       "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
-      "pending-txs-part1": "There are some",
+      "pending-txs-part1": "You have",
       "pending-txs-part2": "pending transactions.",
-      "pending-txs-part3": "Data you see may not be updated.",
+      "pending-txs-part3": "The balances and some other data may not be updated.",
+      "pending-link-error": "You are already in the transaction history page.",
       "no-connections": "No connections active, your client is not connected to any other nodes!",
       "no-backend-part1": "Cannot reach backend. Please restart the app and/or seek help on our",
       "no-backend-part2": "Telegram.",
@@ -83,10 +85,11 @@
 
   "wizard": {
     "create-title": "Create Wallet",
-    "create-desc": "If you don't have a {{ coinName }} wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load\" and enter your seed.",
+    "create-desc": "If you don't have a wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load\" and enter your seed.",
     "encrypt-title": "Encrypt Wallet",
     "encrypt-desc": "Increase security of your wallet by encrypting it. By entering a password below, your wallet will be encrypted. Only those with the password will be able access the wallet and remove funds.",
     "hardware-wallet-link": "Using a Skywallet?",
+    "hardware-wallet-alt-link": "Use a Skywallet",
     "new-button": "New",
     "load-button": "Load",
     "finish-button": "Finish",
@@ -98,8 +101,17 @@
     }
   },
 
+  "change-coin": {
+    "title": "Change active coin",
+    "search": "Search",
+    "with-wallet": "Coins you have created wallets for:",
+    "without-wallet": "Coins you have not created wallets for:",
+    "no-results": "No coins match the search term"
+  },
+
   "wallet": {
     "title-and-button": "Wallets",
+    "no-wallets": "Currently there are no wallets",
     "show-empty-button": "Show Empty",
     "hide-empty-button": "Hide Empty",
     "add-button": "New Wallet",
@@ -123,9 +135,12 @@
     "new": {
       "create-title": "Create Wallet",
       "load-title": "Load Wallet",
+      "not-available-warning": "Sorry, it is not possible to create wallets for this coin at this time.",
+      "skywallet-only-warning": "You can only create wallets for this coin using a Skywallet.",
       "advanced-options-link": "Advanced wallet options",
       "advanced-options-close-warning": "The changes you have made will be lost. Are you sure you want to continue?",
       "name-label": "Name",
+      "coin-label": "Coin",
       "type-label": "Type",
       "type-deterministic": "Deterministic (Legacy)",
       "type-bip44": "Bip44 (New)",
@@ -235,10 +250,22 @@
     "signed-button": "Signed",
     "unsigned-confirmation": "The unsigned transactions form does not allow to send transactions normally, but simply creates the text of a transaction, which must be signed before it can be sent to the network. This is useful for creating transactions that will be signed on an always offline device, for security reasons. Are you sure you wish to continue?",
     "synchronizing-warning": "The wallet is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
+    "available-balance-indication": "Excluding pending balance",
+    "wallets-updated-warning": "The wallet list has been updated.",
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",
     "personal-note-label": "Personal note",
+    "gas-price-label": "Gas price",
+    "gas-limit-label": "Gas limit",
+    "fee-options": "Fee options",
+    "fee-label": "Aproximate fee",
+    "fee-measure": "{{ measure }} per byte",
+    "fee-problem-warning": "There was a problem trying to get the recommended fee, so it will have to be entered manually before sending the transaction.",
+    "fee-low-warning": "The fee you entered is lower than recommended, the transaction could take a very long time to be confirmed.",
+    "fee-high-warning": "The fee you entered is higher than recommended, the cost for sending the transaction could be higher than desired.",
+    "fee-unknown-warning": "The system is still obtaining the information about the recommended fees, so it is not possible to determine if the fee you entered is convenient.",
+    "fee-problem-warning2": "There was a problem trying to get the recommended fee, so it is not possible to determine if the fee you entered is convenient.",
     "personal-note-help": "Use this field to add a text for allowing you to identify the transaction in the future. This text is saved locally, so it will only be visible from this computer.",
     "wallet-label": "Wallet",
     "invalid-amount": "Please enter a valid amount",
@@ -251,6 +278,7 @@
     "invaid-amounts-warning": "Invalid values were detected during conversion. Please check the amount that will be sent.",
     "multiple-problems-warning": "Some values were not converted because they were invalid or could have been converted with precision errors. Please check the amount that will be sent.",
     "addresses-label": "Addresses",
+    "no-available-balance-error": "No available balance has been computed.",
     "no-wallet-selected-error": "There are no coins to send.",
     "no-coins-left-error": "There are no coins left to send.",
     "addresses-help": "Limit the addresses from where the coins and hours could be sent.",
@@ -263,6 +291,11 @@
     "enter-addresses-for-outputs": "Valid addresses must be entered first",
     "enter-wallet-for-outputs-and-addresses": "A valid wallet must be selected first",
     "invalid-addresses-for-outputs": "No outputs available",
+    "loading-available": "Loading available balance...",
+    "waiting-for-available": "Waiting for a valid fee to calculate the available balance...",
+    "available-funds-without-hours-msg-part1": "You can send up to",
+    "available-funds-without-hours-msg-part2": "(at least", 
+    "available-funds-without-hours-msg-part3": "must be used as transaction fee for sending all the coins).",
     "available-funds-msg-part1": "With your current selection you can send up to",
     "available-funds-msg-part2": "and",
     "available-funds-msg-part3": "(at least",
@@ -273,6 +306,8 @@
     "destinations-label": "Destinations",
     "destinations-help1": "Destination addresses and their coins.",
     "destinations-help2": "Destination addresses, their coins and hours.",
+    "destination-label": "Destination",
+    "destination-help": "Destination address and the coins that will be sent to it.",
     "hours-allocation-check": "Use automatic {{ coinHoursName }} allocation",
     "options-link": "Options",
     "hours-share-factor-label": "{{ coinHoursName }} share factor",
@@ -286,10 +321,27 @@
     "saving-note-error": "The transaction was successfully sent, but it was not possible to save the note.",
     "sent": "Transaction successfully sent.",
     "total-to-send": "Total:",
+    "invalid-address": "Invalid destination address found: ",
+    "invalid-addresses": "Invalid destination addresses found: ",
+
+    "fees": {
+      "very-high": "Very high",
+      "high": "High",
+      "Normal": "Normal",
+      "Low": "Low",
+      "very-Low": "Very Low",
+      "custom": "Custom"
+    },
+
+    "eth-fees": {
+      "Normal": "Recommended",
+      "custom": "Custom"
+    },
 
     "bulk-send": {
       "title": "Bulk Send",
       "indications": "To send to multiple destinations in a quick way, type each address, coin amount and hour amount (optional) on a line, separated by a comma. Example: if you want to send 10 coins and 5 hours to the \"xyz\" address, type \"xyz,10,5\"; if you want the hours to be calculated automatically, type \"xyz,10\". Decimal values must be separated with a dot.",
+      "indications-without-hours": "To send to multiple destinations in a quick way, type each address and coin amount on a line, separated by a comma. Example: if you want to send 10 coins to the \"xyz\" address, type \"xyz,10\". Decimal values must be separated with a dot.",
       "process-button": "Process",
       "no-data-error": "There is no text to process.",
       "inconsistent-data-error": "If you set how many hours you want to send to a destination, you must do so for all destinations.",
@@ -343,6 +395,7 @@
 
   "reset": {
     "title": "Reset Password",
+    "invalid-wallet": "Invalid wallet",
     "wallet-label": "Wallet",
     "seed-label": "Wallet seed",
     "passphrase-label": "Wallet passphrase (if any)",
@@ -353,7 +406,6 @@
   },
 
   "tx": {
-    "transaction-title": "Transaction",
     "confirm-transaction-title": "Confirm Transaction",
     "from-small-label": "From:",
     "to-small-label": "To:",
@@ -361,9 +413,13 @@
     "wallets-small-label": "Wallets:",
     "date-small-label": "Date:",
     "status-small-label": "Status:",
+    "amount-small-label": "Amount:",
     "coins-small-label": "Coins:",
     "hours-small-label": "Hours:",
     "fee-small-label": "Fee:",
+    "balance-to-send-info": "Includes the transaction fee.",
+    "approximate-fee-warning": " / Approximate",
+    "approximate-fee-info": "The fee could be less after processing the transaction. Any unused amount will be returned to the source address.",
     "id-small-label": "Tx ID:",
     "note-small-label": "Note:",
     "without-note": "Without note",
@@ -378,7 +434,7 @@
     "confirmed-transaction": "Confirmed",
     "pending-transaction": "Pending ({{currentConfirmations}} / {{confirmationsNeeded}})",
     "current-rate-help": "Calculated at the current rate.",
-    "coinbase": "COINBASE (new coins)"
+    "coinbase": "COINBASE (new coins and fees)"
   },
 
   "edit-note": {
@@ -443,7 +499,8 @@
     "txid-table-label": "Transaction ID",
     "none": "No pending transactions",
     "my-transactions-button": "Mine",
-    "all-transactions-button": "All"
+    "all-transactions-button": "All",
+    "unknown-date": "Unknown"
   },
 
   "outputs": {
@@ -454,15 +511,17 @@
   "history": {
     "title-and-button": "History",
     "tx-detail-title": "Transaction Detail",
+    "failed": "Failed",
+    "failed-info": "The transaction fee was paid but the funds were not sent.",
     "complex-transaction": "Complex transaction",
     "moving": "Moving {{ coinName }} between addresses",
     "moved": "{{ coinName }} moved between addresses",
     "moving-wallet": "Moving {{ coinName }} between wallets",
     "moved-wallet": "{{ coinName }} moved between wallets",
     "sending": "Sending {{ coinName }}",
-    "sent": "{{ coinName }} Sent",
+    "sent": "{{ coinName }} sent",
     "receiving": "Receiving {{ coinName }}",
-    "received": "{{ coinName }} Received",
+    "received": "{{ coinName }} received",
     "pending-indication": "Pending ({{currentConfirmations}} / {{confirmationsNeeded}})",
     "confirmations-help": "The transaction only has {{currentConfirmations}} of {{confirmationsNeeded}} confirmations needed for being considered completed.",
     "transaction-note-small-label": "Note:",
@@ -477,16 +536,18 @@
     "other-wallets-title": "Other Wallets",
     "wallets-title": "Wallets",
     "addresses": "Addresses",
+    "load-more": "Load more",
     "view-all": "View all {{ number }} transactions",
+    "use-explorer": "Use the blockchain explorer for accessing the full transaction history",
     "show-addresses": "Show the addresses",
     "hide-addresses": "Hide the addresses",
-    "balance-help": "Does not include {{ amount }} paid as fee."
+    "balance-help": "Does not include {{ amount }} you paid as fee."
   },
 
   "address-history": {
     "title": "Wallet Addresses",
     "omited-addresses-warning": "There was a problem and some addresses were ignored.",
-    "invalid wallet": "Invalid wallet",
+    "invalid-wallet": "Invalid wallet",
     "add-button": "Add Addresses",
     "normal-address-table-label": "Normal address",
     "normal-address-info": "Addresses you normally use to receive coins.",
@@ -540,8 +601,8 @@
       "incorrect-pin": "Unable to perform the operation. The PIN you have entered is incorrect.",
       "refused": "The operation was canceled.",
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the Skywallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
-      "daemon-connection": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from www.skycoin.com/downloads",
-      "daemon-connection-with-configurable-link": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from ",
+      "outdated-daemon": "It was not possible to complete the operation because the Skywallet daemon is outdated. You can download the latest version from ",
+      "daemon-connection": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from ",
       "timeout": "The operation was canceled due to inactivity. Please try again.",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled.",
       "invalid-address": "Invalid address.",
