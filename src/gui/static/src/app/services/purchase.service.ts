@@ -43,12 +43,12 @@ export class PurchaseService {
 
   generate(wallet: WalletBase): Observable<PurchaseOrder> {
     return this.walletsAndAddressesService.addAddressesToWallet(wallet, 1).pipe(mergeMap(address => {
-      return this.post('bind', { skyaddr: address[0].address, coin_type: 'BTC' }).pipe(
+      return this.post('bind', { skyaddr: address[0].printableAddress, coin_type: 'BTC' }).pipe(
         map(response => ({
           coin_type: response.coin_type,
           deposit_address: response.deposit_address,
           filename: wallet.id,
-          recipient_address: address[0].address,
+          recipient_address: address[0].printableAddress,
           status: 'waiting_deposit',
         })));
     }));

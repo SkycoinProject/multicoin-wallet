@@ -9,7 +9,7 @@ import { GeneratedTransaction, OldTransaction, OldTransactionTypes } from '../..
 import { PriceService } from '../../../../../services/price.service';
 import { WalletsAndAddressesService } from '../../../../../services/wallet-operations/wallets-and-addresses.service';
 import { getTransactionIconName } from '../../../../../utils/history-utils';
-import { WalletBase } from '../../../../../services/wallet-operations/wallet-objects';
+import { WalletBase, AddressMap } from '../../../../../services/wallet-operations/wallet-objects';
 import { CoinService } from '../../../../../services/coin.service';
 import { CoinTypes } from '../../../../../coins/settings/coin-types';
 
@@ -34,7 +34,7 @@ export class TransactionInfoComponent implements OnDestroy {
   // If the user has more than one wallet.
   userHasMultipleWallets = false;
   // List with all the addresses the user has and their corresponding wallets.
-  internalAddressesMap = new Map<string, WalletBase>();
+  internalAddressesMap = new AddressMap<WalletBase>(this.walletsAndAddressesService.formatAddress);
   // If true, the currently selected coin includes coin hours.
   coinHasHours = false;
   // How many confirmations a transaction must have to be considered fully confirmed.
@@ -49,7 +49,7 @@ export class TransactionInfoComponent implements OnDestroy {
   constructor(
     private priceService: PriceService,
     private dialog: MatDialog,
-    walletsAndAddressesService: WalletsAndAddressesService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
     coinService: CoinService,
   ) {
     this.subscription = this.priceService.price.subscribe(price => this.price = price);
@@ -63,7 +63,7 @@ export class TransactionInfoComponent implements OnDestroy {
       this.userHasMultipleWallets = wallets.length > 1;
       wallets.forEach(wallet => {
         wallet.addresses.forEach(address => {
-          this.internalAddressesMap.set(address.address, wallet);
+          this.internalAddressesMap.set(address.printableAddress, wallet);
         });
       });
     });

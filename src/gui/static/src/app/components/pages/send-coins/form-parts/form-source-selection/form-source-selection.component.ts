@@ -6,7 +6,7 @@ import { BigNumber } from 'bignumber.js';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { BalanceAndOutputsService } from '../../../../../services/wallet-operations/balance-and-outputs.service';
-import { WalletWithBalance, AddressWithBalance, WalletTypes } from '../../../../../services/wallet-operations/wallet-objects';
+import { WalletWithBalance, AddressWithBalance, WalletTypes, AddressMap } from '../../../../../services/wallet-operations/wallet-objects';
 import { Output as UnspentOutput } from '../../../../../services/wallet-operations/transaction-objects';
 import { processServiceError } from '../../../../../utils/errors';
 import { OperationError } from '../../../../../utils/operation-error';
@@ -15,6 +15,7 @@ import { NodeService } from '../../../../../services/node.service';
 import { CoinService } from '../../../../../services/coin.service';
 import { CoinTypes } from '../../../../../coins/settings/coin-types';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
+import { WalletsAndAddressesService } from '../../../../../services/wallet-operations/wallets-and-addresses.service';
 
 /**
  * Info about the balance which is available with the selections the user has
@@ -153,6 +154,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     private balanceAndOutputsService: BalanceAndOutputsService,
     private coinService: CoinService,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.coinHasOutputs = coinService.currentCoinInmediate.coinTypeFeatures.outputs;
@@ -540,8 +542,8 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as AddressWithBalance[]).length === 0) {
       return this.allUnspentOutputs;
     } else {
-      const addressMap = new Map<string, boolean>();
-      (this.form.get('addresses').value as AddressWithBalance[]).forEach(address => addressMap.set(address.address, true));
+      const addressMap = new AddressMap<boolean>(this.walletsAndAddressesService.formatAddress);
+      (this.form.get('addresses').value as AddressWithBalance[]).forEach(address => addressMap.set(address.printableAddress, true));
 
       return this.allUnspentOutputs.filter(out => addressMap.has(out.address));
     }

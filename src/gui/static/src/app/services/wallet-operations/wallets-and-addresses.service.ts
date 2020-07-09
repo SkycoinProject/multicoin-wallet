@@ -249,4 +249,17 @@ export class WalletsAndAddressesService {
       }
     }));
   }
+
+  /**
+   * Takes an address string and applies to it the correct format for the currently
+   * selected coin. Some addresses can only be represented in one way, but others,
+   * like ETH addresses and Bech32 addreeses, can be represented in different
+   * ways, so this function makes all those addresses have a consistent format, so it
+   * is posible to show then in an optimal way or compare them in a safe way. However,
+   * if possible, try not to use this function for comparing addresses, but instead use the
+   * comparison function of AddressBase or the AddressMap object.
+   */
+  get formatAddress(): (address: string) => string {
+    return this.operator.formatAddress;
+  }
 }

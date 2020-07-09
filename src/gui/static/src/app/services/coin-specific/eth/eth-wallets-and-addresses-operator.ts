@@ -159,7 +159,10 @@ export class EthWalletsAndAddressesOperator implements WalletsAndAddressesOperat
         hardwareWallets.push(this.createHardwareWalletData(
           wallet.label,
           wallet.addresses.map(address => {
-            return { address: address.address, confirmed: address.confirmed };
+            const newAddress = AddressBase.create(this.formatAddress, address.printableAddress);
+            newAddress.confirmed = address.confirmed;
+
+            return newAddress;
           }),
           wallet.hasHwSecurityWarnings,
           wallet.stopShowingHwSecurityPopup,
@@ -250,7 +253,21 @@ export class EthWalletsAndAddressesOperator implements WalletsAndAddressesOperat
             // This is just a precaution.
             wallet.isHardware = true;
             if (!wallet.addresses) {
-              wallet.addresses = [{ address: 'invalid', confirmed: false, }];
+              const newAddress = AddressBase.create(this.formatAddress, 'invalid');
+              newAddress.confirmed = false;
+              wallet.addresses = [newAddress];
+            }
+
+            // If an address was saved with the old format, convert it to the new one.
+            for (let i = 0; i < wallet.addresses.length; i++) {
+              if (wallet.addresses[i]['address']) {
+                const confirmed = wallet.addresses[i].confirmed;
+                const isChangeAddress = wallet.addresses[i].isChangeAddress;
+
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['address']);
+                wallet.addresses[i].confirmed = confirmed;
+                wallet.addresses[i].isChangeAddress = isChangeAddress;
+              }
             }
 
             // If the value was not retrieved, it means that the wallet was saved with a previous
@@ -261,7 +278,7 @@ export class EthWalletsAndAddressesOperator implements WalletsAndAddressesOperat
 
             wallet.coin = this.currentCoin.coinName;
 
-            wallet.id = this.getHwWalletID(wallet.addresses[0].address);
+            wallet.id = this.getHwWalletID(wallet.addresses[0].printableAddress);
           });
 
           return loadedWallets;
@@ -288,7 +305,21 @@ export class EthWalletsAndAddressesOperator implements WalletsAndAddressesOperat
             // This is just a precaution.
             wallet.isHardware = false;
             if (!wallet.addresses) {
-              wallet.addresses = [{ address: 'invalid', confirmed: true, }];
+              const newAddress = AddressBase.create(this.formatAddress, 'invalid');
+              newAddress.confirmed = true;
+              wallet.addresses = [newAddress];
+            }
+
+            // If an address was saved with the old format, convert it to the new one.
+            for (let i = 0; i < wallet.addresses.length; i++) {
+              if (wallet.addresses[i]['address']) {
+                const confirmed = wallet.addresses[i].confirmed;
+                const isChangeAddress = wallet.addresses[i].isChangeAddress;
+
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['address']);
+                wallet.addresses[i].confirmed = confirmed;
+                wallet.addresses[i].isChangeAddress = isChangeAddress;
+              }
             }
           });
 
@@ -313,5 +344,9 @@ export class EthWalletsAndAddressesOperator implements WalletsAndAddressesOperat
    */
   private informDataUpdated() {
     this.walletsSubject.next(this.walletsList);
+  }
+
+  formatAddress(address: string): string {
+    return address.trim().toLowerCase();
   }
 }

@@ -3,13 +3,14 @@ import { NgZone, Injector } from '@angular/core';
 import { mergeMap, map, delay, tap, first, filter } from 'rxjs/operators';
 import BigNumber from 'bignumber.js';
 
-import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, WalletWithOutputs } from '../../wallet-operations/wallet-objects';
+import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, WalletWithOutputs, AddressMap, AddressBase } from '../../wallet-operations/wallet-objects';
 import { Output } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
 import { EthCoinConfig } from '../../../coins/coin-type-configs/eth.coin-config';
 import { BlockbookApiService } from '../../api/blockbook-api.service';
+import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 
 /**
  * Balance of a wallet, for internal use.
@@ -18,7 +19,11 @@ class WalletBalance {
   current = new BigNumber(0);
   predicted = new BigNumber(0);
   available = new BigNumber(0);
-  addresses = new Map<string, AddressBalance>();
+  addresses: AddressMap<AddressBalance>;
+
+  constructor(walletsAndAddressesOperator: WalletsAndAddressesOperator) {
+    this.addresses = new AddressMap(walletsAndAddressesOperator.formatAddress);
+  }
 }
 
 /**
@@ -84,6 +89,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
   // Services and operators used by this operator.
   private blockbookApiService: BlockbookApiService;
   private ngZone: NgZone;
+  private walletsAndAddressesOperator: WalletsAndAddressesOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
@@ -98,6 +104,8 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
     // Get the operators and only then start using them.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
+
       // Update the balance immediately each time the wallets are updated.
       this.walletsSubscription = operators.walletsAndAddressesOperator.currentWallets.subscribe(wallets => {
         this.savedWalletsList = wallets;
@@ -350,9 +358,9 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
 
     if (!useSavedBalanceData) {
       // Get the balance of all addresses.
-      const addresses = wallet.addresses.map(a => a.address);
+      const addresses = wallet.addresses.map(a => a.printableAddress);
       query = this.recursivelyGetBalances(addresses, lastBlock).pipe(mergeMap(result => {
-        const response = new WalletBalance();
+        const response = new WalletBalance(this.walletsAndAddressesOperator);
 
         result.forEach((addressBalance, address) => {
           // Add the values to the balance of the wallet.
@@ -369,7 +377,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       if (this.savedBalanceData.has(wallet.id)) {
         query = of(this.savedBalanceData.get(wallet.id));
       } else {
-        query = of(new WalletBalance());
+        query = of(new WalletBalance(this.walletsAndAddressesOperator));
       }
     }
 
@@ -383,10 +391,10 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
       wallet.hasPendingCoins = !wallet.coins.isEqualTo(wallet.confirmedCoins);
 
       wallet.addresses.forEach(address => {
-        if (balance.addresses.has(address.address)) {
-          address.coins = balance.addresses.get(address.address).predicted;
-          address.confirmedCoins = balance.addresses.get(address.address).current;
-          address.availableCoins = balance.addresses.get(address.address).available;
+        if (balance.addresses.has(address.printableAddress)) {
+          address.coins = balance.addresses.get(address.printableAddress).predicted;
+          address.confirmedCoins = balance.addresses.get(address.printableAddress).current;
+          address.availableCoins = balance.addresses.get(address.printableAddress).available;
           address.hasPendingCoins = !address.coins.isEqualTo(address.confirmedCoins);
         } else {
           address.coins = new BigNumber(0);
@@ -411,7 +419,12 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * @param currentElements Already obtained balances. For internal use.
    * @returns Map with the balances of the provided address list.
    */
-  private recursivelyGetBalances(addresses: string[], lastBlock: number, currentElements = new Map<string, AddressBalance>()): Observable<Map<string, AddressBalance>> {
+  private recursivelyGetBalances(
+    addresses: string[],
+    lastBlock: number,
+    currentElements = new AddressMap<AddressBalance>(this.walletsAndAddressesOperator.formatAddress),
+  ): Observable<AddressMap<AddressBalance>> {
+
     if (addresses.length === 0) {
       return of(currentElements);
     }
@@ -495,12 +508,13 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    */
   private calculateBalanceFromTransactions(transactions: any[], address: string, onlyIncoming = false): BigNumber {
     let balance = new BigNumber(0);
+    const addressObject = AddressBase.create(this.walletsAndAddressesOperator.formatAddress, address);
 
     if (transactions && transactions.length > 0) {
       transactions.forEach(transaction => {
         // If the input is from the current address, consider the output and fee as outgoing coins.
         if (!onlyIncoming && transaction.vin && (transaction.vin as any[]).length === 1 && (transaction.vin as any[])[0].isAddress) {
-          if ((transaction.vin as any[])[0].addresses.length === 1 && (transaction.vin as any[])[0].addresses[0] === address) {
+          if ((transaction.vin as any[])[0].addresses.length === 1 && addressObject.compareAddress((transaction.vin as any[])[0].addresses[0])) {
             // Only compute the balance is the transaction did not fail.
             if (transaction.ethereumSpecific.status !== 0) {
               balance = balance.minus(this.getOutputValue(transaction));
@@ -517,7 +531,7 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
         // If the output is for the current address, consider the output as incoming coins.
         // Only compute the balance is the transaction did not fail.
         if (transaction.ethereumSpecific.status !== 0) {
-          balance = balance.plus(this.getOutputValue(transaction, address));
+          balance = balance.plus(this.getOutputValue(transaction, addressObject));
         }
       });
     }
@@ -533,9 +547,9 @@ export class EthBalanceAndOutputsOperator implements BalanceAndOutputsOperator {
    * output is for the provided address. If the output is for another address, the returned
    * value is 0.
    */
-  private getOutputValue(transaction: any, addressFilter: string = null): BigNumber {
+  private getOutputValue(transaction: any, addressFilter: AddressBase = null): BigNumber {
     if (transaction.vout && (transaction.vout as any[]).length === 1 && (transaction.vout as any[])[0].isAddress) {
-      if (!addressFilter || ((transaction.vout as any[])[0].addresses.length === 1 && (transaction.vout as any[])[0].addresses[0] === addressFilter)) {
+      if (!addressFilter || ((transaction.vout as any[])[0].addresses.length === 1 && addressFilter.compareAddress((transaction.vout as any[])[0].addresses[0]))) {
         if ((transaction.vout as any[])[0].value) {
           return new BigNumber((transaction.vout as any[])[0].value);
         }

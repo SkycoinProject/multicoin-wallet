@@ -6,10 +6,11 @@ import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { copyTextToClipboard } from '../../../../utils/general-utils';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
-import { WalletWithBalance, AddressWithBalance } from '../../../../services/wallet-operations/wallet-objects';
+import { WalletWithBalance, AddressWithBalance, AddressMap } from '../../../../services/wallet-operations/wallet-objects';
 import { WalletsComponent } from '../wallets.component';
 import { WalletOptionsComponent } from '../wallet-options/wallet-options.component';
 import { CoinService } from '../../../../services/coin.service';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
 /**
  * Shows the option buttons and address list of a wallet on the wallet list.
@@ -30,7 +31,7 @@ export class WalletDetailComponent implements OnDestroy {
   // If all addresses without coins must be hidden on the address list.
   hideEmpty = false;
   // Allows to know which addresses are being copied, so the UI can show an indication.
-  copying = new Map<string, boolean>();
+  copying = new AddressMap<boolean>(this.walletsAndAddressesService.formatAddress);
 
   // Vars for showing only the options available for the current coin.
   showOutputsOption: boolean;
@@ -41,6 +42,7 @@ export class WalletDetailComponent implements OnDestroy {
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private hwWalletService: HwWalletService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
     coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
@@ -120,16 +122,16 @@ export class WalletDetailComponent implements OnDestroy {
   copyAddress(event, address: AddressWithBalance, duration = 500) {
     event.stopPropagation();
 
-    if (this.copying.has(address.address)) {
+    if (this.copying.has(address.printableAddress)) {
       return;
     }
 
-    copyTextToClipboard(address.address);
-    this.copying.set(address.address, true);
+    copyTextToClipboard(address.printableAddress);
+    this.copying.set(address.printableAddress, true);
 
     setTimeout(() => {
-      if (this.copying.has(address.address)) {
-        this.copying.delete(address.address);
+      if (this.copying.has(address.printableAddress)) {
+        this.copying.delete(address.printableAddress);
       }
     }, duration);
   }

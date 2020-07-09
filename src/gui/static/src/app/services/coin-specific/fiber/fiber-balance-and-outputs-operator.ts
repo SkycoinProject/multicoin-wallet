@@ -3,7 +3,7 @@ import { mergeMap, map, switchMap, tap, delay, filter, first } from 'rxjs/operat
 import { NgZone, Injector } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 
-import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, walletWithOutputsFromBase, WalletWithOutputs } from '../../wallet-operations/wallet-objects';
+import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, walletWithOutputsFromBase, WalletWithOutputs, AddressMap } from '../../wallet-operations/wallet-objects';
 import { Output } from '../../wallet-operations/transaction-objects';
 import { FiberWalletsAndAddressesOperator } from './fiber-wallets-and-addresses-operator';
 import { Coin } from '../../../coins/coin';
@@ -138,7 +138,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
   get outputsWithWallets(): Observable<WalletWithOutputs[]> {
     // Run each time the wallet list changes.
     return this.walletsWithBalance.pipe(switchMap(wallets => {
-      const addresses = wallets.map(wallet => wallet.addresses.map(address => address.address).join(',')).join(',');
+      const addresses = wallets.map(wallet => wallet.addresses.map(address => address.printableAddress).join(',')).join(',');
 
       // Get the unspent outputs of the list of addresses.
       return this.obtainOutputsList(addresses, false);
@@ -150,7 +150,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
         walletsList.push(newWallet);
 
         newWallet.addresses.forEach(address => {
-          address.outputs = outputs.filter(output => output.address === address.address);
+          address.outputs = outputs.filter(output => address.compareAddress(output.address));
         });
       });
 
@@ -185,7 +185,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
 
         outputsToUse.forEach(output => {
           const processedOutput: Output = {
-            address: output.address,
+            address: this.walletsAndAddressesOperator.formatAddress(output.address),
             coins: new BigNumber(output.coins),
             hash: output.hash,
             hours: new BigNumber(output.calculated_hours),
@@ -200,7 +200,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
   }
 
   getWalletUnspentOutputs(wallet: WalletBase): Observable<Output[]> {
-    const addresses = wallet.addresses.map(a => a.address).join(',');
+    const addresses = wallet.addresses.map(a => a.printableAddress).join(',');
 
     return this.obtainOutputsList(addresses, true);
   }
@@ -250,7 +250,7 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
           // Get the wallet list as it is in the node.
           const nodeWallets: Map<string, WalletBase> = new Map<string, WalletBase>();
           response.forEach(wallet => {
-            const processedWallet = FiberWalletsAndAddressesOperator.processWallet(wallet, this.currentCoin.coinName);
+            const processedWallet = FiberWalletsAndAddressesOperator.processWallet(wallet, this.currentCoin.coinName, this.walletsAndAddressesOperator.formatAddress);
             nodeWallets.set(processedWallet.id, processedWallet);
           });
 
@@ -454,8 +454,8 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
       if (!wallet.isHardware) {
         query = this.fiberApiService.get(this.currentCoin.nodeUrl, 'wallet/balance', { id: wallet.id });
       } else {
-        const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
-        query = this.fiberApiService.post(this.currentCoin.nodeUrl, 'balance', { addrs: formattedAddresses });
+        const addressesList = wallet.addresses.map(a => a.printableAddress).join(',');
+        query = this.fiberApiService.post(this.currentCoin.nodeUrl, 'balance', { addrs: addressesList });
       }
     } else {
       if (this.savedBalanceData.has(wallet.id)) {
@@ -467,6 +467,12 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
 
     return query.pipe(map(balance => {
       this.temporalSavedBalanceData.set(wallet.id, balance);
+
+      const addressMap = new AddressMap<any>(this.walletsAndAddressesOperator.formatAddress);
+      const addresses = Object.keys(balance.addresses);
+      addresses.forEach(address => {
+        addressMap.set(address, balance.addresses[address]);
+      });
 
       // TODO: the available balance should be all the confirmed coins or hours minus all
       // coins or hours going out.
@@ -492,11 +498,11 @@ export class FiberBalanceAndOutputsOperator implements BalanceAndOutputsOperator
       }
 
       wallet.addresses.forEach(address => {
-        if (balance.addresses[address.address]) {
-          address.coins = new BigNumber(balance.addresses[address.address].predicted.coins).dividedBy(1000000);
-          address.hours = new BigNumber(balance.addresses[address.address].predicted.hours);
-          address.confirmedCoins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
-          address.confirmedHours = new BigNumber(balance.addresses[address.address].confirmed.hours);
+        if (addressMap.has(address.printableAddress)) {
+          address.coins = new BigNumber(addressMap.get(address.printableAddress).predicted.coins).dividedBy(1000000);
+          address.hours = new BigNumber(addressMap.get(address.printableAddress).predicted.hours);
+          address.confirmedCoins = new BigNumber(addressMap.get(address.printableAddress).confirmed.coins).dividedBy(1000000);
+          address.confirmedHours = new BigNumber(addressMap.get(address.printableAddress).confirmed.hours);
           address.availableCoins = address.coins;
           address.availableHours = address.hours;
           address.hasPendingCoins = !address.coins.isEqualTo(address.confirmedCoins);

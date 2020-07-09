@@ -845,7 +845,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     let selectedAddresses: string[];
     if (!this.showForManualUnsigned) {
       selectedAddresses = this.selectedSources.addresses && this.selectedSources.addresses.length > 0 ?
-        this.selectedSources.addresses.map(addr => addr.address) : null;
+        this.selectedSources.addresses.map(addr => addr.printableAddress) : null;
     } else {
       selectedAddresses = this.selectedSources.manualAddresses;
     }
@@ -868,7 +868,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     // user wants to send the transaction immediately, without preview.
     this.processingSubscription = this.spendingService.createTransaction(
       this.selectedSources.wallet,
-      selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.address),
+      selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.printableAddress),
       selectedOutputs,
       destinations,
       this.hoursSelection,
@@ -959,7 +959,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             gasLimit: this.form.get('gasLimit').value,
           },
           amount: amount,
-          to: destinations.map(d => d.address),
+          to: destinations.map(d => this.walletsAndAddressesService.formatAddress(d.address)),
           transaction,
           showForManualUnsigned: this.showForManualUnsigned,
         });

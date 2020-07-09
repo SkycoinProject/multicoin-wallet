@@ -22,9 +22,9 @@
     <div class="-flex-fill address-column">
       <!-- For confirmed addresses. -->
       <ng-container *ngIf="!wallet.isHardware || address.confirmed">
-        <app-qr-code-button [address]="address.address"></app-qr-code-button>
-        <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
-          {{ address.address }}
+        <app-qr-code-button [address]="address.printableAddress"></app-qr-code-button>
+        <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.printableAddress) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.printableAddress)">
+          {{ address.printableAddress }}
           <mat-spinner appMainColorFormElement *ngIf="confirmingIndex === i"></mat-spinner>
           <span appThemeColorText [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
             {{ 'wallet.address.copy' | translate }}
@@ -34,7 +34,7 @@
       <!-- For unconfirmed addresses. -->
       <ng-container *ngIf="wallet.isHardware && !address.confirmed">
         <p class="click-to-copy" (click)="confirmAddress(wallet, i, true)">
-          <span class="small-preview">{{ address.address }}</span>
+          <span class="small-preview">{{ address.printableAddress }}</span>
           <span appThemeColorText class="copy-label unconfirmed-label">
             {{ 'wallet.address.show' | translate }}
             <mat-spinner appMainColorFormElement *ngIf="confirmingIndex === i"></mat-spinner>
@@ -64,15 +64,15 @@
       <mat-icon appThemeColorText [showOnlyIfMouseOver]="true" [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
       <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
         <button mat-menu-item (click)="copyAddress($event, address, 1000)" *ngIf="!wallet.isHardware || address.confirmed">
-          {{ 'wallet.address.' + (copying.has(address.address) ? 'copied': 'copy-address') | translate }}
+          {{ 'wallet.address.' + (copying.has(address.printableAddress) ? 'copied': 'copy-address') | translate }}
         </button>
         <button mat-menu-item (click)="confirmAddress(wallet, i, !address.confirmed)" *ngIf="wallet.isHardware">
           {{ 'wallet.address.confirm' | translate }}
         </button>
-        <button *ngIf="showOutputsOption" mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+        <button *ngIf="showOutputsOption" mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.printableAddress }">
           {{ 'wallet.address.outputs' | translate }}
         </button>
-        <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address }">
+        <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.printableAddress }">
           {{ 'wallet.address.history' | translate }}
         </button>
       </mat-menu>

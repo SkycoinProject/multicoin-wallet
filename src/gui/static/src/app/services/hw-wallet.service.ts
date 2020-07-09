@@ -564,7 +564,7 @@ export class HwWalletService {
   checkIfCorrectHwConnected(wallet: WalletBase): Observable<any> {
     return this.getAddresses(1, 0, this.coinService.currentCoinInmediate.skywalletCoinType).pipe(mergeMap(
       response => {
-        if (!wallet.isHardware || response.rawResponse[0] !== wallet.addresses[0].address) {
+        if (!wallet.isHardware || wallet.addresses[0].compareAddress(response.rawResponse[0])) {
           const resp = new OperationError();
           resp.originalError = response;
           resp.type = HWOperationResults.IncorrectHardwareWallet;

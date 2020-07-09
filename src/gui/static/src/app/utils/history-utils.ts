@@ -1,15 +1,16 @@
-import { WalletBase } from '../services/wallet-operations/wallet-objects';
+import { WalletBase, AddressMap } from '../services/wallet-operations/wallet-objects';
 import { OldTransaction, OldTransactionTypes } from '../services/wallet-operations/transaction-objects';
+import { WalletsAndAddressesOperator } from '../services/coin-specific/wallets-and-addresses-operator';
 
 /**
  * Takes an OldTransaction object and calculates the transaction type, the balance and the
  * involved local wallets and addresses. The values are added to the provided
  * OldTransaction instance.
  * @param transaction Transaction to work with.
- * @param addressesMap Map with the name of all the local addresses, pointing to their wallets.
+ * @param addressMap Map with all the local addresses, pointing to their wallets.
  * @param calculateHours If the hours balance must be calculated.
  */
-export function calculateGeneralData(transaction: OldTransaction, addressesMap: Map<string, WalletBase>, calculateHours: boolean): void {
+export function calculateGeneralData(transaction: OldTransaction, addressMap: AddressMap<WalletBase>, calculateHours: boolean, walletsAndAddressesOperator: WalletsAndAddressesOperator): void {
   const involvedWallets = new Map<string, boolean>();
 
   // Check the inputs related to local wallets and if there are multiple local wallets involved
@@ -19,12 +20,12 @@ export function calculateGeneralData(transaction: OldTransaction, addressesMap: 
   let firstLocalInputWallet: string;
   let thereAreOtherLocalInputWallets = false;
   transaction.inputs.map(input => {
-    if (addressesMap.has(input.address)) {
+    if (addressMap.has(input.address)) {
       ownsInputs = true;
-      involvedWallets.set(addressesMap.get(input.address).label, true);
+      involvedWallets.set(addressMap.get(input.address).label, true);
       if (!firstLocalInputWallet) {
-        firstLocalInputWallet = addressesMap.get(input.address).id;
-      } else if (addressesMap.get(input.address).id !== firstLocalInputWallet) {
+        firstLocalInputWallet = addressMap.get(input.address).id;
+      } else if (addressMap.get(input.address).id !== firstLocalInputWallet) {
         thereAreOtherLocalInputWallets = true;
       }
     } else {
@@ -39,12 +40,12 @@ export function calculateGeneralData(transaction: OldTransaction, addressesMap: 
   let firstLocalOutputWallet: string;
   let thereAreOtherLocalOutputWallets = false;
   transaction.outputs.map(output => {
-    if (addressesMap.has(output.address)) {
+    if (addressMap.has(output.address)) {
       ownsOutputs = true;
-      involvedWallets.set(addressesMap.get(output.address).label, true);
+      involvedWallets.set(addressMap.get(output.address).label, true);
       if (!firstLocalOutputWallet) {
-        firstLocalOutputWallet = addressesMap.get(output.address).id;
-      } else if (addressesMap.get(output.address).id !== firstLocalOutputWallet) {
+        firstLocalOutputWallet = addressMap.get(output.address).id;
+      } else if (addressMap.get(output.address).id !== firstLocalOutputWallet) {
         thereAreOtherLocalOutputWallets = true;
       }
     } else {
@@ -87,7 +88,7 @@ export function calculateGeneralData(transaction: OldTransaction, addressesMap: 
     transaction.outputs.map(output => {
       // If the transactions is an incoming one, all coins and hours on outputs
       // pointing to local addresses are considered received.
-      if (addressesMap.has(output.address)) {
+      if (addressMap.has(output.address)) {
         involvedLocalAddresses.set(output.address, true);
         transaction.balance = transaction.balance.plus(output.coins);
         if (calculateHours) {
@@ -99,11 +100,12 @@ export function calculateGeneralData(transaction: OldTransaction, addressesMap: 
     // If the transaction is an outgoing one, all addresses of all wallets used for inputs
     // are considered potential return addresses, so all coins sent to those addresses
     // will be excluded when counting how many coins and hours were sent.
-    const possibleReturnAddressesMap: Map<string, boolean> = new Map<string, boolean>();
+    const possibleReturnAddressesMap = new AddressMap<boolean>(walletsAndAddressesOperator.formatAddress);
     transaction.inputs.map(input => {
-      if (addressesMap.has(input.address)) {
+      if (addressMap.has(input.address)) {
         involvedLocalAddresses.set(input.address, true);
-        addressesMap.get(input.address).addresses.map(add => possibleReturnAddressesMap.set(add.address, true));
+        addressMap.get(input.address).addresses
+          .map(add => possibleReturnAddressesMap.set(add.printableAddress, true));
       }
     });
 
@@ -120,7 +122,7 @@ export function calculateGeneralData(transaction: OldTransaction, addressesMap: 
     transaction.type === OldTransactionTypes.MovedBetweenAddresses ||
     transaction.type === OldTransactionTypes.MovedBetweenWallets
   ) {
-    const inputAddressesMap: Map<string, boolean> = new Map<string, boolean>();
+    const inputAddressesMap = new AddressMap<boolean>(walletsAndAddressesOperator.formatAddress);
 
     transaction.inputs.map(input => {
       inputAddressesMap.set(input.address, true);
@@ -142,12 +144,12 @@ export function calculateGeneralData(transaction: OldTransaction, addressesMap: 
     // If the transaction type is unknown, all local addresses are considered relevant
     // and no balance data is calculated.
     transaction.inputs.map(input => {
-      if (addressesMap.has(input.address)) {
+      if (addressMap.has(input.address)) {
         involvedLocalAddresses.set(input.address, true);
       }
     });
     transaction.outputs.map(output => {
-      if (addressesMap.has(output.address)) {
+      if (addressMap.has(output.address)) {
         involvedLocalAddresses.set(output.address, true);
       }
     });
@@ -155,7 +157,7 @@ export function calculateGeneralData(transaction: OldTransaction, addressesMap: 
 
   // Create the list of relevant local addresses involved on the transaction.
   involvedLocalAddresses.forEach((value, key) => {
-    transaction.relevantAddresses.push(key);
+    transaction.relevantAddresses.push(walletsAndAddressesOperator.formatAddress(key));
   });
 }
 

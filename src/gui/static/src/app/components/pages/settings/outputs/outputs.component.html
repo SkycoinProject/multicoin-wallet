@@ -19,8 +19,8 @@
         <ng-container *ngFor="let address of wallet.addresses">
           <div class="-row">
             <div class="-flex-fill grey-text text-truncate">
-              <app-qr-code-button [address]="address.address"></app-qr-code-button>
-              <span class="address">{{ address.address }}</span>
+              <app-qr-code-button [address]="address.printableAddress"></app-qr-code-button>
+              <span class="address">{{ address.printableAddress }}</span>
             </div>
           </div>
           <div class="-row" *ngFor="let output of address.outputs">

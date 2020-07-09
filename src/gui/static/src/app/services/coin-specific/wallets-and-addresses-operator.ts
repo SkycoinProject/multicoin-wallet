@@ -95,6 +95,7 @@ export interface WalletsAndAddressesOperator {
   informValuesUpdated(wallet: WalletBase);
   createWallet(args: CreateWalletArgs): Observable<WalletBase>;
   deleteWallet(walletId: string): void;
+  formatAddress(address: string): string;
 
   /**
    * Loads the wallets of the coin configured when the operator was created. The wallet list will

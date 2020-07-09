@@ -5,13 +5,12 @@ import { Injector } from '@angular/core';
 
 import { HwWalletService } from '../../hw-wallet.service';
 import { AppConfig } from '../../../app.config';
-import { WalletBase, AddressBase, duplicateWalletBase, WalletTypes } from '../../wallet-operations/wallet-objects';
+import { WalletBase, AddressBase, duplicateWalletBase, WalletTypes, AddressMap } from '../../wallet-operations/wallet-objects';
 import { processServiceError, redirectToErrorPage } from '../../../utils/errors';
 import { StorageService, StorageType } from '../../storage.service';
-import { OldTransaction } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { WalletsAndAddressesOperator, LastAddress, CreateWalletArgs, CreateSoftwareWalletArgs } from '../wallets-and-addresses-operator';
-import { getTransactionsHistory, getIfAddressesUsed } from './utils/fiber-history-utils';
+import { getIfAddressesUsed } from './utils/fiber-history-utils';
 import { FiberApiService } from '../../api/fiber-api.service';
 
 /**
@@ -61,7 +60,7 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
    * @param wallet Wallet data returned by the node.
    * @param coinName Name of the coin that will be asigned to the wallet.
    */
-  static processWallet(wallet: any, coinName: string): WalletBase {
+  static processWallet(wallet: any, coinName: string, addressFormatter: (address: string) => string): WalletBase {
     // Fill the properties related to the wallet itself.
     const processedWallet: WalletBase = {
       label: wallet.meta.label,
@@ -80,11 +79,11 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
       processedWallet.addresses = (wallet.entries as any[]).map<AddressBase>((entry: any) => {
         const isChangeAddress = processedWallet.walletType !== WalletTypes.Deterministic ? (entry.change === 1) : false;
 
-        return {
-          address: entry.address,
-          confirmed: true,
-          isChangeAddress: isChangeAddress,
-        };
+        const address = AddressBase.create(addressFormatter, entry.address);
+        address.confirmed = true;
+        address.isChangeAddress = isChangeAddress;
+
+        return address;
       });
     }
 
@@ -157,7 +156,8 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
           const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
           const newAddresses: AddressBase[] = [];
           (response.addresses as any[]).forEach(value => {
-            const newAddress: AddressBase = {address: value, confirmed: true};
+            const newAddress = AddressBase.create(this.formatAddress, value);
+            newAddress.confirmed = true;
             newAddresses.push(newAddress);
             affectedWallet.addresses.push(newAddress);
           });
@@ -180,7 +180,8 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
         const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
         const newAddresses: AddressBase[] = [];
         (response.rawResponse as any[]).forEach(value => {
-          const newAddress: AddressBase = {address: value, confirmed: false};
+          const newAddress = AddressBase.create(this.formatAddress, value);
+          newAddress.confirmed = false;
           newAddresses.push(newAddress);
           affectedWallet.addresses.push(newAddress);
         });
@@ -209,7 +210,9 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
           const newAddresses: string[] = response.addresses;
           if (newAddresses && newAddresses.length > 0) {
             newAddresses.forEach(address => {
-              affectedWallet.addresses.push({address: address, confirmed: true});
+              const newAddress = AddressBase.create(this.formatAddress, address);
+              newAddress.confirmed = true;
+              affectedWallet.addresses.push(newAddress);
             });
             this.informDataUpdated();
 
@@ -278,12 +281,12 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
         const finalResponse: LastAddress = { lastAddress: '' };
 
         // Map with all the addreses which have already received coins.
-        let usedMap = new Map<string, boolean>();
+        let usedMap = new AddressMap<boolean>(this.formatAddress);
 
-        let firstStep: Observable<Map<string, boolean>>;
+        let firstStep: Observable<AddressMap<boolean>>;
         if (checkUnused) {
           // Get which addresses have been used.
-          firstStep = getIfAddressesUsed(this.currentCoin, wallet, this.fiberApiService, this.storageService);
+          firstStep = getIfAddressesUsed(this.currentCoin, wallet, this.fiberApiService, this.storageService, this);
         } else {
           firstStep = of(undefined);
         }
@@ -311,7 +314,7 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
           }
 
           // Update the wallet and the balance.
-          this.walletsList[indexOnTheList] = FiberWalletsAndAddressesOperator.processWallet(response, this.currentCoin.coinName);
+          this.walletsList[indexOnTheList] = FiberWalletsAndAddressesOperator.processWallet(response, this.currentCoin.coinName, this.formatAddress);
           this.informDataUpdated();
 
           // Get the index of the last external address.
@@ -455,7 +458,7 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
 
     // Ask the node to create the wallet and return the data of the newly created wallet.
     return this.fiberApiService.post(this.currentCoin.nodeUrl, 'wallet/create', params).pipe(map(response => {
-      const wallet: WalletBase = FiberWalletsAndAddressesOperator.processWallet(response, this.currentCoin.coinName);
+      const wallet: WalletBase = FiberWalletsAndAddressesOperator.processWallet(response, this.currentCoin.coinName, this.formatAddress);
       this.walletsList.push(wallet);
 
       this.informDataUpdated();
@@ -472,8 +475,8 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
     let addresses: string[];
     let lastAddressWithTx = 0;
     let id: string;
-    const addressesMap: Map<string, boolean> = new Map<string, boolean>();
-    const addressesWithTxMap: Map<string, boolean> = new Map<string, boolean>();
+    const addressesMap = new AddressMap<boolean>(this.formatAddress);
+    const addressesWithTxMap = new AddressMap<boolean>(this.formatAddress);
 
     // Ask the device to return as many addresses as set on AppConfig.maxHardwareWalletAddresses.
     return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0, this.currentCoin.skywalletCoinType).pipe(mergeMap(response => {
@@ -518,7 +521,10 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
       const newWallet = this.createHardwareWalletData(
         this.translate.instant('hardware-wallet.general.default-wallet-name'),
         addresses.slice(0, lastAddressWithTx + 1).map(add => {
-          return { address: add, confirmed: false };
+          const newAddress = AddressBase.create(this.formatAddress, add);
+          newAddress.confirmed = false;
+
+          return newAddress;
         }), true, false,
       );
 
@@ -561,7 +567,10 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
         hardwareWallets.push(this.createHardwareWalletData(
           wallet.label,
           wallet.addresses.map(address => {
-            return { address: address.address, confirmed: address.confirmed };
+            const newAddress = AddressBase.create(this.formatAddress, address.printableAddress);
+            newAddress.confirmed = address.confirmed;
+
+            return newAddress;
           }),
           wallet.hasHwSecurityWarnings,
           wallet.stopShowingHwSecurityPopup,
@@ -636,7 +645,7 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
 
       // Process each wallet and include it if appropiate.
       response.forEach(wallet => {
-        const processedWallet = FiberWalletsAndAddressesOperator.processWallet(wallet, this.currentCoin.coinName);
+        const processedWallet = FiberWalletsAndAddressesOperator.processWallet(wallet, this.currentCoin.coinName, this.formatAddress);
         if (processedWallet.walletType === WalletTypes.Bip44 && AppConfig.bip44Enabled) {
           wallets.push(processedWallet);
         }
@@ -686,7 +695,21 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
             // This is just a precaution.
             wallet.isHardware = true;
             if (!wallet.addresses) {
-              wallet.addresses = [{ address: 'invalid', confirmed: false, }];
+              const newAddress = AddressBase.create(this.formatAddress, 'invalid');
+              newAddress.confirmed = false;
+              wallet.addresses = [newAddress];
+            }
+
+            // If an address was saved with the old format, convert it to the new one.
+            for (let i = 0; i < wallet.addresses.length; i++) {
+              if (wallet.addresses[i]['address']) {
+                const confirmed = wallet.addresses[i].confirmed;
+                const isChangeAddress = wallet.addresses[i].isChangeAddress;
+
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['address']);
+                wallet.addresses[i].confirmed = confirmed;
+                wallet.addresses[i].isChangeAddress = isChangeAddress;
+              }
             }
 
             // If the value was not retrieved, it means that the wallet was saved with a previous
@@ -697,7 +720,7 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
 
             wallet.coin = this.currentCoin.coinName;
 
-            wallet.id = this.getHwWalletID(wallet.addresses[0].address);
+            wallet.id = this.getHwWalletID(wallet.addresses[0].printableAddress);
           });
 
           return loadedWallets;
@@ -724,7 +747,21 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
             // This is just a precaution.
             wallet.isHardware = false;
             if (!wallet.addresses) {
-              wallet.addresses = [{ address: 'invalid', confirmed: true, }];
+              const newAddress = AddressBase.create(this.formatAddress, 'invalid');
+              newAddress.confirmed = true;
+              wallet.addresses = [newAddress];
+            }
+
+            // If an address was saved with the old format, convert it to the new one.
+            for (let i = 0; i < wallet.addresses.length; i++) {
+              if (wallet.addresses[i]['address']) {
+                const confirmed = wallet.addresses[i].confirmed;
+                const isChangeAddress = wallet.addresses[i].isChangeAddress;
+
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['address']);
+                wallet.addresses[i].confirmed = confirmed;
+                wallet.addresses[i].isChangeAddress = isChangeAddress;
+              }
             }
           });
 
@@ -749,5 +786,9 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
    */
   private informDataUpdated() {
     this.walletsSubject.next(this.walletsList);
+  }
+
+  formatAddress(address: string): string {
+    return address.trim();
   }
 }

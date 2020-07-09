@@ -7,7 +7,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService, HwOutput, HwInput } from '../../hw-wallet.service';
 import { StorageService, StorageType } from '../../storage.service';
 import { FiberTxEncoder } from './utils/fiber-tx-encoder';
-import { WalletBase } from '../../wallet-operations/wallet-objects';
+import { WalletBase, AddressBase, AddressMap } from '../../wallet-operations/wallet-objects';
 import { GeneratedTransaction, Output } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { TransactionDestination, HoursDistributionOptions, RecommendedFees } from '../../wallet-operations/spending.service';
@@ -15,6 +15,7 @@ import { SpendingOperator } from '../spending-operator';
 import { FiberApiService } from '../../api/fiber-api.service';
 import { BalanceAndOutputsOperator } from '../balance-and-outputs-operator';
 import { OperatorService } from '../../operators.service';
+import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 
 /**
  * Operator for SpendingService to be used with Fiber coins.
@@ -37,6 +38,7 @@ export class FiberSpendingOperator implements SpendingOperator {
   private translate: TranslateService;
   private storageService: StorageService;
   private balanceAndOutputsOperator: BalanceAndOutputsOperator;
+  private walletsAndAddressesOperator: WalletsAndAddressesOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
@@ -48,6 +50,7 @@ export class FiberSpendingOperator implements SpendingOperator {
     // Get the operators.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
       this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
     });
 
     this.currentCoin = currentCoin;
@@ -134,7 +137,7 @@ export class FiberSpendingOperator implements SpendingOperator {
 
       let hoursToSend = new BigNumber(0);
       data.transaction.outputs
-        .filter(o => destinations.map(dest => dest.address).find(addr => addr === o.address))
+        .filter(o => destinations.map(dest => AddressBase.create(this.walletsAndAddressesOperator.formatAddress, dest.address)).find(addr => addr.compareAddress(o.address)))
         .map(o => hoursToSend = hoursToSend.plus(new BigNumber(o.hours)));
 
       // Process the node response and create a known object.
@@ -142,7 +145,7 @@ export class FiberSpendingOperator implements SpendingOperator {
         inputs: (data.transaction.inputs as any[]).map(input => {
           return {
             hash: input.uxid,
-            address: input.address,
+            address: this.walletsAndAddressesOperator.formatAddress(input.address),
             coins: new BigNumber(input.coins),
             hours: new BigNumber(input.calculated_hours),
           };
@@ -150,7 +153,7 @@ export class FiberSpendingOperator implements SpendingOperator {
         outputs: (data.transaction.outputs as any[]).map(output => {
           return {
             hash: output.uxid,
-            address: output.address,
+            address: this.walletsAndAddressesOperator.formatAddress(output.address),
             coins: new BigNumber(output.coins),
             hours: new BigNumber(output.hours),
           };
@@ -159,7 +162,7 @@ export class FiberSpendingOperator implements SpendingOperator {
         hoursToSend: hoursToSend,
         fee: new BigNumber(data.transaction.fee),
         from: senderString,
-        to: destinations.map(destination => destination.address).join(', '),
+        to: destinations.map(destination => this.walletsAndAddressesOperator.formatAddress(destination.address)).join(', '),
         wallet: wallet,
         encoded: data.encoded_transaction,
         innerHash: data.transaction.inner_hash,
@@ -228,8 +231,8 @@ export class FiberSpendingOperator implements SpendingOperator {
       const hwOutputs: HwOutput[] = [];
       const hwInputs: HwInput[] = [];
 
-      const addressesMap: Map<string, number> = new Map<string, number>();
-      wallet.addresses.forEach((address, i) => addressesMap.set(address.address, i));
+      const addressMap = new AddressMap<number>(this.walletsAndAddressesOperator.formatAddress);
+      wallet.addresses.forEach((address, i) => addressMap.set(address.printableAddress, i));
 
       // Convert all inputs and outputs to the format used by the hw wallet.
       transaction.outputs.forEach(output => {
@@ -240,14 +243,14 @@ export class FiberSpendingOperator implements SpendingOperator {
         });
 
         // This makes de device consider the output as the one used for returning the remaining coins.
-        if (output.returningCoins && addressesMap.has(output.address)) {
-          hwOutputs[hwOutputs.length - 1].address_index = addressesMap.get(output.address);
+        if (output.returningCoins && addressMap.has(output.address)) {
+          hwOutputs[hwOutputs.length - 1].address_index = addressMap.get(output.address);
         }
       });
       transaction.inputs.forEach(input => {
         hwInputs.push({
           hash: input.hash,
-          index: addressesMap.get(input.address),
+          index: addressMap.get(input.address),
         });
       });
 

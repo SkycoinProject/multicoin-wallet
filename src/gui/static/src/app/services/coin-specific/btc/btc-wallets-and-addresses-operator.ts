@@ -5,7 +5,7 @@ import { TranslateService } from '@ngx-translate/core';
 import BigNumber from 'bignumber.js';
 
 import { HwWalletService } from '../../hw-wallet.service';
-import { WalletBase, AddressBase, duplicateWalletBase, WalletTypes } from '../../wallet-operations/wallet-objects';
+import { WalletBase, AddressBase, duplicateWalletBase, WalletTypes, AddressMap } from '../../wallet-operations/wallet-objects';
 import { redirectToErrorPage, processServiceError } from '../../../utils/errors';
 import { StorageService, StorageType } from '../../storage.service';
 import { Coin } from '../../../coins/coin';
@@ -190,7 +190,10 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
       const newWallet = this.createHardwareWalletData(
         this.translate.instant('hardware-wallet.general.default-wallet-name'),
         addresses.slice(0, lastAddressWithTx + 1).map(add => {
-          return { address: add, confirmed: false };
+          const newAddress = AddressBase.create(this.formatAddress, add);
+          newAddress.confirmed = false;
+
+          return newAddress;
         }), true, false,
       );
 
@@ -218,7 +221,7 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
    * @returns A map with the addresses as key and a value indicating if the address has
    * already been used.
    */
-  private recursivelyGetIfUsed(addresses: string[], currentElements = new Map<string, boolean>()): Observable<Map<string, boolean>> {
+  private recursivelyGetIfUsed(addresses: string[], currentElements = new AddressMap<boolean>(this.formatAddress)): Observable<AddressMap<boolean>> {
     if (addresses.length === 0) {
       return of(currentElements);
     }
@@ -263,7 +266,10 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
         hardwareWallets.push(this.createHardwareWalletData(
           wallet.label,
           wallet.addresses.map(address => {
-            return { address: address.address, confirmed: address.confirmed };
+            const newAddress = AddressBase.create(this.formatAddress, address.printableAddress);
+            newAddress.confirmed = address.confirmed;
+
+            return newAddress;
           }),
           wallet.hasHwSecurityWarnings,
           wallet.stopShowingHwSecurityPopup,
@@ -354,7 +360,21 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
             // This is just a precaution.
             wallet.isHardware = true;
             if (!wallet.addresses) {
-              wallet.addresses = [{ address: 'invalid', confirmed: false, }];
+              const newAddress = AddressBase.create(this.formatAddress, 'invalid');
+              newAddress.confirmed = false;
+              wallet.addresses = [newAddress];
+            }
+
+            // If an address was saved with the old format, convert it to the new one.
+            for (let i = 0; i < wallet.addresses.length; i++) {
+              if (wallet.addresses[i]['address']) {
+                const confirmed = wallet.addresses[i].confirmed;
+                const isChangeAddress = wallet.addresses[i].isChangeAddress;
+
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['address']);
+                wallet.addresses[i].confirmed = confirmed;
+                wallet.addresses[i].isChangeAddress = isChangeAddress;
+              }
             }
 
             // If the value was not retrieved, it means that the wallet was saved with a previous
@@ -365,7 +385,7 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
 
             wallet.coin = this.currentCoin.coinName;
 
-            wallet.id = this.getHwWalletID(wallet.addresses[0].address);
+            wallet.id = this.getHwWalletID(wallet.addresses[0].printableAddress);
           });
 
           return loadedWallets;
@@ -392,7 +412,21 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
             // This is just a precaution.
             wallet.isHardware = false;
             if (!wallet.addresses) {
-              wallet.addresses = [{ address: 'invalid', confirmed: true, }];
+              const newAddress = AddressBase.create(this.formatAddress, 'invalid');
+              newAddress.confirmed = true;
+              wallet.addresses = [newAddress];
+            }
+
+            // If an address was saved with the old format, convert it to the new one.
+            for (let i = 0; i < wallet.addresses.length; i++) {
+              if (wallet.addresses[i]['address']) {
+                const confirmed = wallet.addresses[i].confirmed;
+                const isChangeAddress = wallet.addresses[i].isChangeAddress;
+
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['address']);
+                wallet.addresses[i].confirmed = confirmed;
+                wallet.addresses[i].isChangeAddress = isChangeAddress;
+              }
             }
           });
 
@@ -417,5 +451,14 @@ export class BtcWalletsAndAddressesOperator implements WalletsAndAddressesOperat
    */
   private informDataUpdated() {
     this.walletsSubject.next(this.walletsList);
+  }
+
+  formatAddress(address: string): string {
+    address = address.trim();
+    if (address.toLowerCase().startsWith('bc1') || address.toLowerCase().startsWith('tb1')) {
+      address = address.toLowerCase();
+    }
+
+    return address;
   }
 }

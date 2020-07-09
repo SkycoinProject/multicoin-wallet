@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 
-import { WalletBase, AddressWithBalance } from './wallet-objects';
+import { WalletBase, AddressWithBalance, AddressMap } from './wallet-objects';
 import { OldTransaction } from './transaction-objects';
 import { HistoryOperator } from '../coin-specific/history-operator';
 import { OperatorService } from '../operators.service';
@@ -83,7 +83,7 @@ export interface TransactionHistory {
    * List with the addresses for which transactions were ignored due to the value sent in the
    * transactionLimitperAddress param.
    */
-  addressesWitMoreTransactions: Set<string>;
+  addressesWitAdditionalTransactions: AddressMap<boolean>;
 }
 
 /**
@@ -132,10 +132,10 @@ export class HistoryService {
   /**
    * Checks the addresses of a wallet to know which ones have been used, defined as having
    * received coins.
-   * @returns A map with all addresses indicating which ones have been used and which ones
+   * @returns A map with all addresses, indicating which ones have been used and which ones
    * have not.
    */
-  getIfAddressesUsed(wallet: WalletBase): Observable<Map<string, boolean>> {
+  getIfAddressesUsed(wallet: WalletBase): Observable<AddressMap<boolean>> {
     return this.operator.getIfAddressesUsed(wallet);
   }
 

@@ -69,7 +69,7 @@ export class OutputsComponent implements OnDestroy {
           // Include only addresses with outputs or the requested address.
           wallet.addresses = wallet.addresses.filter(address => {
             if (address.outputs.length > 0) {
-              return addr ? address.address === addr : true;
+              return addr ? address.compareAddress(addr) : true;
             }
           });
 

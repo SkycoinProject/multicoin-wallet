@@ -28,8 +28,8 @@
     <!-- Address list. -->
     <ng-container *ngIf="element.originalWallet.walletType === walletTypes.Deterministic && element.addresses.length > 0">
       <ng-container *ngFor="let address of element.addresses">
-        <button mat-button color="primary" (click)="select(address.address)">
-          <div class="address">{{ address.address }}</div>
+        <button mat-button color="primary" (click)="select(address.printableAddress)">
+          <div class="address">{{ address.printableAddress }}</div>
           <!-- Coins balance. -->
           <div class="balance">
             {{ address.coins | amount:true:'first' }}

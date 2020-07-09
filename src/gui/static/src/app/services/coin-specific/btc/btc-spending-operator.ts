@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { HwWalletService, HwOutput, HwBtcInput, OperationResult, HwBtcOutput } from '../../hw-wallet.service';
 import { StorageService, StorageType } from '../../storage.service';
-import { WalletBase } from '../../wallet-operations/wallet-objects';
+import { WalletBase, AddressMap } from '../../wallet-operations/wallet-objects';
 import { GeneratedTransaction, Output, Input } from '../../wallet-operations/transaction-objects';
 import { Coin } from '../../../coins/coin';
 import { TransactionDestination, HoursDistributionOptions, RecommendedFees } from '../../wallet-operations/spending.service';
@@ -16,6 +16,7 @@ import { OperatorService } from '../../operators.service';
 import { BtcApiService } from '../../api/btc-api.service';
 import { BtcCoinConfig } from '../../../coins/coin-type-configs/btc.coin-config';
 import { BtcInput, BtcOutput, BtcTxEncoder } from './utils/btc-tx-encoder';
+import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 
 /**
  * Operator for SpendingService to be used with btc-like coins.
@@ -40,6 +41,7 @@ export class BtcSpendingOperator implements SpendingOperator {
   private translate: TranslateService;
   private storageService: StorageService;
   private balanceAndOutputsOperator: BalanceAndOutputsOperator;
+  private walletsAndAddressesOperator: WalletsAndAddressesOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
@@ -51,6 +53,7 @@ export class BtcSpendingOperator implements SpendingOperator {
     // Get the operators.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
       this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
     });
 
     this.currentCoin = currentCoin;
@@ -79,7 +82,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       senderString = wallet.label;
     } else {
       if (addresses) {
-        senderString = addresses.join(', ');
+        senderString = addresses.map(add => this.walletsAndAddressesOperator.formatAddress(add)).join(', ');
       } else if (unspents) {
         senderString = unspents.map(output => output.hash).join(', ');
       }
@@ -89,7 +92,7 @@ export class BtcSpendingOperator implements SpendingOperator {
 
     // Get the locking scripts for the destination addresses.
     const addressesToCheck = destinations.map(destination => destination.address);
-    let destinationLockingScripts: Map<string, string>;
+    let destinationLockingScripts: AddressMap<string>;
     response = this.recursivelyGetAddressesScripts(addressesToCheck).pipe(map(result => {
       // If it was not possible to get the script for an address, the address is not valid.
       const invalidAddresses: string[] = [];
@@ -115,14 +118,14 @@ export class BtcSpendingOperator implements SpendingOperator {
       response = response.pipe(map(() => unspents));
     } else {
       // Get all the outputs of the provided wallet or address list.
-      let AddressesToCheck: string[] = [];
+      let AddressesToCheck_: string[] = [];
       if (addresses) {
-        AddressesToCheck = addresses;
+        AddressesToCheck_ = addresses;
       } else {
-        wallet.addresses.forEach(address => AddressesToCheck.push(address.address));
+        wallet.addresses.forEach(address => AddressesToCheck_.push(address.printableAddress));
       }
 
-      response = response.pipe(mergeMap(() => this.balanceAndOutputsOperator.getOutputs(AddressesToCheck.join(','))));
+      response = response.pipe(mergeMap(() => this.balanceAndOutputsOperator.getOutputs(AddressesToCheck_.join(','))));
     }
 
     // How many coins will be sent.
@@ -162,7 +165,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       processedInputs = inputs.map(input => {
         return {
           hash: input.hash,
-          address: input.address,
+          address: this.walletsAndAddressesOperator.formatAddress(input.address),
           coins: input.coins,
           transactionId: input.transactionId,
           indexInTransaction: input.indexInTransaction,
@@ -176,7 +179,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       destinations.forEach(destination => {
         processedOutputs.push({
           hash: '',
-          address: destination.address,
+          address: this.walletsAndAddressesOperator.formatAddress(destination.address),
           coins: new BigNumber(destination.coins),
           lockingScript: destinationLockingScripts.get(destination.address),
         });
@@ -188,7 +191,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       if (coinsInInputs.minus(amountNeeded).isGreaterThan(0)) {
         processedOutputs.push({
           hash: '',
-          address: changeAddress,
+          address: this.walletsAndAddressesOperator.formatAddress(changeAddress),
           coins: coinsInInputs.minus(amountNeeded),
           lockingScript: '',
           returningCoins: true,
@@ -214,7 +217,7 @@ export class BtcSpendingOperator implements SpendingOperator {
       } else {
         return of(null);
       }
-    }), map((changeAddressData: Map<string, string>) => {
+    }), map((changeAddressData: AddressMap<string>) => {
       // Set the script for the output created for the remaining coins, if any.
       if (changeAddressData) {
         processedOutputs[processedOutputs.length - 1].lockingScript = changeAddressData.get(changeAddress);
@@ -227,7 +230,7 @@ export class BtcSpendingOperator implements SpendingOperator {
         coinsToSend: amountToSend,
         fee: calculatedFee,
         from: senderString,
-        to: destinations.map(destination => destination.address).join(', '),
+        to: destinations.map(destination => this.walletsAndAddressesOperator.formatAddress(destination.address)).join(', '),
         wallet: wallet,
         encoded: '',
         innerHash: '',
@@ -350,7 +353,7 @@ export class BtcSpendingOperator implements SpendingOperator {
    * @param currentElements Already obtained data. For internal use.
    * @returns Map with the scripts of each address. If an address is invalid, the script is null.
    */
-  private recursivelyGetAddressesScripts(addresses: string[], currentElements = new Map<string, string>()): Observable<Map<string, string>> {
+  private recursivelyGetAddressesScripts(addresses: string[], currentElements = new AddressMap<string>(this.walletsAndAddressesOperator.formatAddress)): Observable<AddressMap<string>> {
     if (addresses.length === 0) {
       return of(currentElements);
     }
@@ -441,13 +444,13 @@ export class BtcSpendingOperator implements SpendingOperator {
 
       signaturesGenerationProcedure = of(signatures);
 
-    // Procedure for getting the signatures with a software wallet.
+    // Procedure for getting the signatures with a hardware wallet.
     } else {
       const hwOutputs: HwBtcOutput[] = [];
       const hwInputs: HwBtcInput[] = [];
 
-      const addressesMap: Map<string, number> = new Map<string, number>();
-      wallet.addresses.forEach((address, i) => addressesMap.set(address.address, i));
+      const addressMap = new AddressMap<number>(this.walletsAndAddressesOperator.formatAddress);
+      wallet.addresses.forEach((address, i) => addressMap.set(address.printableAddress, i));
 
       // Convert all inputs and outputs to the format used by the hw wallet.
       transaction.outputs.forEach(output => {
@@ -457,14 +460,14 @@ export class BtcSpendingOperator implements SpendingOperator {
         });
 
         // This makes de device consider the output as the one used for returning the remaining coins.
-        if (output.returningCoins && addressesMap.has(output.address)) {
-          hwOutputs[hwOutputs.length - 1].address_index = addressesMap.get(output.address);
+        if (output.returningCoins && addressMap.has(output.address)) {
+          hwOutputs[hwOutputs.length - 1].address_index = addressMap.get(output.address);
         }
       });
       transaction.inputs.forEach(input => {
         hwInputs.push({
           prev_hash: input.transactionId,
-          index: addressesMap.get(input.address),
+          index: addressMap.get(input.address),
         });
       });
 

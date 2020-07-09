@@ -206,7 +206,7 @@ export class WalletOptionsComponent implements OnDestroy {
             // Get the index of the last address with transaction history.
             let lastWithTxs = 0;
             relevantAddresses.forEach((address, i) => {
-              if (AddressesWithTxs.has(address.address) && AddressesWithTxs.get(address.address)) {
+              if (AddressesWithTxs.has(address.printableAddress) && AddressesWithTxs.get(address.printableAddress)) {
                 lastWithTxs = i;
               }
             });

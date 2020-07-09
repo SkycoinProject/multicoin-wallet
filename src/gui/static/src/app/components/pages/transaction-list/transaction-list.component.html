@@ -27,7 +27,7 @@
           {{ 'history.all-addresses' | translate }}
         </mat-option>
         <mat-option appMainColorFormElement *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
-          {{ address.address }} - {{ address.coins | amount }}
+          {{ address.printableAddress }} - {{ address.coins | amount }}
           {{ !coinHasHours ? '' : ' (' + (address.hours | amount:false) + ')' }}
         </mat-option>
       </mat-optgroup>
@@ -46,7 +46,7 @@
       <!-- Filter group for all the addresses shown independently. -->
       <mat-optgroup *ngIf="addresses.length > 0" [label]="'history.addresses' | translate">
         <mat-option appMainColorFormElement *ngFor="let address of addresses" [value]="address" [disabled]="address.showingWholeWallet">
-          {{ address.walletName }} - {{ address.address }} - {{ address.coins | amount }}
+          {{ address.walletName }} - {{ address.printableAddress }} - {{ address.coins | amount }}
           {{ !coinHasHours ? '' : ' (' + (address.hours | amount:false) + ')' }}
         </mat-option>
       </mat-optgroup>
@@ -58,7 +58,7 @@
           <div class="filter text-truncate" *ngIf="filter.label || !filter.showingWholeWallet">
             <span *ngIf="filter.label">{{ filter.label }}</span>
             <span *ngIf="filter.walletName">{{ filter.walletName }} - </span>
-            <span *ngIf="filter.address">{{ filter.address }}</span>
+            <span *ngIf="filter.printableAddress">{{ filter.printableAddress }}</span>
             - {{ filter.coins | amount }}
             {{ !coinHasHours ? '' : ' (' + (filter.hours | amount:false) + ')' }}
           </div>

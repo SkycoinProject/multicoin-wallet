@@ -10,11 +10,12 @@ import { TransactionDetailComponent } from './transaction-detail/transaction-det
 import { HistoryService, TransactionLimits } from '../../../services/wallet-operations/history.service';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 import { OldTransaction, OldTransactionTypes } from '../../../services/wallet-operations/transaction-objects';
-import { WalletTypes } from '../../../services/wallet-operations/wallet-objects';
+import { WalletTypes, AddressMap } from '../../../services/wallet-operations/wallet-objects';
 import { getTransactionIconName } from '../../../utils/history-utils';
 import { CoinService } from '../../../services/coin.service';
 import { AppConfig } from '../../../app.config';
 import { Coin } from '../../../coins/coin';
+import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
 
 /**
  * Represents a wallet, to be used as filter.
@@ -38,7 +39,7 @@ class Wallet {
  */
 class Address {
   walletID: string;
-  address: string;
+  printableAddress: string;
   coins: string;
   hours?: string;
   /**
@@ -133,7 +134,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   someTransactionsWereIgnored: boolean;
   // List with the addresses for which transactions were ignored the last time the history
   // was recovered.
-  addressesWitMoreTransactions: Set<string>;
+  addressesWitMoreTransactions: AddressMap<boolean>;
   // All wallets the user has, for filtering.
   wallets: Wallet[];
   // All wallets that must be shown in the filter list with all its addresses.
@@ -186,6 +187,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private formBuilder: FormBuilder,
     private historyService: HistoryService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
     balanceAndOutputsService: BalanceAndOutputsService,
     route: ActivatedRoute,
     coinService: CoinService,
@@ -209,7 +211,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       let Addresses = params['addr'] ? (params['addr'] as string).split(',') : [];
       let Wallets = params['wal'] ? (params['wal'] as string).split(',') : [];
       // Add prefixes to make it easier to identify the requested filters.
-      Addresses = Addresses.map(element => 'a-' + element);
+      Addresses = Addresses.map(element => 'a-' + this.walletsAndAddressesService.formatAddress(element));
       Wallets = Wallets.map(element => 'w-' + element);
       this.showingStep = ShowingSteps.InitialGroup;
 
@@ -255,12 +257,12 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       // Save the currently selected filters on 2 maps.
       const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
       const selectedWallets: Map<string, boolean> = new Map<string, boolean>();
-      const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
-      selectedfilters.forEach(currentFilter => {
+      const selectedFilters: (Wallet|Address)[] = this.form.get('filter').value;
+      selectedFilters.forEach(currentFilter => {
         if ((currentFilter as Wallet).addresses) {
           selectedWallets.set((currentFilter as Wallet).id, true);
         } else {
-          selectedAddresses.set((currentFilter as Address).walletID + '/' + (currentFilter as Address).address, true);
+          selectedAddresses.set((currentFilter as Address).walletID + '/' + (currentFilter as Address).printableAddress, true);
         }
       });
       // As all wallets and address used as filters will be recreated, this array saves the list
@@ -290,7 +292,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         wallet.addresses.forEach(address => {
           const newAddress: Address = {
             walletID: wallet.id,
-            address: address.address,
+            printableAddress: address.printableAddress,
             coins: address.coins.toString(),
             hours: address.hours ? address.hours.toString() : undefined,
             showingWholeWallet: selectedWallets.has(wallet.id),
@@ -298,7 +300,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
           this.wallets[this.wallets.length - 1].addresses.push(newAddress);
 
           // Use as filter, if appropiate.
-          if (selectedAddresses.has(wallet.id + '/' + address.address)) {
+          if (selectedAddresses.has(wallet.id + '/' + address.printableAddress)) {
             newFilters.push(newAddress);
           }
         });
@@ -403,15 +405,15 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
     const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
     selectedfilters.forEach(currentFilter => {
-      if ((currentFilter as Address).address) {
-        selectedAddresses.set((currentFilter as Address).walletID + '/' + (currentFilter as Address).address, true);
+      if ((currentFilter as Address).printableAddress) {
+        selectedAddresses.set((currentFilter as Address).walletID + '/' + (currentFilter as Address).printableAddress, true);
       }
     });
 
     this.addresses = [];
     this.walletsNotShowingAddresses.forEach(wallet => {
       wallet.addresses.forEach(address => {
-        if (selectedAddresses.has(address.walletID + '/' + address.address)) {
+        if (selectedAddresses.has(address.walletID + '/' + address.printableAddress)) {
           address.walletName = wallet.label;
           this.addresses.push(address);
         }
@@ -440,7 +442,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
     this.transactionsSubscription = of(1).pipe(delay(delayMs), mergeMap(() => this.historyService.getTransactionsHistory(null, transactionLimitperAddress))).subscribe(response => {
         this.allTransactions = response.transactions;
-        this.addressesWitMoreTransactions = response.addressesWitMoreTransactions;
+        this.addressesWitMoreTransactions = response.addressesWitAdditionalTransactions;
         this.transactionsLoadedForTheFirsTime = true;
         this.loadingTransactions = false;
 
@@ -488,23 +490,23 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       this.someTransactionsWereIgnored = false;
 
       // Save all the allowed addresses.
-      const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
+      const selectedAddresses = new AddressMap<boolean>(this.walletsAndAddressesService.formatAddress);
       selectedfilters.forEach(currentFilter => {
         if ((currentFilter as Wallet).addresses) {
           // Update the selection status when a whole wallet was selected.
           (currentFilter as Wallet).addresses.forEach(address => {
-            selectedAddresses.set(address.address, true);
+            selectedAddresses.set(address.printableAddress, true);
             address.showingWholeWallet = true;
 
-            if (this.addressesWitMoreTransactions.has(address.address)) {
+            if (this.addressesWitMoreTransactions.has(address.printableAddress)) {
               this.someTransactionsWereIgnored = true;
             }
           });
           (currentFilter as Wallet).allAddressesSelected = true;
         } else {
-          selectedAddresses.set((currentFilter as Address).address, true);
+          selectedAddresses.set((currentFilter as Address).printableAddress, true);
 
-          if (this.addressesWitMoreTransactions.has((currentFilter as Address).address)) {
+          if (this.addressesWitMoreTransactions.has((currentFilter as Address).printableAddress)) {
             this.someTransactionsWereIgnored = true;
           }
         }
@@ -557,7 +559,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
             }
           } else if (currentFilter.startsWith('a-')) {
             wallet.addresses.forEach(address => {
-              if (filterContent === address.address) {
+              if (filterContent === address.printableAddress) {
                 filters.push(address);
               }
             });

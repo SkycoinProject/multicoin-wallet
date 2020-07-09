@@ -345,7 +345,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         this.operationSubscription = this.walletsAndAddressesService.currentWallets.pipe(first()).subscribe(wallets => {
           // Check if there is already a saved hw wallet with the obtained first address.
           const alreadySaved = wallets.some(wallet => {
-            const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
+            const found = wallet.addresses[0].compareAddress(response.rawResponse[0]) && wallet.isHardware;
             if (found) {
               this.wallet = wallet;
             }

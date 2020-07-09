@@ -4,7 +4,7 @@ import { Injector } from '@angular/core';
 import BigNumber from 'bignumber.js';
 
 import { StorageService } from '../../storage.service';
-import { WalletBase } from '../../wallet-operations/wallet-objects';
+import { WalletBase, AddressMap } from '../../wallet-operations/wallet-objects';
 import { Coin } from '../../../coins/coin';
 import { getTransactionsHistory, recursivelyGetTransactions } from './utils/btc-history-utils';
 import { PendingTransactionsResponse, AddressesHistoryResponse, PendingTransactionData, TransactionHistory, TransactionLimits } from '../../wallet-operations/history.service';
@@ -51,8 +51,8 @@ export class BtcHistoryOperator implements HistoryOperator {
     this.operatorsSubscription.unsubscribe();
   }
 
-  getIfAddressesUsed(wallet: WalletBase): Observable<Map<string, boolean>> {
-    const addresses = wallet.addresses.map(address => address.address);
+  getIfAddressesUsed(wallet: WalletBase): Observable<AddressMap<boolean>> {
+    const addresses = wallet.addresses.map(address => address.printableAddress);
 
     return this.recursivelyGetIfAddressesUsed(addresses);
   }
@@ -63,7 +63,7 @@ export class BtcHistoryOperator implements HistoryOperator {
    * @param addresses Addresses to check. The list will be altered by the function.
    * @param currentElements Already obtained data. For internal use.
    */
-  private recursivelyGetIfAddressesUsed(addresses: string[], currentElements = new Map<string, boolean>()): Observable<Map<string, boolean>> {
+  private recursivelyGetIfAddressesUsed(addresses: string[], currentElements = new AddressMap<boolean>(this.walletsAndAddressesOperator.formatAddress)): Observable<AddressMap<boolean>> {
     if (addresses.length === 0) {
       return of(currentElements);
     }
@@ -96,7 +96,7 @@ export class BtcHistoryOperator implements HistoryOperator {
 
     // Get the history.
     return initialRequest.pipe(first(), mergeMap(wallets => {
-      return getTransactionsHistory(this.currentCoin, wallets, transactionLimitperAddress, this.blockbookApiService, this.storageService);
+      return getTransactionsHistory(this.currentCoin, wallets, transactionLimitperAddress, this.blockbookApiService, this.storageService, this.walletsAndAddressesOperator);
     }));
   }
 
@@ -110,15 +110,15 @@ export class BtcHistoryOperator implements HistoryOperator {
       return this.blockbookApiService.get(this.currentCoin.indexerUrl, 'api');
     }), mergeMap(generalData => {
       // Allows to avoid repeating addresses.
-      const addressesMap = new Map<string, boolean>();
+      const addressMap = new AddressMap<boolean>(this.walletsAndAddressesOperator.formatAddress);
 
       // Get all the addresses of the wallets.
       const addresses: string[] = [];
       wallets.forEach(w => {
         w.addresses.map(add => {
-          if (!addressesMap.has(add.address)) {
-            addresses.push(add.address);
-            addressesMap.set(add.address, true);
+          if (!addressMap.has(add.printableAddress)) {
+            addresses.push(add.printableAddress);
+            addressMap.set(add.printableAddress, true);
           }
         });
       });
@@ -131,7 +131,7 @@ export class BtcHistoryOperator implements HistoryOperator {
       const startingBlock = generalData.blockbook.bestHeight - (this.currentCoin.confirmationsNeeded - 1);
 
       // Get the history.
-      return recursivelyGetTransactions(this.currentCoin, this.blockbookApiService, addresses, transactionsToGet, startingBlock);
+      return recursivelyGetTransactions(this.currentCoin, this.blockbookApiService, this.walletsAndAddressesOperator, addresses, transactionsToGet, startingBlock);
     }), map(response => {
       // Security measure for race conditions, as 2 request were made.
       response.transactions = response.transactions.filter(tx => !tx.confirmations || tx.confirmations < this.currentCoin.confirmationsNeeded);

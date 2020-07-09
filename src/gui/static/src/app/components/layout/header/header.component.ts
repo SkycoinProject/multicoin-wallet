@@ -8,13 +8,14 @@ import { BlockchainService } from '../../../services/blockchain.service';
 import { NetworkService } from '../../../services/network.service';
 import { AppConfig } from '../../../app.config';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
-import { AddressWithBalance } from '../../../services/wallet-operations/wallet-objects';
+import { AddressWithBalance, AddressMap } from '../../../services/wallet-operations/wallet-objects';
 import { Coin } from '../../../coins/coin';
 import { CoinService } from '../../../services/coin.service';
 import { AppUpdateService } from '../../../services/app-update.service';
 import { NodeService } from '../../../services/node.service';
 import { TransactionListComponent } from '../../pages/transaction-list/transaction-list.component';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
 
 /**
  * Header shown at the top of most pages.
@@ -74,6 +75,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private balanceAndOutputsService: BalanceAndOutputsService,
     private coinService: CoinService,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
     this.showBlockchainSyncProgress = coinService.currentCoinInmediate.coinTypeFeatures.blockchainSyncProgress;
@@ -104,19 +106,19 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     // Get the current balance.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
-      const addresses = new Map<string, AddressWithBalance>();
+      const addressMap = new AddressMap<AddressWithBalance>(this.walletsAndAddressesService.formatAddress);
       wallets.forEach(wallet => {
         wallet.addresses.forEach(address => {
-          if (!addresses.has(address.address)) {
-            addresses.set(address.address, address);
+          if (!addressMap.has(address.printableAddress)) {
+            addressMap.set(address.printableAddress, address);
           } else {
             // This prevents a minor glich due to an edge case in which, just for a few seconds,
             // some addresses of a newly added hw wallet which has also been added as a software
             // wallet can report 0 coins while the node is reporting some coins on the same
             // addresses on the previously created software wallet.
-            const previouslySavedAddress = addresses.get(address.address);
+            const previouslySavedAddress = addressMap.get(address.printableAddress);
             if (previouslySavedAddress.coins.isLessThan(address.coins)) {
-              addresses.set(address.address, address);
+              addressMap.set(address.printableAddress, address);
             }
           }
         });
@@ -124,7 +126,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
       let coins = new BigNumber(0);
       let hours = new BigNumber(0);
-      addresses.forEach(addr => {
+      addressMap.forEach(addr => {
         coins = coins.plus(addr.coins);
         if (addr.hours) {
           hours = hours.plus(addr.hours);

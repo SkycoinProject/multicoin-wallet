@@ -16,6 +16,7 @@ import { OperatorService } from '../../operators.service';
 import { EthApiService } from '../../api/eth-api.service';
 import { EthCoinConfig } from '../../../coins/coin-type-configs/eth.coin-config';
 import { EthTransactionData, EthTxEncoder } from './utils/eth-tx-encoder';
+import { WalletsAndAddressesOperator } from '../wallets-and-addresses-operator';
 
 /**
  * Operator for SpendingService to be used with eth-like coins.
@@ -37,6 +38,7 @@ export class EthSpendingOperator implements SpendingOperator {
   private translate: TranslateService;
   private storageService: StorageService;
   private balanceAndOutputsOperator: BalanceAndOutputsOperator;
+  private walletsAndAddressesOperator: WalletsAndAddressesOperator;
 
   constructor(injector: Injector, currentCoin: Coin) {
     // Get the services.
@@ -48,6 +50,7 @@ export class EthSpendingOperator implements SpendingOperator {
     // Get the operators.
     this.operatorsSubscription = injector.get(OperatorService).currentOperators.pipe(filter(operators => !!operators), first()).subscribe(operators => {
       this.balanceAndOutputsOperator = operators.balanceAndOutputsOperator;
+      this.walletsAndAddressesOperator = operators.walletsAndAddressesOperator;
     });
 
     this.currentCoin = currentCoin;
@@ -91,17 +94,17 @@ export class EthSpendingOperator implements SpendingOperator {
     if (wallet) {
       senderString = wallet.label;
     } else if (addresses) {
-      senderString = addresses[0];
+      senderString = this.walletsAndAddressesOperator.formatAddress(addresses[0]);
     }
 
     const txInputs: Input[] = [{
-      address: addresses ? addresses[0] : wallet.addresses[0].address,
+      address: addresses ? this.walletsAndAddressesOperator.formatAddress(addresses[0]) : wallet.addresses[0].printableAddress,
       coins: new BigNumber(0),
       hash: '',
     }];
 
     const txOutputs: Output[] = [{
-      address: destinations[0].address,
+      address: this.walletsAndAddressesOperator.formatAddress(destinations[0].address),
       coins: new BigNumber(destinations[0].coins),
       hash: '',
     }];
@@ -112,7 +115,7 @@ export class EthSpendingOperator implements SpendingOperator {
       coinsToSend: new BigNumber(destinations[0].coins),
       fee: calculatedFee,
       from: senderString,
-      to: destinations[0].address,
+      to: this.walletsAndAddressesOperator.formatAddress(destinations[0].address),
       wallet: wallet,
       encoded: '',
       innerHash: '',

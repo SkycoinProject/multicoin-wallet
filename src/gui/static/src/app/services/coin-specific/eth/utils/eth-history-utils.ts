@@ -2,7 +2,7 @@ import { Observable, of } from 'rxjs';
 import { mergeMap, map } from 'rxjs/operators';
 import { BigNumber } from 'bignumber.js';
 
-import { WalletBase } from '../../../wallet-operations/wallet-objects';
+import { WalletBase, AddressMap } from '../../../wallet-operations/wallet-objects';
 import { OldTransaction, OldTransactionTypes, Output } from '../../../wallet-operations/transaction-objects';
 import { StorageService, StorageType } from '../../../storage.service';
 import { calculateGeneralData } from '../../../../utils/history-utils';
@@ -11,6 +11,7 @@ import { BlockbookApiService } from '../../../../services/api/blockbook-api.serv
 import { EthCoinConfig } from '../../../../coins/coin-type-configs/eth.coin-config';
 import { TransactionHistory, TransactionLimits } from '../../../../services/wallet-operations/history.service';
 import { AppConfig } from '../../../../app.config';
+import { WalletsAndAddressesOperator } from '../../wallets-and-addresses-operator';
 
 /**
  * Gets the transaction history of a wallet list.
@@ -22,6 +23,7 @@ export function getTransactionsHistory(
   transactionLimitperAddress: TransactionLimits,
   blockbookApiService: BlockbookApiService,
   storageService: StorageService,
+  walletsAndAddressesOperator: WalletsAndAddressesOperator,
 ): Observable<TransactionHistory> {
 
   let transactions: OldTransaction[];
@@ -29,20 +31,20 @@ export function getTransactionsHistory(
    * Allows to easily know which addresses are part of the wallets and also to know
    * which wallet the address belong to.
    */
-  const addressesMap: Map<string, WalletBase> = new Map<string, WalletBase>();
+  const addressMap = new AddressMap<WalletBase>(walletsAndAddressesOperator.formatAddress);
 
   // Get all the addresses of the wallets.
   const addresses: string[] = [];
   wallets.forEach(w => {
     w.addresses.map(add => {
-      if (!addressesMap.has(add.address)) {
-        addresses.push(add.address);
+      if (!addressMap.has(add.printableAddress)) {
+        addresses.push(add.printableAddress);
       }
       // There could be more than one wallet with the address. This would happen if the wallet is repeated
       // (like when using the same seed for a software and a hardware wallet). In that case, the wallet
       // with most addresses is considered "the most complete one" and is used.
-      if (!addressesMap.has(add.address) || addressesMap.get(add.address).addresses.length < w.addresses.length) {
-        addressesMap.set(add.address, w);
+      if (!addressMap.has(add.printableAddress) || addressMap.get(add.printableAddress).addresses.length < w.addresses.length) {
+        addressMap.set(add.printableAddress, w);
       }
     });
   });
@@ -51,7 +53,7 @@ export function getTransactionsHistory(
   const decimalsCorrector = new BigNumber(10).exponentiatedBy((currentCoin.config as EthCoinConfig).decimals);
 
   // Addresses for which transactions were ignored due to transactionLimitperAddres.
-  let addressesWitMoreTransactions: Set<string>;
+  let addressesWitMoreTransactions: AddressMap<boolean>;
   // Calculate how many transactions to get per address.
   const hasManyAddresses = addresses.length > AppConfig.fewAddressesLimit;
   let transactionsToGet = hasManyAddresses ? AppConfig.maxTxPerAddressIfManyAddresses : AppConfig.maxTxPerAddressIfFewAddresses;
@@ -62,7 +64,7 @@ export function getTransactionsHistory(
   }
 
   // Get the transactions of all addresses.
-  return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, transactionsToGet).pipe(mergeMap((response: TransactionsResponse) => {
+  return recursivelyGetTransactions(currentCoin, blockbookApiService, walletsAndAddressesOperator, addresses, transactionsToGet).pipe(mergeMap((response: TransactionsResponse) => {
     addressesWitMoreTransactions = response.addressesWitMoreTransactions;
 
     // Process the response and convert it into a known object type. Some values are temporal.
@@ -72,7 +74,7 @@ export function getTransactionsHistory(
       (transaction.vout as any[]).forEach(output => {
         outputs.push({
           hash: '',
-          address: (output.addresses as string[]).join(', '),
+          address: (output.addresses as string[]).map(add => walletsAndAddressesOperator.formatAddress(add)).join(', '),
           coins: new BigNumber(output.value).dividedBy(decimalsCorrector),
         });
       });
@@ -89,7 +91,7 @@ export function getTransactionsHistory(
         inputs: (transaction.vin as any[]).map(input => {
           return {
             hash: '',
-            address: (input.addresses as string[]).join(', '),
+            address: (input.addresses as string[]).map(add => walletsAndAddressesOperator.formatAddress(add)).join(', '),
             coins: new BigNumber(0),
           };
         }),
@@ -130,7 +132,7 @@ export function getTransactionsHistory(
       })
       .map(transaction => {
         // Add to the transaction object the type, balance and the involved wallets and addresses.
-        calculateGeneralData(transaction, addressesMap, false);
+        calculateGeneralData(transaction, addressMap, false, walletsAndAddressesOperator);
 
         // Add the note.
         const txNote = notesMap.get(transaction.id);
@@ -143,7 +145,7 @@ export function getTransactionsHistory(
 
     const finalResponse: TransactionHistory = {
       transactions: transactions,
-      addressesWitMoreTransactions: addressesWitMoreTransactions,
+      addressesWitAdditionalTransactions: addressesWitMoreTransactions,
     };
 
     return finalResponse;
@@ -159,7 +161,7 @@ export interface TransactionsResponse {
    * List with the addresses for which transactions were ignored due to the value sent in the
    * maxPerAddress param.
    */
-  addressesWitMoreTransactions: Set<string>;
+  addressesWitMoreTransactions: AddressMap<boolean>;
 }
 
 /**
@@ -168,8 +170,6 @@ export interface TransactionsResponse {
  * @param maxPerAddress Max number of transactions to return per address.
  * @param startingBlock Block from which to start looking for transactions.
  * @param currentElements Already obtained transactions. For internal use.
- * @param hasMore If the maxPerAddress param caused some of the transactions of one or more
- * addresses to be ignored. For internal use.
  * @param addressesWitMoreTransactions Addresses with transactions which were ignored.
  * For internal use.
  * @returns Array with all the transactions related to the provided address list, in the
@@ -178,11 +178,12 @@ export interface TransactionsResponse {
 export function recursivelyGetTransactions(
   currentCoin: Coin,
   blockbookApiService: BlockbookApiService,
+  walletsAndAddressesOperator: WalletsAndAddressesOperator,
   addresses: string[],
   maxPerAddress: number,
   startingBlock: number = null,
   currentElements = new Map<string, any>(),
-  addressesWitMoreTransactions = new Set<string>(),
+  addressesWitMoreTransactions = new AddressMap<boolean>(walletsAndAddressesOperator.formatAddress),
 ): Observable<TransactionsResponse> {
   const requestParams = {
     pageSize: maxPerAddress,
@@ -204,7 +205,7 @@ export function recursivelyGetTransactions(
 
       // Check if some transactions were ignored.
       if (response.totalPages && response.totalPages > 1) {
-        addressesWitMoreTransactions.add(addresses[addresses.length - 1]);
+        addressesWitMoreTransactions.set(addresses[addresses.length - 1], true);
       }
 
       addresses.pop();
@@ -225,6 +226,6 @@ export function recursivelyGetTransactions(
       }
 
       // Continue to the next step.
-      return recursivelyGetTransactions(currentCoin, blockbookApiService, addresses, maxPerAddress, startingBlock, currentElements, addressesWitMoreTransactions);
+      return recursivelyGetTransactions(currentCoin, blockbookApiService, walletsAndAddressesOperator, addresses, maxPerAddress, startingBlock, currentElements, addressesWitMoreTransactions);
     }));
 }
