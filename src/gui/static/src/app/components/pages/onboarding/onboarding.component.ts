@@ -74,7 +74,7 @@ export class OnboardingComponent implements OnInit, AfterViewInit, OnDestroy {
       softwareWalletArgs: {
         label: this.formData.label,
         type: this.formData.type,
-        seed: this.formData.seed,
+        seed: this.formData.enterSeedWithAssistance ? this.formData.lastAssistedSeed : this.formData.lastCustomSeed,
         password: password,
         passphrase: this.formData.passphrase,
         xPub: this.formData.xPub,

@@ -1,13 +1,15 @@
-import { Component, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ChangeDetectorRef, OnInit } from '@angular/core';
 import { SubscriptionLike,  combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
+import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
 
 import { ButtonComponent } from '../../layout/button/button.component';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { SoftwareWalletService } from '../../../services/wallet-operations/software-wallet.service';
 import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
 import { WalletBase, WalletTypes } from '../../../services/wallet-operations/wallet-objects';
+import { AssistedSeedFieldComponent } from '../wallets/create-wallet/create-wallet-form/assisted-seed-field/assisted-seed-field.component';
+import { WordAskedReasons } from '../../layout/seed-word-dialog/seed-word-dialog.component';
 
 /**
  * Allows to use the seed to remove or change the password of an encrypted software wallet.
@@ -19,8 +21,10 @@ import { WalletBase, WalletTypes } from '../../../services/wallet-operations/wal
   templateUrl: './reset-password.component.html',
   styleUrls: ['./reset-password.component.scss'],
 })
-export class ResetPasswordComponent implements OnDestroy {
+export class ResetPasswordComponent implements OnInit, OnDestroy {
   @ViewChild('resetButton') resetButton: ButtonComponent;
+  // Component for entering the seed using the assisted mode.
+  @ViewChild('assistedSeed') assistedSeed: AssistedSeedFieldComponent;
 
   form: FormGroup;
   wallet: WalletBase;
@@ -28,8 +32,11 @@ export class ResetPasswordComponent implements OnDestroy {
   busy = true;
   // If the id on the URL does not correspond to a valid wallet.
   invalidWallet = false;
+  // If true, the user must enter the ssed using the asisted mode.
+  enterSeedWithAssistance = true;
 
   walletTypes = WalletTypes;
+  wordAskedReasons = WordAskedReasons;
 
   private subscription: SubscriptionLike;
   private done = false;
@@ -43,7 +50,9 @@ export class ResetPasswordComponent implements OnDestroy {
     private softwareWalletService: SoftwareWalletService,
     private walletsAndAddressesService: WalletsAndAddressesService,
     private changeDetector: ChangeDetectorRef,
-  ) {
+  ) { }
+
+  ngOnInit() {
     this.initForm();
     // Get the wallets and route params.
     this.subscription = combineLatest(this.route.params, this.walletsAndAddressesService.currentWallets, (params, wallets) => {
@@ -71,16 +80,39 @@ export class ResetPasswordComponent implements OnDestroy {
     }
   }
 
+  // Allows to know if the form is valid.
+  get isValid(): boolean {
+    return this.form && this.form.valid &&
+      ((this.enterSeedWithAssistance && this.assistedSeed && this.assistedSeed.lastAssistedSeed) ||
+      (!this.enterSeedWithAssistance && this.form.value.seed));
+  }
+
+  // Returns the value of the number_of_words form field.
+  get selectedNumberOfWords(): number {
+    return this.form ? this.form.value.number_of_words : 0;
+  }
+
   initForm() {
     const validators = [];
     validators.push(this.passwordMatchValidator.bind(this));
 
     this.form = new FormGroup({}, validators);
     this.form.addControl('wallet', new FormControl());
-    this.form.addControl('seed', new FormControl('', [Validators.required]));
+    this.form.addControl('number_of_words', new FormControl(12));
+    this.form.addControl('seed', new FormControl(''));
     this.form.addControl('passphrase', new FormControl(''));
     this.form.addControl('password', new FormControl(''));
     this.form.addControl('confirm', new FormControl(''));
+
+    // If assistedSeed already exists, reset it.
+    if (this.assistedSeed) {
+      this.assistedSeed.lastAssistedSeed = '';
+    }
+  }
+
+  // Switches between the assisted mode and the manual mode for entering the seed.
+  changeSeedType() {
+    this.enterSeedWithAssistance = !this.enterSeedWithAssistance;
   }
 
   // Resets the wallet password.
@@ -93,7 +125,9 @@ export class ResetPasswordComponent implements OnDestroy {
     this.msgBarService.hide();
     this.resetButton.setLoading();
 
-    this.softwareWalletService.resetPassword(this.wallet, this.form.value.seed, this.form.value.password, this.form.value.passphrase)
+    const seed = this.enterSeedWithAssistance ? this.assistedSeed.lastAssistedSeed : this.form.value.seed;
+
+    this.softwareWalletService.resetPassword(this.wallet, seed, this.form.value.password, this.form.value.passphrase)
       .subscribe(() => {
         this.resetButton.setSuccess();
         this.resetButton.setDisabled();

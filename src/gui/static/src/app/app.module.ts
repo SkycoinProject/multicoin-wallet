@@ -137,6 +137,7 @@ import { SelectCoinComponent } from './components/layout/select-coin/select-coin
 import { MainColorFormElementDirective } from './directives/styling/main-color-form-element.directive';
 import { ColorImageDirective } from './directives/styling/image-color.directive';
 import { ThemeColorTextDirective } from './directives/styling/theme-color-text.directive';
+import { AssistedSeedFieldComponent } from './components/pages/wallets/create-wallet/create-wallet-form/assisted-seed-field/assisted-seed-field.component';
 
 @NgModule({
   declarations: [
@@ -223,6 +224,7 @@ import { ThemeColorTextDirective } from './directives/styling/theme-color-text.d
     MainColorFormElementDirective,
     ColorImageDirective,
     ThemeColorTextDirective,
+    AssistedSeedFieldComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

@@ -17,6 +17,7 @@ export enum WordAskedReasons {
   HWWalletOperation = 'HWWalletOperation',
   CreatingSoftwareWallet = 'CreatingSoftwareWallet',
   RecoveringSoftwareWallet = 'RecoveringSoftwareWallet',
+  RecoveringSoftwareWalletPassword = 'RecoveringSoftwareWalletPassword',
 }
 
 /**

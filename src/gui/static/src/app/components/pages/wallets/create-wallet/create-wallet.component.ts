@@ -137,7 +137,7 @@ export class CreateWalletComponent implements OnDestroy {
       softwareWalletArgs: {
         label: data.label,
         type: data.type,
-        seed: data.seed,
+        seed: data.enterSeedWithAssistance ? data.lastAssistedSeed : data.lastCustomSeed,
         password: data.password,
         passphrase: data.passphrase,
         xPub: data.xPub,
