@@ -1,10 +1,10 @@
-import { throwError as observableThrowError, SubscriptionLike, of } from 'rxjs';
+import { throwError as observableThrowError, SubscriptionLike, of, concat } from 'rxjs';
 import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import * as moment from 'moment';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
+import { retryWhen, delay, take, mergeMap } from 'rxjs/operators';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { ExchangeService, StoredExchangeOrder, TradingPair, ExchangeOrder } from '../../../../services/exchange.service';
@@ -208,7 +208,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Loads the available trading pairs from the backend.
   private loadData() {
     this.subscriptionsGroup.push(this.exchangeService.tradingPairs()
-      .pipe(retryWhen(errors => errors.pipe(delay(2000), take(10), concat(observableThrowError('')))))
+      .pipe(retryWhen(errors => concat(errors.pipe(delay(2000), take(10)), observableThrowError(''))))
       .subscribe(pairs => {
         this.tradingPairs = [];
 

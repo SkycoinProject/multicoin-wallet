@@ -586,7 +586,10 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
     // The data is saved as a JSON string.
     this.savingHwWalletDataSubscription =
       this.storageService.store(StorageType.CLIENT, this.hwWalletsDataStorageKey, JSON.stringify(hardwareWallets))
-        .subscribe(null, () => redirectToErrorPage(3));
+        .subscribe({
+          next: null,
+          error: () => redirectToErrorPage(3),
+        });
 
     this.informDataUpdated();
   }

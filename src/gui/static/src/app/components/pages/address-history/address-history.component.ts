@@ -2,7 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike, combineLatest } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { first, map } from 'rxjs/operators';
 
 import { HistoryService, AddressesState } from '../../../services/wallet-operations/history.service';
 import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
@@ -60,7 +60,10 @@ export class AddressHistoryComponent implements OnDestroy {
     this.showOutputsOption = coinService.currentCoinInmediate.coinTypeFeatures.outputs;
 
     // Get the wallets and route params.
-    this.basicDataSubscription = combineLatest(this.route.params, this.walletsAndAddressesService.currentWallets.pipe(first()), (params, wallets) => {
+    this.basicDataSubscription = combineLatest([this.route.params, this.walletsAndAddressesService.currentWallets.pipe(first())]).pipe(map(result => {
+      const params = result[0];
+      const wallets = result[1];
+
       this.loading = true;
       this.invalidWallet = false;
       this.showAllExternalAddresses = false;
@@ -81,7 +84,7 @@ export class AddressHistoryComponent implements OnDestroy {
       }
 
       this.startDataRefreshSubscription();
-    }).subscribe();
+    })).subscribe();
   }
 
   ngOnDestroy() {

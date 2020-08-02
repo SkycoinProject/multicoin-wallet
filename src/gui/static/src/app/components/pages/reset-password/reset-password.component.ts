@@ -2,6 +2,7 @@ import { Component, OnDestroy, ViewChild, ChangeDetectorRef, OnInit } from '@ang
 import { SubscriptionLike,  combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
+import { map } from 'rxjs/operators';
 
 import { ButtonComponent } from '../../layout/button/button.component';
 import { MsgBarService } from '../../../services/msg-bar.service';
@@ -55,7 +56,10 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.initForm();
     // Get the wallets and route params.
-    this.subscription = combineLatest(this.route.params, this.walletsAndAddressesService.currentWallets, (params, wallets) => {
+    this.subscription = combineLatest([this.route.params, this.walletsAndAddressesService.currentWallets]).pipe(map(result => {
+      const params = result[0];
+      const wallets = result[1];
+
       const wallet = wallets.find(w => w.id === params['id']);
       this.invalidWallet = false;
 
@@ -70,7 +74,7 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
       this.form.get('wallet').setValue(wallet.label);
       // Activate the form.
       this.busy = false;
-    }).subscribe();
+    })).subscribe();
   }
 
   ngOnDestroy() {
