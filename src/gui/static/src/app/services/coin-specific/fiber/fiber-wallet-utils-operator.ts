@@ -35,13 +35,4 @@ export class FiberWalletUtilsOperator implements WalletUtilsOperator {
     return this.fiberApiService.post(this.currentCoin.nodeUrl, 'address/verify', { address }, {useV2: true})
       .pipe(map(() => true), catchError(() => of(false)));
   }
-
-  verifySeed(seed: string): Observable<boolean> {
-    return this.fiberApiService.post(this.currentCoin.nodeUrl, 'wallet/seed/verify', {seed: seed}, {useV2: true})
-      .pipe(map(() => true), catchError(() => of(false)));
-  }
-
-  generateSeed(entropy: number): Observable<string> {
-    return this.fiberApiService.get(this.currentCoin.nodeUrl, 'wallet/newSeed', { entropy }).pipe(map(response => response.seed));
-  }
 }

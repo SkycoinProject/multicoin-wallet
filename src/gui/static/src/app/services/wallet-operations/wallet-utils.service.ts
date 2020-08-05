@@ -1,5 +1,5 @@
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 
 import { FiberApiService } from '../api/fiber-api.service';
@@ -54,7 +54,8 @@ export class WalletUtilsService {
    * @returns True if the seed is valid or false otherwise.
    */
   verifySeed(seed: string): Observable<boolean> {
-    return this.operator.verifySeed(seed);
+    return this.fiberApiService.post(environment.nodeUrl, 'wallet/seed/verify', {seed: seed}, {useV2: true})
+      .pipe(map(() => true), catchError(() => of(false)));
   }
 
   /**
@@ -66,6 +67,6 @@ export class WalletUtilsService {
       throw new Error('Invalid entropy value.');
     }
 
-    return this.operator.generateSeed(entropy);
+    return this.fiberApiService.get(environment.nodeUrl, 'wallet/newSeed', { entropy }).pipe(map(response => response.seed));
   }
 }

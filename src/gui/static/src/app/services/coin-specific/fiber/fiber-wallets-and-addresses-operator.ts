@@ -703,16 +703,23 @@ export class FiberWalletsAndAddressesOperator implements WalletsAndAddressesOper
               wallet.addresses = [newAddress];
             }
 
-            // If an address was saved with the old format, convert it to the new one.
             for (let i = 0; i < wallet.addresses.length; i++) {
-              if (wallet.addresses[i]['address']) {
-                const confirmed = wallet.addresses[i].confirmed;
-                const isChangeAddress = wallet.addresses[i].isChangeAddress;
+              const confirmed = wallet.addresses[i].confirmed;
+              const isChangeAddress = wallet.addresses[i].isChangeAddress;
 
+              // Convert the saved address to the expected format.
+              if (wallet.addresses[i]['address']) {
+                // If the address was saved with the old format.
                 wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['address']);
-                wallet.addresses[i].confirmed = confirmed;
-                wallet.addresses[i].isChangeAddress = isChangeAddress;
+              } else if (wallet.addresses[i]['printableAddressInternal']) {
+                // If the address was saved with the current format.
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['printableAddressInternal']);
+              } else {
+                wallet.addresses[i] = AddressBase.create(this.formatAddress, wallet.addresses[i]['invalid']);
               }
+
+              wallet.addresses[i].confirmed = confirmed;
+              wallet.addresses[i].isChangeAddress = isChangeAddress;
             }
 
             // If the value was not retrieved, it means that the wallet was saved with a previous

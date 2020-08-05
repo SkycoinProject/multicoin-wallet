@@ -13,6 +13,4 @@ export interface WalletUtilsOperator {
 
   // Functions with utils related to the wallets. Documented on the service.
   verifyAddress(address: string): Observable<boolean>;
-  verifySeed(seed: string): Observable<boolean>;
-  generateSeed(entropy: number): Observable<string>;
 }
