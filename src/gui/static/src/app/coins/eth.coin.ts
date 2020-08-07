@@ -15,7 +15,7 @@ export class EthCoin extends Coin {
   uriSpecificatioPrefix = 'ethereum';
   priceTickerId = 'eth-ethereum';
   assetsFolderName = 'ethereum';
-  confirmationsNeeded = 30;
+  normalConfirmationsNeeded = 30;
   config = new EthCoinConfig('32576');
   styleConfig = new CoinStyleBase();
 }

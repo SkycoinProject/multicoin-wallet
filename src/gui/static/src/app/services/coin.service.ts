@@ -36,6 +36,7 @@ export class CoinService {
   private coinsInternal: Coin[] = [];
 
   private readonly currentCoinStorageKey = 'currentCoin';
+  private readonly confirmationsStorageKeyPrefix = 'confirmations_';
 
   /**
    * Makes the service load the data it needs to work.
@@ -58,6 +59,18 @@ export class CoinService {
       this.currentCoinInternal.next(coin);
       this.saveCurrentCoin();
     }
+  }
+
+  updateConfirmationsNeeded(newNumber: number) {
+    const convertedValue = Number(newNumber);
+    if (convertedValue === NaN || convertedValue < 1) {
+      throw new Error('Invalid number');
+    }
+
+    this.currentCoinInmediateInternal.confirmationsNeeded = newNumber;
+    localStorage.setItem(this.confirmationsStorageKeyPrefix + this.currentCoinInmediate.coinName, newNumber.toString());
+
+    this.currentCoinInternal.next(this.currentCoinInmediateInternal);
   }
 
   /**
@@ -94,9 +107,19 @@ export class CoinService {
       if (Names[value.coinName]) {
         throw new Error('Invalid configuration: more than one coin with the same name.');
       }
-      if (value.confirmationsNeeded < 1) {
+      if (value.normalConfirmationsNeeded < 1) {
         throw new Error('Invalid configuration: coins must request at least one confirmation.');
       }
+
+      // Get how many confirmations the coin needs.
+      const savedConfirmations = localStorage.getItem(this.confirmationsStorageKeyPrefix + value.coinName);
+      if (!savedConfirmations) {
+        value.confirmationsNeeded = value.normalConfirmationsNeeded;
+      } else {
+        value.confirmationsNeeded = value.normalConfirmationsNeeded;
+        value.confirmationsNeeded = Number(savedConfirmations);
+      }
+
       Names[value.coinName] = true;
     });
 

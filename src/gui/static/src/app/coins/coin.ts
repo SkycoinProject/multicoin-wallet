@@ -75,9 +75,10 @@ export abstract class Coin {
    */
   headerHasGradient = true;
   /**
-   * How many confirmations a transaction must have to be considered final. Must be at least 1.
+   * How many confirmations a transaction must normally have to be considered final, without
+   * taking into account the selections made by the user. Must be at least 1.
    */
-  abstract confirmationsNeeded: number;
+  abstract normalConfirmationsNeeded: number;
   /**
    * The type identifying how the Skywallet should work with this coin. If not set, the
    * compatibility with the Skywallet is deactivated.
@@ -93,6 +94,19 @@ export abstract class Coin {
    * Styling configuration for the coin.
    */
   abstract styleConfig: CoinStyleBase;
+
+
+  /***************************************************
+   * 
+   * The following properties don't have to be added in subclasses when creating a new coin.
+   * 
+   ***************************************************/
+
+  /**
+   * How many confirmations a transaction must have to be considered final, as selected by
+   * the user.
+   */
+  confirmationsNeeded: number;
 
   /**
    * Returns an object indicating which features of the app or general properties are compatible

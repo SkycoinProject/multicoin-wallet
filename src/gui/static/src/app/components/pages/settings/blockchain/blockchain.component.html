@@ -20,6 +20,27 @@
             <div class="-key">{{ 'blockchain.hash-label' | translate }}</div>
             <div class="break-all">{{ block.hash }}</div>
           </div>
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.confirmations-label' | translate }}</div>
+            <div class="break-all">
+              {{ confirmations }}
+              <!-- Waning shown if the number of confirmations has been modified. -->
+              <mat-icon
+                *ngIf="confirmations !== recommendedConfirmations"
+                [inline]="true"
+                class="warning-icon red-text"
+                [matTooltip]="'blockchain.confirmations-warning' | translate:{number: recommendedConfirmations}"
+              >warning</mat-icon>
+              <!-- Edit confirmations icon. -->
+              <mat-icon
+                [inline]="true"
+                class="link"
+                appThemeColorText
+                (click)="changeConfirmations()"
+                [matTooltip]="'blockchain.edit-confirmations-info' | translate"
+              >edit</mat-icon>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Supply info. -->

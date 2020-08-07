@@ -16,7 +16,7 @@ export class BtcCoin extends Coin {
   uriSpecificatioPrefix = 'bitcoin';
   priceTickerId = 'btc-bitcoin';
   assetsFolderName = 'bitcoin';
-  confirmationsNeeded = 3;
+  normalConfirmationsNeeded = 3;
   skywalletCoinType = SkywalletSupportedCoinTypes.BTC;
   config = new BtcCoinConfig();
   styleConfig = new CoinStyleBase();

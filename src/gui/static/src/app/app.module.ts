@@ -138,6 +138,8 @@ import { MainColorFormElementDirective } from './directives/styling/main-color-f
 import { ColorImageDirective } from './directives/styling/image-color.directive';
 import { ThemeColorTextDirective } from './directives/styling/theme-color-text.directive';
 import { AssistedSeedFieldComponent } from './components/pages/wallets/create-wallet/create-wallet-form/assisted-seed-field/assisted-seed-field.component';
+import { SelectConfirmationsComponent } from './components/pages/settings/blockchain/select-confirmations/select-confirmations.component';
+
 
 @NgModule({
   declarations: [
@@ -225,6 +227,7 @@ import { AssistedSeedFieldComponent } from './components/pages/wallets/create-wa
     ColorImageDirective,
     ThemeColorTextDirective,
     AssistedSeedFieldComponent,
+    SelectConfirmationsComponent,
   ],
   imports: [
     AppTranslationModule,

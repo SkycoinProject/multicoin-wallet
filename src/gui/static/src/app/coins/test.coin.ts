@@ -17,7 +17,7 @@ export class TestCoin extends Coin {
   priceTickerId = 'btc-bitcoin';
   explorerUrl = 'https://explorer.testcoin.net';
   assetsFolderName = 'testcoin';
-  confirmationsNeeded = 1;
+  normalConfirmationsNeeded = 1;
   skywalletCoinType = SkywalletSupportedCoinTypes.SKY;
   styleConfig = new CoinStyleBase();
 }

@@ -17,4 +17,14 @@
     color: $grey;
     margin-bottom: 5px;
   }
+
+  mat-icon {
+    position: relative;
+    top: 1px;
+  }
+
+  .warning-icon {
+    animation: alert-blinking 1s linear infinite;
+    cursor: default;
+  }
 }

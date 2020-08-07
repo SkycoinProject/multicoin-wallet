@@ -472,10 +472,20 @@
     "blocks-label": "Number of blocks",
     "time-label": "Timestamp of last block",
     "hash-label": "Hash of last block",
+    "confirmations-label": "Confirmations needed",
     "current-supply-label": "Current {{ coinName }} supply",
     "total-supply-label": "Total {{ coinName }} supply",
     "current-coinhour-supply-label": "Current {{ coinHoursName }} supply",
-    "total-coinhour-supply-label": "Total {{ coinHoursName }} supply"
+    "total-coinhour-supply-label": "Total {{ coinHoursName }} supply",
+    "edit-confirmations-info": "Change how many confirmations a transaction must have for it to be considered final.",
+    "edit-confirmations-warning": "The number of confirmations needed helps to keep your funds safe. This option must only be used by experienced users who understand the risks involved. Are you sure you want to continue?",
+    "confirmations-warning": "The recommended number of confirmations for this coin is {{ number }}.",
+
+    "select-confirmation": {
+      "title": "Edit Confirmations Needed",
+      "confirmations-label": "Confirmations",
+      "apply-button": "Apply"
+    }
   },
 
   "network": {

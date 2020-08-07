@@ -1,0 +1,26 @@
+<app-modal [headline]="'blockchain.select-confirmation.title' | translate" [dialog]="dialogRef">
+  <!-- Form. -->
+  <div [formGroup]="form">
+    <!-- Form field. -->
+    <div class="form-field">
+      <label for="confirmations">{{ 'blockchain.select-confirmation.confirmations-label' | translate }}</label>
+      <input
+        formControlName="confirmations"
+        id="confirmations"
+        type="number"
+        min="1"
+        [max]="maxAllowedValue"
+        (keydown.enter)="changeConfirmations()"
+      >
+    </div>
+  </div>
+  <!-- Button area. -->
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      {{ 'common.cancel-button' | translate }}
+    </app-button>
+    <app-button (action)="changeConfirmations()" [useMainGradient]="true" [disabled]="!isValid">
+      {{ 'blockchain.select-confirmation.apply-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>
