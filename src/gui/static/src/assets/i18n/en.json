@@ -438,6 +438,7 @@
     "confirmed-transaction": "Confirmed",
     "pending-transaction": "Pending ({{currentConfirmations}} / {{confirmationsNeeded}})",
     "current-rate-help": "Calculated at the current rate.",
+    "hours-burned-help": "{{ hoursName }} burned as fee for sending the transaction.",
     "coinbase": "COINBASE (new coins and fees)"
   },
 

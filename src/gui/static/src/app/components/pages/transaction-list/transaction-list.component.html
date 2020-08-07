@@ -165,6 +165,12 @@
             <p *ngIf="price" [matTooltip]="'tx.current-rate-help' | translate">
               {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
             </p>
+            <div *ngIf="coinHasHours" class="burned">
+              <p [matTooltip]="'tx.hours-burned-help' | translate:{hoursName: ('hours' | commonText)}">
+                <mat-icon [inline]="true">whatshot</mat-icon>
+                {{ transaction.fee | amount:false:'first' }}
+              </p>
+            </div>
           </ng-container>
         </div></div>
       </div>

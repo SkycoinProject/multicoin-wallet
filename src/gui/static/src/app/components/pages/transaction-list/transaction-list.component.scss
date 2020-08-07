@@ -173,6 +173,15 @@
       display: inline-block;
       margin: 0;
     }
+
+    .burned {
+      margin: 8px 0 0 0;
+
+      mat-icon {
+        position: relative;
+        top: 1px;
+      }
+    }
   }
 }
 
