@@ -1,10 +1,12 @@
-import { of, Observable } from 'rxjs';
+import { of, Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { Injector } from '@angular/core';
 
 import { Coin } from '../../../coins/coin';
 import { FiberApiService } from '../../api/fiber-api.service';
 import { WalletUtilsOperator } from '../wallet-utils-operator';
+import { processServiceError } from 'app/utils/errors';
+import { OperationError, OperationErrorTypes } from 'app/utils/operation-error';
 
 /**
  * Operator for WalletUtilsService to be used with Fiber coins.
@@ -32,7 +34,18 @@ export class FiberWalletUtilsOperator implements WalletUtilsOperator {
   dispose() { }
 
   verifyAddress(address: string): Observable<boolean> {
-    return this.fiberApiService.post(this.currentCoin.nodeUrl, 'address/verify', { address }, {useV2: true})
-      .pipe(map(() => true), catchError(() => of(false)));
+    return this.fiberApiService.post(this.currentCoin.nodeUrl, 'address/verify', { address }, {useV2: true}).pipe(
+      map(() => true),
+      catchError((err: OperationError) => {
+        err = processServiceError(err);
+
+        // Return false in case of error, but not if the error was for a connection problem.
+        if (err.type !== OperationErrorTypes.NoInternet) {
+          return of(false);
+        } else {
+          return throwError(err);
+        }
+      }),
+    );
   }
 }

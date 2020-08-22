@@ -323,6 +323,10 @@
     "total-to-send": "Total:",
     "invalid-address": "Dirección de destino inválida encontrada: ",
     "invalid-addresses": "Direcciones de destino inválidas encontradas: ",
+    "invalid-address-error": "La dirección de destino no es válida.",
+    "one-invalid-address-error": "Una de las direcciones de destino no es válida.",
+    "various-invalid-addresses-error": "Algunas direcciones de destino no son válidas.",
+    "all-addresses-invalid-error": "Las direcciones de destino no son válidas.",
 
     "fees": {
       "very-high": "Muy alta",

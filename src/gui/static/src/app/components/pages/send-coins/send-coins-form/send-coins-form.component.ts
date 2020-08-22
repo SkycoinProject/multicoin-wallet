@@ -1,4 +1,4 @@
-import { SubscriptionLike, of } from 'rxjs';
+import { SubscriptionLike, of, forkJoin, throwError } from 'rxjs';
 import { first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
@@ -29,6 +29,7 @@ import { CoinService } from '../../../../services/coin.service';
 import { CoinTypes } from '../../../../coins/settings/coin-types';
 import { BtcCoinConfig } from '../../../../coins/coin-type-configs/btc.coin-config';
 import { EthCoinConfig } from '../../../../coins/coin-type-configs/eth.coin-config';
+import { WalletUtilsService } from 'app/services/wallet-operations/wallet-utils.service';
 
 /**
  * Data returned when SendCoinsFormComponent asks to show the preview of a transaction. Useful
@@ -226,6 +227,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     private changeDetector: ChangeDetectorRef,
     private spendingService: SpendingService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private walletUtilsService: WalletUtilsService,
     coinService: CoinService,
   ) {
     this.coinHasHours = coinService.currentCoinInmediate.coinTypeFeatures.coinHours;
@@ -864,29 +866,62 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       fee = this.form.get('gasPrice').value + '/' + this.form.get('gasLimit').value;
     }
 
-    // Create the transaction. The transaction is signed if the wallet is bip44 or the
-    // user wants to send the transaction immediately, without preview.
-    this.processingSubscription = this.spendingService.createTransaction(
-      this.selectedSources.wallet,
-      selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.printableAddress),
-      selectedOutputs,
-      destinations,
-      this.hoursSelection,
-      this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
-      passwordDialog ? passwordDialog.password : null,
-      this.showForManualUnsigned || (this.selectedSources.wallet.walletType !== WalletTypes.Bip44 && creatingPreviewTx),
-      fee,
-    ).pipe(mergeMap(response => {
-      transaction = response;
+    // Stop showing addresses as invalid.
+    this.formMultipleDestinations.setValidAddressesList(null);
 
-      // If using a bip44 wallet, update its address list, to let the preview know about any
-      // newly created return address.
-      if (creatingPreviewTx && this.selectedSources.wallet && this.selectedSources.wallet.walletType === WalletTypes.Bip44) {
-        return this.walletsAndAddressesService.updateWallet(this.selectedSources.wallet);
-      }
+    // Check if the addresses are valid.
+    this.processingSubscription = forkJoin(destinations.map(destination => this.walletUtilsService.verifyAddress(destination.address))).pipe(
+      mergeMap(validityList => {
+        // Check how many addresses are invalid.
+        let invalidAddresses = 0;
+        validityList.forEach(valid => {
+          if (!valid) {
+            invalidAddresses += 1;
+          }
+        });
 
-      return of(null);
-    })).subscribe(() => {
+        if (invalidAddresses === 0) {
+          // Create the transaction. The transaction is signed if the wallet is bip44 or the
+          // user wants to send the transaction immediately, without preview.
+          return this.spendingService.createTransaction(
+            this.selectedSources.wallet,
+            selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.printableAddress),
+            selectedOutputs,
+            destinations,
+            this.hoursSelection,
+            this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
+            passwordDialog ? passwordDialog.password : null,
+            this.showForManualUnsigned || (this.selectedSources.wallet.walletType !== WalletTypes.Bip44 && creatingPreviewTx),
+            fee,
+          );
+        } else {
+          // Show the appropiate error msg.
+          if (destinations.length > 1) {
+            this.formMultipleDestinations.setValidAddressesList(validityList);
+
+            if (invalidAddresses === destinations.length) {
+              return throwError(this.translate.instant('send.all-addresses-invalid-error'));
+            } else if (invalidAddresses === 1) {
+              return throwError(this.translate.instant('send.one-invalid-address-error'));
+            } else {
+              return throwError(this.translate.instant('send.various-invalid-addresses-error'));
+            }
+          }
+
+          return throwError(this.translate.instant('send.invalid-address-error'));
+        }
+      }), mergeMap(response => {
+        transaction = response;
+
+        // If using a bip44 wallet, update its address list, to let the preview know about any
+        // newly created return address.
+        if (creatingPreviewTx && this.selectedSources.wallet && this.selectedSources.wallet.walletType === WalletTypes.Bip44) {
+          return this.walletsAndAddressesService.updateWallet(this.selectedSources.wallet);
+        }
+
+        return of(null);
+      }),
+    ).subscribe(() => {
       // Close the password dialog, if it exists.
       if (passwordDialog) {
         passwordDialog.close();

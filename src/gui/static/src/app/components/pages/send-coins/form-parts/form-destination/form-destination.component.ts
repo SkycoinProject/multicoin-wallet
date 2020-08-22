@@ -145,6 +145,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   // If the coin only allows to send transactions to a single destination and does not allow
   // to select the change address.
   limitedSendingOptions = false;
+  // List for knowing which destination addresses are valid, by index.
+  validAddressesList: boolean[];
 
   private priceSubscription: SubscriptionLike;
   private addressSubscription: SubscriptionLike;
@@ -465,6 +467,11 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     const destinations = this.form.get('destinations') as FormArray;
     destinations.removeAt(index);
 
+    // Remove the associated entry in the address validity list, if needed.
+    if (this.validAddressesList && this.validAddressesList.length > index) {
+      this.validAddressesList.splice(index, 1);
+    }
+
     // Remove the subscription used to check the changes made to the fields of the destination.
     this.destinationSubscriptions[index].unsubscribe();
     this.destinationSubscriptions.splice(index, 1);
@@ -532,6 +539,31 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    */
   get currentlySelectedCurrency(): DoubleButtonActive {
     return this.selectedCurrency;
+  }
+
+  /**
+   * Allows to set a list indicating which addresses are valid.
+   * @param list Validity list. It must include if the address is valid for the index of
+   * each destination. It can be null, to show all addresses as valid.
+   */
+  setValidAddressesList(list: boolean[]) {
+    this.validAddressesList = list;
+
+    if (this.validAddressesList && this.validAddressesList.length > this.destControls.length) {
+      this.validAddressesList = this.validAddressesList.slice(0, this.destControls.length);
+    }
+  }
+
+  /**
+   * Allows to check if the address of a destination must be shown as valid.
+   * @param addressIndex Index of the address.
+   */
+  isAddressValid(addressIndex: number) {
+    if (this.validAddressesList && this.validAddressesList.length > addressIndex) {
+      return this.validAddressesList[addressIndex];
+    }
+
+    return true;
   }
 
   /**
