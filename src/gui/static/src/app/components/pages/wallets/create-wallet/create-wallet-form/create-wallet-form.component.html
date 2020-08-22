@@ -138,6 +138,7 @@
 
     <!-- Second seed field for the manual mode. -->
     <ng-container *ngIf="!enterSeedWithAssistance">
+      <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner appMainColorFormElement></mat-spinner></div>
       <textarea formControlName="confirm_seed" id="confirm_seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
     </ng-container>
   </div>

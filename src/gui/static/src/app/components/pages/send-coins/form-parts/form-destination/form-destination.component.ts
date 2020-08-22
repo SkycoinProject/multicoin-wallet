@@ -170,7 +170,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-      address: ['', this.showSimpleForm ? Validators.required : null],
+      address: ['', this.validateAddress.bind(this)],
       destinations: this.formBuilder.array([], this.validateDestinations.bind(this)),
     });
     this.addDestination();
@@ -567,6 +567,18 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Validates the address field.
+  private validateAddress() {
+    if (this.showSimpleForm && this.form) {
+      const address = this.form.get('address').value as string;
+      if (!address || address.trim().length < 20) {
+        return { Invalid: true };
+      }
+    }
+
+    return null;
+  }
+
   // Validates the values on the fields of the form destinations array.
   private validateDestinations() {
     if (!this.form) {
@@ -575,8 +587,11 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     // Check if there are invalid values.
     const invalidInput = this.destControls.find(control => {
-      if (!control.get('address').value && !this.showSimpleForm) {
-        return true;
+      if (!this.showSimpleForm) {
+        const address = control.get('address').value as string;
+        if (!address || address.trim().length < 20) {
+          return true;
+        }
       }
 
       const controlsToCheck = ['coins'];

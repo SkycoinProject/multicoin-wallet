@@ -97,9 +97,9 @@ export abstract class Coin {
 
 
   /***************************************************
-   * 
+   *
    * The following properties don't have to be added in subclasses when creating a new coin.
-   * 
+   *
    ***************************************************/
 
   /**

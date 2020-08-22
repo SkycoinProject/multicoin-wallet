@@ -1,4 +1,4 @@
-import { switchMap } from 'rxjs/operators';
+import { switchMap, delay, flatMap } from 'rxjs/operators';
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
@@ -502,10 +502,10 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
     this.seedValiditySubscription = this.seed.asObservable().pipe(switchMap(seed => {
       // Verify the seed if it was entered manually and was confirmed.
-      if ((!this.seedMatchValidator() || !this.create) && !this.enterSeedWithAssistance && seed.trim().length > 0) {
+      if ((!this.seedMatchValidator() || !this.create) && !this.enterSeedWithAssistance && seed.length > 0) {
         this.checkingCustomSeed = true;
 
-        return this.walletUtilsService.verifySeed(seed);
+        return of(0).pipe(delay(500), flatMap(() => this.walletUtilsService.verifySeed(seed)));
       } else {
         return of(true);
       }
