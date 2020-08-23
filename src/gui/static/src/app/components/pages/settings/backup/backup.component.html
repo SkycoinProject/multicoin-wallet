@@ -14,22 +14,36 @@
     <app-loading-content
       [isLoading]="false"
       noDataText="backup.no-wallets"
-      *ngIf="validWallets.length === 0"
+      *ngIf="wallets.length === 0"
     ></app-loading-content>
 
     <!-- Wallet list. -->
-    <div class="-table" *ngIf="validWallets.length > 0">
+    <div class="-table" *ngIf="wallets.length > 0">
       <div class="-headers">
         <div class="-width-250">{{ 'backup.wallet-table-label' | translate }}</div>
         <div class="-width-150">{{ 'backup.filename-table-label' | translate }}</div>
         <div class="-flex-fill"></div>
       </div>
       <div class="-body">
-        <div class="-row" *ngFor="let wallet of validWallets">
+        <div class="-row" *ngFor="let wallet of wallets">
           <div class="-width-250 text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-width-150">{{ wallet.id }}</div>
           <div class="-flex-fill text-right">
-            <span class="link" appThemeColorText (click)="showSeed(wallet)">{{ 'backup.show-seed-button' | translate }}</span>
+            <div class="link address-link" appThemeColorText (click)="saveAddresses(wallet)">{{ 'backup.save-addresses-button' | translate }}</div>
+            <!-- If it is possible to shown the seed. -->
+            <div
+              class="link"
+              appThemeColorText
+              (click)="showSeed(wallet)"
+              *ngIf="wallet.encrypted && !wallet.isHardware && wallet.walletType !== walletTypes.XPub"
+            >{{ 'backup.show-seed-button' | translate }}</div>
+            <!-- If it is not possible to shown the seed. -->
+            <div *ngIf="!wallet.encrypted || wallet.isHardware || wallet.walletType === walletTypes.XPub">
+              <mat-icon *ngIf="wallet.walletType === walletTypes.XPub" class="help-icon" [matTooltip]="'backup.xpub-info' | translate">help</mat-icon>
+              <mat-icon *ngIf="!wallet.encrypted && !wallet.isHardware && wallet.walletType !== walletTypes.XPub" class="help-icon" [matTooltip]="'backup.unencrypted-info' | translate">help</mat-icon>
+              <mat-icon *ngIf="wallet.isHardware && wallet.walletType !== walletTypes.XPub" class="help-icon" [matTooltip]="'backup.hw-wallet-info' | translate">help</mat-icon>
+              {{ 'backup.show-seed-button' | translate }}
+            </div>
           </div>
         </div>
       </div>

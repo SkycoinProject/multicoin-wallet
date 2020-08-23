@@ -26,6 +26,8 @@ export class BackupComponent implements OnInit, OnDestroy {
   // Wallet list.
   wallets: WalletBase[] = [];
 
+  walletTypes = WalletTypes;
+
   private folderSubscription: Subscription;
   private walletSubscription: Subscription;
 
@@ -61,9 +63,29 @@ export class BackupComponent implements OnInit, OnDestroy {
     this.walletSubscription.unsubscribe();
   }
 
-  // List of wallets to show on the UI.
-  get validWallets() {
-    return this.wallets.filter(wallet => wallet.encrypted && !wallet.isHardware && wallet.walletType !== WalletTypes.XPub);
+  // Creates a csv file with the addresses and makes the browser download it.
+  saveAddresses(wallet: WalletBase) {
+    // Create the address list.
+    let addresses = '';
+    wallet.addresses.forEach(address => {
+      addresses += address.printableAddress + ',';
+    });
+    addresses = addresses.substr(0, addresses.length - 1);
+
+    // Create an invisible link and click it to download the data.
+    const blob = new Blob([addresses], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', wallet.label + '.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      this.msgBarService.showError('backup.not-compatible-error');
+    }
   }
 
   // Retrieves the seed from the node and shows it in a modal window.
