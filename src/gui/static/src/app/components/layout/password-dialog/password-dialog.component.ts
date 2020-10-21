@@ -70,6 +70,10 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   passwordSubmit = new Subject<PasswordSubmitEvent>();
   working = false;
 
+  // Vars with the validation error messages.
+  password1ErrorMsg = '';
+  password2ErrorMsg = '';
+
   walletTypes = WalletTypes;
 
   /**
@@ -101,7 +105,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.form = new FormGroup({}, this.validateForm.bind(this));
+    this.form = new FormGroup({});
     this.form.addControl('password', new FormControl(''));
     this.form.addControl('confirm_password', new FormControl(''));
 
@@ -110,6 +114,8 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     } else {
       this.form.get('confirm_password').disable();
     }
+
+    this.form.setValidators(this.validateForm.bind(this));
 
     // Make the window bigger if a help msg is going to be shown.
     if (this.data.description) {
@@ -144,18 +150,36 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.changeDetector.detectChanges();
   }
 
-  private validateForm() {
-    if (this.form) {
-      if (this.form.get('password').value.length === 0) {
-        return { Required: true };
-      }
+  validateForm() {
+    this.password1ErrorMsg = '';
+    this.password2ErrorMsg = '';
 
-      if (this.data.confirm && this.form.get('password').value !== this.form.get('confirm_password').value) {
-        return { NotEqual: true };
+    let valid = true;
+
+    if (!this.form.get('password').value) {
+      valid = false;
+      if (this.form.get('password').touched) {
+        this.password1ErrorMsg = 'password.password-error-info';
       }
     }
 
-    return null;
+    if (this.data.confirm) {
+      if (!this.form.get('confirm_password').value) {
+        valid = false;
+        if (this.form.get('confirm_password').touched) {
+          this.password2ErrorMsg = 'password.password-error-info';
+        }
+      }
+
+      // If both password fields have a value, check if the 2 passwords entered by the user
+      // are equal.
+      if (valid && this.form.get('password').value !== this.form.get('confirm_password').value) {
+        valid = false;
+        this.password2ErrorMsg = 'password.confirm-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 
   private close() {

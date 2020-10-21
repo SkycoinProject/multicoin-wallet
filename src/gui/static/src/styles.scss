@@ -146,6 +146,15 @@ Alerts
   color: $red;
 }
 
+.red-field {
+  border: $red solid 2px !important;
+  color: $red !important;
+}
+
+.error-tooltip {
+  background-color: $red !important;
+}
+
 input {
   caret-color: black !important;
 }

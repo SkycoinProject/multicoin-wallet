@@ -29,6 +29,9 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
   // If true, the currently selected coin includes coin hours.
   coinHasHours = false;
 
+  // Vars with the validation error messages.
+  inputErrorMsg = '';
+
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
    */
@@ -55,6 +58,8 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
     this.form = this.formBuilder.group({
       data: [this.data],
     });
+
+    this.form.setValidators(this.validateForm.bind(this));
   }
 
   ngOnDestroy() {
@@ -137,5 +142,23 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
     } catch (e) {
       this.msgBarService.showError('send.bulk-send.invalid-data-error');
     }
+  }
+
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.inputErrorMsg = '';
+
+    let valid = true;
+
+    if (!this.form.get('data').value || !this.form.get('data').value.trim()) {
+      valid = false;
+      if (this.form.get('data').touched) {
+        this.inputErrorMsg = 'send.bulk-send.data-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

@@ -57,7 +57,9 @@
   "password": {
     "title": "Introduzca Su Contraseña",
     "password-label": "Contraseña",
+    "password-error-info": "Debe ingresar una contraseña.",
     "confirm-password-label": "Confirmar contraseña",
+    "confirm-error-info": "Las dos contraseñas deben coincidir.",
     "proceed-button": "Proceder",
     "reset-link": "He olvidado mi contraseña",
     "incorrect-password-error": "Contraseña incorrecta.",
@@ -140,6 +142,7 @@
       "advanced-options-link": "Opciones avanzadas de billetera",
       "advanced-options-close-warning": "Los cambios que ha realizado se perderán. ¿Seguro que desea continuar?",
       "name-label": "Nombre",
+      "name-error-info": "Debe ingresar un nombre.",
       "coin-label": "Moneda",
       "type-label": "Tipo",
       "type-deterministic": "Determinista (Antigua)",
@@ -152,8 +155,11 @@
       "passphrase-warning": "Sea extremadamente cauteloso con la passphrase. Si necesita recuperar la billetera, deberá ingresar no solo la semilla, sino también EXACTAMENTE la misma passphrase que ingrese aquí, caracter por caracter. Si tiene la semilla pero no la passphrase, no podrá recuperar el acceso a los fondos.",
       "words-number-label": "Cuantas palabras tiene la semilla",
       "xpub-label": "Llave xPub",
+      "xpub-error-info": "Debe ingresar un valor válido.",
       "seed-label": "Semilla",
+      "seed-error-info": "Debe ingresar una semilla.",
       "confirm-seed-label": "Confirmar semilla",
+      "confirm-seed-error-info": "Las dos semillas deben coincidir.",
       "seed-warning": "¡Recuerde esta semilla! Manténgala en un lugar seguro. ¡Si olvida su semilla, no podrá recuperar la billetera!",
       "12-words": "12 palabras",
       "24-words": "24 palabras",
@@ -181,6 +187,7 @@
         "incorrect-word-error": "La palabra que ha ingresado no coincide con la que se ha solicitado.",
         "invalid-seed-error": "La semilla que ha ingresado no es válida. Por favor, vuelva a intentarlo.",
         "enter-word": "Ingrese la palabra número {{number}}",
+        "word-error-info": "Debe ingresar una palabra.",
         "new-seed-info": "Usted debe ingresar las palabras de la semilla que fue generada por el sistema, para confirmarla.",
         "recover-seed-info": "Por favor, asegúrese de ingresar las palabras correctas en el orden correcto."
       }
@@ -189,6 +196,7 @@
     "rename": {
       "title": "Renombrar Billetera",
       "name-label": "Nombre",
+      "label-error-info": "Debe ingresar un nombre.",
       "rename-button": "Renombrar"
     },
 
@@ -213,6 +221,7 @@
     "add-addresses": {
       "title": "Seleccionar Cantidad",
       "quantity-label": "Cantidad de direcciones a crear",
+      "quantity-error-info": "Debe ingresar un valor entre 1 y 100.",
       "error": "Hubo un error inesperado. Por favor, inténtelo de nuevo."
     },
 
@@ -266,8 +275,10 @@
     "fee-high-warning": "La comisión que ingresó es más alta que la recomendada, el costo por enviar la transacción podría ser más alto de lo deseado.",
     "fee-unknown-warning": "El sistema aún está obteniendo la información de las comisiones recomendadas, por lo que no es posible determinar si la comisión que ingresó es conveniente.",
     "fee-problem-warning2": "Hubo un problema al intentar obtener la comisión recomendada, por lo que no es posible determinar si la comisión que ingresó es conveniente.",
+    "fee-error-info": "El valor es demasiado bajo o inválido.",
     "personal-note-help": "Use este campo para agregar un texto que le permita identificar la transacción en el futuro. Este texto se guarda localmente, por lo que solo será visible desde esta computadora.",
     "wallet-label": "Billetera",
+    "wallet-error-info": "Debe seleccionar una billetera.",
     "invalid-amount": "Por favor introduzca una cantidad válida",
     "convert-confirmation": "¿También desea que la cantidad introducida se convierta de {{from}} a {{to}}?",
     "convert-confirmation-plural": "¿También desea que las cantidades introducidas se conviertan de {{from}} a {{to}}?",
@@ -278,6 +289,7 @@
     "invaid-amounts-warning": "Se detectaron valores inválidos durante la conversión. Por favor verifique la cantidad que se enviará.",
     "multiple-problems-warning": "Algunos valores no se convirtieron por ser inválidos o podrían haberse convertido con errores de precisión. Por favor verifique la cantidad que se enviará.",
     "addresses-label": "Direcciones",
+    "addresses-error-info": "Debe ingresar al menos una dirección válida.",
     "no-available-balance-error": "No se ha calculado el saldo disponible.",
     "no-wallet-selected-error": "No hay monedas para enviar.",
     "no-coins-left-error": "No hay monedas restantes para enviar.",
@@ -301,6 +313,7 @@
     "available-funds-msg-part3": "(al menos",
     "available-funds-msg-part4": "deben ser utilizadas como comisión de transacción para enviar todas las monedas u horas).",
     "change-address-label": "Dirección de retorno personalizada",
+    "change-address-error-info": "La dirección de retorno no es válida.",
     "change-address-select-from-list-link": "Seleccionar",
     "change-address-help": "Dirección para recibir el cambio. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras.",
     "destinations-label": "Destinos",
@@ -334,6 +347,10 @@
     "one-invalid-address-error": "Una de las direcciones de destino no es válida.",
     "various-invalid-addresses-error": "Algunas direcciones de destino no son válidas.",
     "all-addresses-invalid-error": "Las direcciones de destino no son válidas.",
+    "invalid-addresses-error": "Por favor asegúrese de que la dirección sea válida.",
+    "address-error-info": "Por favor introduzca una dirección válida.",
+    "invalid-value-error-info": "Valor inválido.",
+    "insufficient-funds-error-info": "El valor ingresado es mayor que el saldo disponible.",
 
     "known-node-errors": {
       "null-change-address-error": "La dirección nula no se puede utilizar como dirección de retorno personalizada. Por favor introduzca una dirección válida.",
@@ -370,6 +387,7 @@
       "title": "Envío Masivo",
       "indications": "Para enviar a múltiples destinos de forma rápida, escriba cada dirección, cantidad de monedas y cantidad de horas (opcional) en una línea, separadas por una coma. Ejemplo: si desea enviar 10 monedas y 5 horas a la dirección \"xyz\", escriba \"xyz,10,5\"; si desea que las horas se calculen automáticamente, escriba \"xyz,10\". Los valores decimales se deben separar con un punto.",
       "indications-without-hours": "Para enviar a múltiples destinos de forma rápida, escriba cada dirección y cantidad de monedas en una línea, separadas por una coma. Ejemplo: si desea enviar 10 monedas a la dirección \"xyz\", escriba \"xyz,10\". Los valores decimales se deben separar con un punto.",
+      "data-error-info": "Debe ingresar un valor.",
       "process-button": "Procesar",
       "no-data-error": "No hay texto para procesar.",
       "inconsistent-data-error": "Si establece cuántas horas desea enviar a un destino, debe hacerlo para todos los destinos.",
@@ -391,6 +409,8 @@
 
   "offline-transactions": {
     "loading-problem": "Error al intentar obtener los datos necesarios",
+    "wallet-error-info": "Debe seleccionar una billetera.",
+    "tx-error-info": "Debe ingresar un texto de transacción válido.",
     "copy-tx": {
       "signed-title": "Transacción Firmada",
       "unsigned-title": "Transacción Sin Firmar",
@@ -426,6 +446,7 @@
     "invalid-wallet": "Billetera inválida",
     "wallet-label": "Billetera",
     "seed-label": "Semilla de la billetera",
+    "seed-error-info": "Debe ingresar una semilla.",
     "enter-seed": "Presione aquí para ingresar la semilla",
     "words-number-label": "Cuantas palabras tiene la semilla",
     "12-words": "12 palabras",
@@ -433,6 +454,7 @@
     "passphrase-label": "Passphrase de la billetera (si tiene)",
     "password-label": "Nueva contraseña (deje en blanco si desea que la billetera no esté encriptada)",
     "confirm-label": "Confirme la contraseña",
+    "confirm-error-info": "Las dos contraseñas deben coincidir.",
     "reset-button": "Restablecer",
     "done": "Contraseña cambiada correctamente."
   },
@@ -508,7 +530,14 @@
     "current-supply-label": "Suministro de {{ coinName }} actual",
     "total-supply-label": "Suministro de {{ coinName }} total",
     "current-coinhour-supply-label": "Suministro de {{ coinHoursName }} actual",
-    "total-coinhour-supply-label": "Suministro de {{ coinHoursName }} total"
+    "total-coinhour-supply-label": "Suministro de {{ coinHoursName }} total",
+
+    "select-confirmation": {
+      "title": "Editar confirmaciones necesarias",
+      "confirmations-label": "Confirmaciones",
+      "confirmations-error-info": "Debe ingresar un valor entero válido entre 0 y {{ max }}.",
+      "apply-button": "Aplicar"
+    }
   },
 
   "network": {
@@ -713,6 +742,7 @@
       "done": "Hecho",
       "added1": "La Skywallet conectada se ha agregado a la lista de billeteras con el siguiente nombre:",
       "added2": "Ahora puede consultar el saldo y las direcciones de la Skywallet incluso cuando no está conectada.",
+      "added-error-info": "Debe ingresar un nombre.",
       "characters-warning": "Si utiliza caracteres no comunes en el idioma inglés, es posible que el nombre no se muestre correctamente en el dispositivo."
     },
     "wipe" : {
@@ -804,6 +834,9 @@
     "offline": "El servicio está temporalmente offline",
     "problem-connecting": "No se puede conectar con el servicio. Por favor compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
     "invalid-address-error": "Dirección inválida.",
+    "from-coin-error-info": "Debe seleccionar una moneda.",
+    "invalid-value-error-info": "Valor inválido.",
+    "address-error-info": "Por favor introduzca una dirección válida.",
     "statuses": {
       "user-waiting": "Esperando el deposito. Por favor envíe {{amount}} {{from}} a la dirección de intercambio indicada más abajo",
       "user-waiting-info": "El sistema está a la espera de que usted realice el depósito en la dirección de intercambio. El proceso de intercambio comenzará después de que se detecte el depósito y sea confirmado en la cadena de bloques. Si ya ha realizado el depósito, debería ser detectado en breve.",

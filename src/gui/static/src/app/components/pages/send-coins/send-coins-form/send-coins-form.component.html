@@ -83,7 +83,14 @@
         [ngClass]="{'element-disabled' : busy}">
       </app-arrow-link>
     </label>
-    <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
+    <input
+      formControlName="changeAddress"
+      id="change-address"
+      (keydown.enter)="showForManualUnsigned ? preview() : null"
+      [attr.disabled]="busy ? 'true' : null"
+      [appFormFieldError]="invalidChangeAddress ? 'send.invalid-addresses-error' : changeAddressErrorMsg"
+      (blur)="validateForm()"
+    >
   </div>
 
   <!-- Note. -->
@@ -131,7 +138,13 @@
       <!-- Fee. -->
       <div class="col-4">
         <div class="-input-addon">
-          <input formControlName="fee" [id]="fee" [attr.disabled]="busy ? 'true' : null">
+          <input
+            formControlName="fee"
+            [id]="fee"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="btcFeeErrorMsg"
+            (blur)="validateForm()"
+          >
           <span>{{ 'send.fee-measure' | translate:{measure: feePaymentCoinUnit} }}</span>
         </div>
       </div>
@@ -160,7 +173,13 @@
         <!-- Fee. -->
         <div class="col-4">
           <div class="-input-addon">
-            <input formControlName="gasPrice" [id]="gasPrice" [attr.disabled]="busy ? 'true' : null">
+            <input
+              formControlName="gasPrice"
+              [id]="gasPrice"
+              [attr.disabled]="busy ? 'true' : null"
+              [appFormFieldError]="gasPriceAddressErrorMsg"
+              (blur)="validateForm()"
+            >
             <span>{{ feePaymentCoinUnit }}</span>
           </div>
         </div>
@@ -172,7 +191,13 @@
       <label for="gasLimit">
         {{ 'send.gas-limit-label' | translate }}
       </label>
-      <input formControlName="gasLimit" id="gasLimit" [attr.disabled]="busy ? 'true' : null">
+      <input
+        formControlName="gasLimit"
+        id="gasLimit"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="gasLimitAddressErrorMsg"
+        (blur)="validateForm()"
+      >
     </div>
   </ng-container>
 

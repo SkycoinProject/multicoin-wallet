@@ -1,5 +1,5 @@
 import { Component, OnDestroy, ViewChild, ChangeDetectorRef, OnInit } from '@angular/core';
-import { SubscriptionLike,  combineLatest } from 'rxjs';
+import { SubscriptionLike, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
 import { map } from 'rxjs/operators';
@@ -38,6 +38,10 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
 
   walletTypes = WalletTypes;
   wordAskedReasons = WordAskedReasons;
+
+  // Vars with the validation error messages.
+  seedErrorMsg = '';
+  passwordErrorMsg = '';
 
   private subscription: SubscriptionLike;
   private done = false;
@@ -84,23 +88,13 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Allows to know if the form is valid.
-  get isValid(): boolean {
-    return this.form && this.form.valid &&
-      ((this.enterSeedWithAssistance && this.assistedSeed && this.assistedSeed.lastAssistedSeed) ||
-      (!this.enterSeedWithAssistance && this.form.value.seed));
-  }
-
   // Returns the value of the number_of_words form field.
   get selectedNumberOfWords(): number {
     return this.form ? this.form.value.number_of_words : 0;
   }
 
   initForm() {
-    const validators = [];
-    validators.push(this.passwordMatchValidator.bind(this));
-
-    this.form = new FormGroup({}, validators);
+    this.form = new FormGroup({});
     this.form.addControl('wallet', new FormControl());
     this.form.addControl('number_of_words', new FormControl(12));
     this.form.addControl('seed', new FormControl(''));
@@ -112,11 +106,18 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
     if (this.assistedSeed) {
       this.assistedSeed.lastAssistedSeed = '';
     }
+
+    this.form.setValidators(this.validateForm.bind(this));
   }
 
   // Switches between the assisted mode and the manual mode for entering the seed.
   changeSeedType() {
     this.enterSeedWithAssistance = !this.enterSeedWithAssistance;
+    this.form.updateValueAndValidity();
+  }
+
+  assistedSeedChanged() {
+    this.form.updateValueAndValidity();
   }
 
   // Resets the wallet password.
@@ -156,12 +157,36 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
     this.changeDetector.detectChanges();
   }
 
-  // Checks if the 2 passwords entered by the user are equal.
-  private passwordMatchValidator() {
-    if (this.form && this.form.get('password') && this.form.get('confirm')) {
-      return this.form.get('password').value === this.form.get('confirm').value ? null : { NotEqual: true };
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.seedErrorMsg = '';
+    this.passwordErrorMsg = '';
+
+    let valid = true;
+
+    if (this.enterSeedWithAssistance) {
+      if (!this.assistedSeed || !this.assistedSeed.lastAssistedSeed) {
+        valid = false;
+      }
     } else {
-      return { NotEqual: true };
+      if (!this.form.get('seed').value) {
+        valid = false;
+        if (this.form.get('seed').touched) {
+          this.seedErrorMsg = 'reset.seed-error-info';
+        }
+      }
     }
+
+    // Check if the 2 passwords entered by the user are equal.
+    if (this.form.get('password').value !== this.form.get('confirm').value) {
+      valid = false;
+      if (this.form.get('confirm').touched) {
+        this.passwordErrorMsg = 'reset.confirm-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

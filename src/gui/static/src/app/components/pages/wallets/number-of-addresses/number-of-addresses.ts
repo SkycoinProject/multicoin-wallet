@@ -15,6 +15,9 @@ import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dial
 export class NumberOfAddressesComponent implements OnInit {
   form: FormGroup;
 
+  // Vars with the validation error messages.
+  inputErrorMsg = '';
+
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
    */
@@ -32,7 +35,9 @@ export class NumberOfAddressesComponent implements OnInit {
 
   ngOnInit() {
     this.form = new FormGroup({});
-    this.form.addControl('quantity', new FormControl(1, [this.validateQuantity]));
+    this.form.addControl('quantity', new FormControl(1));
+
+    this.form.setValidators(this.validateForm.bind(this));
   }
 
   closePopup() {
@@ -43,12 +48,23 @@ export class NumberOfAddressesComponent implements OnInit {
     this.dialogRef.close(this.form.value.quantity);
   }
 
-  // Validates the quantity entered by the user.
-  private validateQuantity(control: FormControl) {
-    if (control.value < 1 || control.value > 100 || Number(control.value) !== Math.round(Number(control.value))) {
-      return { invalid: true };
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.inputErrorMsg = '';
+
+    let valid = true;
+
+    // The number must be an integer from 1 to 100.
+    const value = this.form.get('quantity').value as number;
+    if (!value || value < 1 || value > 100 || value !== Math.round(value)) {
+      valid = false;
+      if (this.form.get('quantity').touched) {
+        this.inputErrorMsg = 'wallet.add-addresses.quantity-error-info';
+      }
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 }

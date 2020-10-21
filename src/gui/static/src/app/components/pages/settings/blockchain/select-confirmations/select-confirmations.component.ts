@@ -1,9 +1,11 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import BigNumber from 'bignumber.js';
 
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { CoinService } from '../../../../../services/coin.service';
+import { TranslateService } from '@ngx-translate/core';
 
 /**
  * Modal window for changing how many confirmation the transactions of the currently selected
@@ -19,6 +21,9 @@ export class SelectConfirmationsComponent implements OnInit {
   readonly maxAllowedValue = 100;
 
   form: FormGroup;
+
+  // Vars with the validation error messages.
+  confirmationsErrorMsg = '';
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
@@ -37,26 +42,41 @@ export class SelectConfirmationsComponent implements OnInit {
     private msgBarService: MsgBarService,
     private changeDetector: ChangeDetectorRef,
     private coinService: CoinService,
+    private translateService: TranslateService,
   ) {}
 
   ngOnInit() {
     this.form = this.formBuilder.group({
       confirmations: [this.coinService.currentCoinInmediate.confirmationsNeeded],
     });
+
+    this.form.setValidators(this.validateForm.bind(this));
   }
 
-  // Allows to know if the form is valid.
-  get isValid(): boolean {
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.confirmationsErrorMsg = '';
+
+    let valid = true;
+
+    const confirmations = this.form.get('confirmations').value;
+    const confirmationsBn = new BigNumber(confirmations);
+
     if (
-      this.form &&
-      this.form.get('confirmations').value &&
-      this.form.get('confirmations').value > 0 &&
-      this.form.get('confirmations').value <= this.maxAllowedValue
+      confirmationsBn.isNaN() ||
+      confirmationsBn.isLessThan(0) ||
+      confirmationsBn.isGreaterThan(this.maxAllowedValue) ||
+      !confirmationsBn.isEqualTo(confirmationsBn.decimalPlaces(0))
     ) {
-      return true;
+      valid = false;
+      if (this.form.get('confirmations').touched) {
+        this.confirmationsErrorMsg = this.translateService.instant('blockchain.select-confirmation.confirmations-error-info', { max: this.maxAllowedValue });
+      }
     }
 
-    return false;
+    return valid ? null : { Invalid: true };
   }
 
   closePopup() {

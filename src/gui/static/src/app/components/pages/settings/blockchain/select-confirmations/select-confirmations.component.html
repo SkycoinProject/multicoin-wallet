@@ -11,6 +11,8 @@
         min="1"
         [max]="maxAllowedValue"
         (keydown.enter)="changeConfirmations()"
+        [appFormFieldError]="confirmationsErrorMsg"
+        (blur)="validateForm()"
       >
     </div>
   </div>
@@ -19,7 +21,7 @@
     <app-button (action)="closePopup()">
       {{ 'common.cancel-button' | translate }}
     </app-button>
-    <app-button (action)="changeConfirmations()" [useMainGradient]="true" [disabled]="!isValid">
+    <app-button (action)="changeConfirmations()" [useMainGradient]="true" [disabled]="!form.valid">
       {{ 'blockchain.select-confirmation.apply-button' | translate }}
     </app-button>
   </div>

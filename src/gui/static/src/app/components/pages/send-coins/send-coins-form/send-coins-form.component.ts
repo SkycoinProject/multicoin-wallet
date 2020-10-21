@@ -212,6 +212,13 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Sources the user has selected.
   private selectedSources: SelectedSources;
 
+  // Vars with the validation error messages.
+  changeAddressErrorMsg = '';
+  btcFeeErrorMsg = '';
+  gasPriceAddressErrorMsg = '';
+  gasLimitAddressErrorMsg = '';
+  invalidChangeAddress = false;
+
   private syncCheckSubscription: SubscriptionLike;
   private processingSubscription: SubscriptionLike;
   private getRecommendedFeesSubscription: SubscriptionLike;
@@ -254,7 +261,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.form = new FormGroup({}, this.validateForm.bind(this));
+    this.form = new FormGroup({});
     this.form.addControl('changeAddress', new FormControl(''));
     this.form.addControl('note', new FormControl(''));
     this.form.addControl('fee', new FormControl(''));
@@ -264,6 +271,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.addControl('ethFeeType', new FormControl(1));
     this.form.addControl('gasPrice', new FormControl(''));
     this.form.addControl('gasLimit', new FormControl(''));
+
+    this.form.setValidators(this.validateForm.bind(this));
 
     // If the user changes the fee, select the custom fee type and update the available balance.
     this.fieldsSubscriptions.push(this.form.get('fee').valueChanges.subscribe(() => {
@@ -344,7 +353,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       const reportedAvailable = this.formSourceSelection.availableBalance;
       this.loadingAvailableBalance = reportedAvailable.loading;
 
-      this.validFeeNeeded = !!this.validateFee();
+      this.validFeeNeeded = !this.validateFee();
 
       if (!reportedAvailable.loading && !this.validFeeNeeded) {
         const reportedDestinations = this.formMultipleDestinations.getDestinations(false);
@@ -675,63 +684,78 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.get('gasLimit').setValue(this.formData.form.gasLimit);
   }
 
-  // Validates the form.
-  private validateForm() {
-    if (!this.form || !this.formSourceSelection) {
-      return { Required: true };
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.changeAddressErrorMsg = '';
+
+    let valid = true;
+
+    const changeAddress = this.form.get('changeAddress').value as string;
+    if (changeAddress && changeAddress.length < 20) {
+      valid = false;
+      if (this.form.get('changeAddress').touched) {
+        this.changeAddressErrorMsg = 'send.address-error-info';
+      }
     }
 
     const feeValidationResult = this.validateFee();
-    if (feeValidationResult) {
-      return feeValidationResult;
+    if (!feeValidationResult) {
+      valid = false;
     }
 
     // Check the validity of the subforms.
     if (!this.formSourceSelection || !this.formSourceSelection.valid || !this.formMultipleDestinations || !this.formMultipleDestinations.valid) {
-      return { Invalid: true };
+      valid = false;
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 
   // Validates the fee entered in the form.
-  private validateFee() {
+  private validateFee(): boolean {
+    this.btcFeeErrorMsg = '';
+    this.gasPriceAddressErrorMsg = '';
+    this.gasLimitAddressErrorMsg = '';
+
     if (!this.form || !this.form.get('fee')) {
-      return { Required: true };
+      return false;
     }
+
+    let valid = true;
 
     // Validate the fee, if appropiate.
     if (this.coinFeeType === FeeTypes.Btc) {
-      // The fee must be a valid number with a limit in its decimals.
+      // The fee must be a valid number, more than the minimum and with a limit in its decimals.
       const fee = new BigNumber(this.form.get('fee').value);
-      if (fee.isNaN() || fee.isLessThan(0) || !fee.isEqualTo(fee.decimalPlaces(this.maxFeeDecimals))) {
-        return { Invalid: true };
-      }
-
-      // Check if it is more than the minimum.
-      if (fee.isLessThan(this.minimumfee)) {
-        return { Invalid: true };
+      if (fee.isNaN() || fee.isLessThan(this.minimumfee) || !fee.isEqualTo(fee.decimalPlaces(this.maxFeeDecimals))) {
+        valid = false;
+        if (this.form.get('fee').touched) {
+          this.btcFeeErrorMsg = 'send.fee-error-info';
+        }
       }
     } else if (this.coinFeeType === FeeTypes.Eth) {
-      // The gas price must be a valid number with a limit in its decimals.
+      // The gas price must be a valid number, more than the minimum and with a limit in its decimals.
       const gasPrice = new BigNumber(this.form.get('gasPrice').value);
-      if (gasPrice.isNaN() || gasPrice.isLessThan(0) || !gasPrice.isEqualTo(gasPrice.decimalPlaces(this.maxFeeDecimals))) {
-        return { Invalid: true };
-      }
-
-      // Check if it is more than the minimum.
-      if (gasPrice.isLessThan(this.minimumfee)) {
-        return { Invalid: true };
+      if (gasPrice.isNaN() || gasPrice.isLessThan(this.minimumfee) || !gasPrice.isEqualTo(gasPrice.decimalPlaces(this.maxFeeDecimals))) {
+        valid = false;
+        if (this.form.get('gasPrice').touched) {
+          this.gasPriceAddressErrorMsg = 'send.fee-error-info';
+        }
       }
 
       // The gas limit must be a valid integer number.
       const gasLimit = new BigNumber(this.form.get('gasLimit').value);
       if (gasLimit.isNaN() || gasLimit.isLessThanOrEqualTo(0) || !gasLimit.isEqualTo(gasLimit.decimalPlaces(0))) {
-        return { Invalid: true };
+        valid = false;
+        if (this.form.get('gasLimit').touched) {
+          this.gasLimitAddressErrorMsg = 'send.fee-error-info';
+        }
       }
     }
 
-    return null;
+    return valid;
   }
 
   // Checks if the fee the user entered is not potentially incorrect and shows a warning
@@ -804,7 +828,6 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.closeSyncCheckSubscription();
     this.syncCheckSubscription = this.blockchainService.progress.pipe(first()).subscribe(response => {
       if (response.synchronized) {
-        //this.prepareTransaction(creatingPreviewTx);
         this.checkHoursBeforeCreatingTx(creatingPreviewTx);
       } else {
         const confirmationParams: ConfirmationParams = {
@@ -814,7 +837,6 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
         ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
           if (confirmationResult) {
-            //this.prepareTransaction(creatingPreviewTx);
             this.checkHoursBeforeCreatingTx(creatingPreviewTx);
           }
         });
@@ -963,9 +985,28 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     // Stop showing addresses as invalid.
     this.formMultipleDestinations.setValidAddressesList(null);
 
+    // Remove any error previously detected by the node in the change address.
+    this.invalidChangeAddress = false;
+    const customChangeAddress = this.form.get('changeAddress').value;
+
+    // Create a list with the destination addresses, to check them with the node. If there is
+    // a custom change address, it is added.
+    const addresses = destinations.map(destination => destination.address);
+    if (customChangeAddress) {
+      addresses.push(customChangeAddress);
+    }
+
     // Check if the addresses are valid.
-    this.processingSubscription = forkJoin(destinations.map(destination => this.walletUtilsService.verifyAddress(destination.address))).pipe(
+    this.processingSubscription = forkJoin(addresses.map(address => this.walletUtilsService.verifyAddress(address))).pipe(
       mergeMap(validityList => {
+        if (customChangeAddress) {
+          this.invalidChangeAddress = !validityList.pop();
+
+          if (this.invalidChangeAddress) {
+            return throwError(this.translate.instant('send.change-address-error-info'));
+          }
+        }
+
         // Check how many addresses are invalid.
         let invalidAddresses = 0;
         validityList.forEach(valid => {
@@ -989,10 +1030,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             fee,
           );
         } else {
+          this.formMultipleDestinations.setValidAddressesList(validityList);
+
           // Show the appropiate error msg.
           if (destinations.length > 1) {
-            this.formMultipleDestinations.setValidAddressesList(validityList);
-
             if (invalidAddresses === destinations.length) {
               return throwError(this.translate.instant('send.all-addresses-invalid-error'));
             } else if (invalidAddresses === 1) {

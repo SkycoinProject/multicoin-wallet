@@ -82,7 +82,7 @@
           "options": {
             "browserTarget": "desktopwallet:build",
             "proxyConfig": "proxy.config.js",
-            "aot": true
+            "aot": false
           },
           "configurations": {
             "production": {
