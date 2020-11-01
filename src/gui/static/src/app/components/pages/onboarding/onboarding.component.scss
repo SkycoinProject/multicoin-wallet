@@ -1,0 +1,23 @@
+@import '../../../../theme/variables';
+
+.main-container {
+  height: 100%;
+}
+
+button {
+  position: fixed;
+  right: 30px;
+  top: 20px;
+  background-color: $white !important;
+
+  &:hover {
+    background-color: $white-hover !important;
+  }
+}
+
+.flag {
+  width: 16px;
+  height: 16px;
+  position: relative;
+  top: -3px;
+}

@@ -1,0 +1,23 @@
+<app-modal [useRedTitle]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
+  {{ data.text | translate }}
+  <span *ngIf="data.linkText && data.linkFunction" class="link" appThemeColorText (click)="data.linkFunction(); closeModal(false);">{{ data.linkText | translate }}</span>
+
+  <div class="-check-container" *ngIf="data.checkboxText">
+    <mat-checkbox type="checkbox"
+                  appMainColorFormElement
+                  class="-check e2e-confirm-checkbox"
+                  id="terms"
+                  [checked]="accepted"
+                  (change)="setAccept($event)">{{ data.checkboxText | translate }}
+    </mat-checkbox>
+  </div>
+
+  <div class="-buttons">
+    <app-button (action)="closeModal(false)" *ngIf="data.cancelButtonText">
+      {{ data.cancelButtonText | translate }}
+    </app-button>
+    <app-button (action)="closeModal(true)" [useMainGradient]="true" [disabled]="data.checkboxText && !accepted">
+      {{ data.confirmButtonText | translate }}
+    </app-button>
+  </div>
+</app-modal>

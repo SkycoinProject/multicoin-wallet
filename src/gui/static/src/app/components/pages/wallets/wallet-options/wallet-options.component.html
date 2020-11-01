@@ -1,0 +1,64 @@
+<app-modal
+  [headline]="(data.automaticallyAddAddresses ? 'address-history.add-button' : 'wallet.wallet-options.title') | translate"
+  [dialog]="dialogRef" [disableDismiss]="loading"
+>
+  <app-loading-content
+    [isLoading]="true"
+    *ngIf="loading"
+  ></app-loading-content>
+
+  <div class="list-button-container light-button-theme" *ngIf="!loading">
+    <!-- Address history. -->
+    <button class="top-line" mat-button color="primary" (click)="showAddressHistory()" *ngIf="wallet.walletType !== walletTypes.Deterministic">
+      <div class="content">
+        <img src="assets/img/list-purple.png" />
+        <span>{{ 'address-history.title' | translate }}</span>
+      </div>
+    </button>
+    <!-- Rename wallet. -->
+    <button [ngClass]="{ 'top-line': wallet.walletType === walletTypes.Deterministic }" mat-button color="primary" (click)="renameWallet()">
+      <div class="content e2e-rename">
+        <img src="assets/img/edit-blue.png" />
+        <span>{{ 'wallet.rename.title' | translate }}</span>
+      </div>
+    </button>
+    <!-- Add addresses. -->
+    <button mat-button color="primary" (click)="addAddresses()" *ngIf="!wallet.isHardware && wallet.walletType === walletTypes.Deterministic">
+      <div class="content e2e-add">
+        <img src="assets/img/plus-green.png" />
+        <span>{{ 'wallet.wallet-options.add' | translate }}</span>
+      </div>
+    </button>
+    <!-- Scan the addresses. -->
+    <button mat-button color="primary" (click)="scanAddresses()" *ngIf="!wallet.isHardware">
+      <div class="content">
+        <img src="assets/img/search-gold.png" />
+        <span>
+          {{ 'wallet.wallet-options.scan' | translate }}
+          <mat-icon class="help-icon" [matTooltip]="'wallet.wallet-options.scan-help' | translate">help</mat-icon>
+        </span>
+      </div>
+    </button>
+    <!-- Encrypt wallet. -->
+    <button mat-button color="primary" (click)="toggleEncryption()" *ngIf="!wallet.encrypted && !wallet.isHardware">
+      <div class="content e2e-encrypt">
+        <img src="assets/img/lock-green.png" />
+        <span>{{ 'wallet.wallet-options.encrypt' | translate }}</span>
+      </div>
+    </button>
+    <!-- Decrypt wallet. -->
+    <button mat-button color="primary" (click)="toggleEncryption()" *ngIf="wallet.encrypted && !wallet.isHardware">
+      <div class="content e2e-decrypt">
+        <img src="assets/img/unlock-red.png" />
+        <span>{{ 'wallet.wallet-options.decrypt' | translate }}</span>
+      </div>
+    </button>
+    <!-- Delete hw wallet. -->
+    <button mat-button color="primary" (click)="deleteHwWallet()" *ngIf="wallet.isHardware">
+      <div class="content">
+        <img src="assets/img/delete-red.png" />
+        <span>{{ 'wallet.wallet-options.delete' | translate }}</span>
+      </div>
+    </button>
+  </div>
+</app-modal>

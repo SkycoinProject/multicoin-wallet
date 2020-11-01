@@ -1,0 +1,75 @@
+<div>
+  <app-header [headline]="'blockchain.title' | translate"></app-header>
+
+  <app-loading-content *ngIf="!block"></app-loading-content>
+
+  <div class="container" *ngIf="block">
+    <div class="row -wrapper">
+      <!-- Blocks info. -->
+      <div [ngClass]="{ 'col-md-6 pl-0': coinSupply, 'col-md-12 pl-0 pr-0': !coinSupply }">
+        <div class="paper">
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.blocks-label' | translate }}</div>
+            <div class="break-all">{{ block.seq | number }}</div>
+          </div>
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.time-label' | translate }}</div>
+            <div class="break-all">{{ block.timestamp | dateTime }}</div>
+          </div>
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.hash-label' | translate }}</div>
+            <div class="break-all">{{ block.hash }}</div>
+          </div>
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.confirmations-label' | translate }}</div>
+            <div class="break-all">
+              {{ confirmations }}
+              <!-- Waning shown if the number of confirmations has been modified. -->
+              <mat-icon
+                *ngIf="confirmations !== recommendedConfirmations"
+                [inline]="true"
+                class="warning-icon red-text"
+                [matTooltip]="'blockchain.confirmations-warning' | translate:{number: recommendedConfirmations}"
+              >warning</mat-icon>
+              <!-- Edit confirmations icon. -->
+              <mat-icon
+                [inline]="true"
+                class="link"
+                appThemeColorText
+                (click)="changeConfirmations()"
+                [matTooltip]="'blockchain.edit-confirmations-info' | translate"
+              >edit</mat-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Supply info. -->
+      <div class="col-md-6 pr-0" *ngIf="coinSupply">
+        <div class="paper">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.current-supply-label' | translate:{coinName: ('coinSymbol' | commonText)} }}</div>
+                <div class="break-all">{{ coinSupply.currentSupply | amount:true:'first' }}</div>
+              </div>
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.total-supply-label' | translate:{coinName: ('coinSymbol' | commonText)} }}</div>
+                <div class="break-all">{{ coinSupply.totalSupply | amount:true:'first' }}</div>
+              </div>
+            </div>
+            <div class="col-md-6" *ngIf="coinHasHours">
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.current-coinhour-supply-label' | translate:{coinHoursName: ('hours' | commonText)} }}</div>
+                <div class="break-all">{{ coinSupply.currentCoinhourSupply | amount:false:'first' }}</div>
+              </div>
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.total-coinhour-supply-label' | translate:{coinHoursName: ('hours' | commonText)} }}</div>
+                <div class="break-all">{{ coinSupply.totalCoinhourSupply | amount:false:'first' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

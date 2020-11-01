@@ -1,0 +1,16 @@
+@import '../../../../theme/variables';
+
+.white-text {
+  color: $white !important;
+}
+
+span {
+  padding-left: 5px;
+
+  mat-icon {
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+}

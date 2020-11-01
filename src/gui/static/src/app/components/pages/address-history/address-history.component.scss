@@ -1,0 +1,42 @@
+@import '../../../../theme/variables';
+
+.number-cell {
+  width: 85px;
+  flex-shrink: 0;
+}
+
+.options-cell {
+  width: 40px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-left: 0px !important;
+
+  mat-icon {
+    cursor: pointer;
+    color: lighten($grey, 30%);
+    font-size: 18px;
+    width: unset;
+    vertical-align: text-bottom;
+  }
+}
+
+app-qr-code-button {
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+.view-all-button {
+  font-size: $font-size-standard;
+  text-align: center;
+  padding: 20px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: $white-hover;
+  }
+}
+
+.button-container {
+  text-align: right;
+  margin: 15px $main-containers-margin 5px;
+}

@@ -1,0 +1,79 @@
+<div class="-container">
+  <!-- Background image. -->
+  <div
+    class="large-header"
+    [ngStyle]="{'background-image': 'url(assets/coins/' + currentCoin.assetsFolderName + '/header.jpg)'}"
+  >
+    <!-- Balance area. -->
+    <div
+      class="gradient"
+      [ngStyle]="{'background-image': currentCoin.headerHasGradient ? ('url(assets/coins/' + currentCoin.assetsFolderName + '/gradient.png)') : ''}"
+    >
+      <app-top-bar [headline]="headline"></app-top-bar>
+      <div class="balance-container" [ngStyle]="{'color': textColor}">
+        <div class="balance">
+          <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)" class="loading-header">{{ 'common.loading' | translate }}</p>
+          <p *ngIf="synchronizationInfoObtained && !synchronized && showBlockchainSyncProgress" class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
+          <p *ngIf="synchronizationInfoObtained && !synchronized && !showBlockchainSyncProgress" class="loading-header"><span>{{ 'header.syncing-blocks' | translate }}</span></p>
+          <p *ngIf="synchronized && balanceObtained" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
+          <p class="dollars" *ngIf="showPrice">
+            <span *ngIf="price">
+              <span *ngIf="synchronized && balanceObtained">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
+              <span *ngIf="!synchronized || !balanceObtained">-</span>
+              ({{ price | currency:'USD':'symbol':'1.2-2' }})
+            </span>
+            <span *ngIf="!price">{{ 'common.loading' | translate }}</span>
+          </p>
+        </div>
+      </div>
+      <!-- Hours area. -->
+      <div *ngIf="coinHasHours" class="hour-balance" [ngStyle]="{'color': hoursTextColor}">
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)">{{ 'common.loading' | translate }}</p>
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="synchronized && balanceObtained">{{ hours | amount:false }}</p>
+      </div>
+      <!-- Elements for coins without hours. -->
+      <div *ngIf="!coinHasHours && synchronizationInfoObtained && !synchronized" class="hour-balance" [ngStyle]="{'color': hoursTextColor}">
+        <p [ngStyle]="{'background-color': hoursBackgroundColor}" *ngIf="synchronizationInfoObtained && !synchronized">
+          {{ 'header.syncing-blocks' | translate }}
+          <ng-container *ngIf="showBlockchainSyncProgress">
+            {{ '(' + currentBlock + '/'  + highestBlock + ')' }}
+          </ng-container>
+        </p>
+      </div>
+      <div *ngIf="!coinHasHours && (!synchronizationInfoObtained || synchronized)" class="empty-hour-balance"></div>
+    </div>
+  </div>
+  <app-nav-bar></app-nav-bar>
+  <mat-progress-bar
+    *ngIf="!synchronized && showBlockchainSyncProgress"
+    color="primary"
+    [mode]="!synchronizationInfoObtained ? 'query' : 'determinate'"
+    [value]="synchronizationPercentage * 100"></mat-progress-bar
+  >
+  <!-- Errors area. -->
+  <div class="notification-bar" *ngIf="appUpdateService.updateAvailable">
+    <div>
+      {{ 'header.warnings.update-part1' | translate }}
+      <a [href]="walletDownloadUrl" target="_blank" rel="noreferrer nofollow noopener">v{{ appUpdateService.lastestVersion }}</a>
+      {{ 'header.warnings.update-part3' | translate }}
+    </div>
+  </div>
+  <div class="notification-bar" *ngIf="nodeService.localNodeCsrfDisabled">
+    <div>{{ 'header.warnings.csrf' | translate }}</div>
+  </div>
+  <div class="notification-bar" *ngIf="!nodeService.localNodeCsrfDisabled && networkService.noConnections">
+    <div>{{ 'header.warnings.no-connections' | translate }}</div>
+  </div>
+  <div class="notification-bar" *ngIf="hasPendingTxs || (!synchronized && synchronizationInfoObtained)">
+    <div *ngIf="hasPendingTxs">
+      {{ 'header.warnings.pending-txs-part1' | translate }}
+      <a *ngIf="!historyPage.pageLoaded" routerLink='/transactions'>{{ 'header.warnings.pending-txs-part2' | translate }}</a>
+      <a *ngIf="historyPage.pageLoaded" (click)="informAlreadyShowingHistory()">{{ 'header.warnings.pending-txs-part2' | translate }}</a>
+      {{ 'header.warnings.pending-txs-part3' | translate }}
+    </div>
+    <div *ngIf="!synchronized && synchronizationInfoObtained && !hasPendingTxs">
+      {{ 'header.warnings.synchronizing' | translate }}
+    </div>
+  </div>
+</div>

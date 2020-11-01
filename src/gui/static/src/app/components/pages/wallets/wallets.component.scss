@@ -1,0 +1,132 @@
+@import '../../../../theme/variables';
+
+.-width-85 {
+  padding-right: $main-containers-small-padding !important;
+}
+
+.-width-250 {
+  padding-left: $main-containers-small-padding !important;
+
+  @media (max-width: $max-sm-width) {
+    width: 200px;
+    flex-shrink: 0;
+  }
+}
+
+.-headers {
+  > div {
+    padding: 0px;
+  }
+}
+
+.-body {
+  margin-bottom: 10px;
+  color: $black;
+  background-color: transparent !important;
+
+  .-row {
+    font-size: $font-size-standard;
+    line-height: 60px;
+    height: 60px;
+    background-color: $white;
+    cursor: pointer;
+
+    > div {
+      padding: 0px;
+    }
+
+    .-label {
+      line-height: 1.3;
+
+      .-wallet-type-label {
+        color: $red;
+        font-size: $font-size-micro;
+        margin-top: 2px;
+
+        mat-icon {
+          vertical-align: text-bottom;
+        }
+      }
+    }
+
+    .-hours {
+      color: $grey;
+      text-align: right;
+    }
+
+    .-coins {
+      text-align: right;
+    }
+
+    .-encryption {
+      padding-left: 20px !important;
+
+      > div {
+        border-radius: 50%;
+        background-color: $grey-lightest;
+        display: inline-block;
+        height: 38px;
+        width: 38px;
+
+        img {
+          height: 38px;
+          padding: 3px;
+          width: 38px;
+        }
+      }
+    }
+
+    .-expand {
+      display: flex;
+      justify-content: flex-end;
+
+      img {
+        width: $normal-icon-size;
+        height: $normal-icon-size;
+        opacity: 0.7;
+      }
+
+      button {
+        opacity: 0.5;
+
+        mat-icon {
+          position: relative;
+          top: -2px;
+        }
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+
+    &:hover {
+      background-color: $white-hover;
+
+      .-expand img {
+        opacity: 1;
+      }
+
+      .-encryption > div {
+        background-color: darken($grey-lightest, 1%);
+      }
+    }
+  }
+}
+
+.action-buttons {
+  padding: 40px 0;
+  text-align: center;
+
+  button {
+    margin: 0 5px;
+  }
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.rotate-270 {
+  transform: rotate(270deg);
+}

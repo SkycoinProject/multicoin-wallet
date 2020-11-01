@@ -1,0 +1,97 @@
+<div>
+  <app-header [headline]="'wallet.title-and-button' | translate"></app-header>
+
+  <div class="container">
+    <app-loading-content *ngIf="hardwareWallets.length === 0 && wallets.length === 0" [isLoading]="false" [noDataText]="'wallet.no-wallets'"></app-loading-content>
+    <!-- One table for hw wallets and other for software wallet. -->
+    <div class="-table" *ngFor="let i of [0, 1]">
+      <ng-container *ngIf="(i === 0 && hardwareWallets.length > 0) || (i === 1 && wallets.length > 0)">
+        <!-- Table header. -->
+        <div class="-headers">
+          <div class="-width-250 text-truncate">{{ (i === 0 ? 'wallet.hardware-wallet-table-label' : 'wallet.wallet-table-label') | translate }}</div>
+          <div class="-flex-fill"></div>
+          <div class="-width-130 text-right">{{ 'coinSymbol' | commonText }}</div>
+          <div *ngIf="coinHasHours" class="-width-130 text-right">{{ 'hours' | commonText }}</div>
+          <div class="-width-85"></div>
+        </div>
+
+        <!-- Wallet panels. -->
+        <div class="e2e-wallets" *ngFor="let wallet of (i === 0 ? hardwareWallets : wallets)">
+          <div class="-body">
+            <div class="-row" (click)="toggleWallet(wallet)">
+              <!-- Label. -->
+              <div class="-width-250 -label">
+                <div class="text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
+                <!-- Legacy wallet indicator. -->
+                <div *ngIf="hasVariousWalletTypes && wallet.walletType === walletTypes.Deterministic" class="-wallet-type-label">
+                  <span [matTooltip]="'wallet.legacy-info' | translate">
+                    {{ 'wallet.legacy-small-label' | translate }}
+                    <mat-icon [inline]="true">help</mat-icon>
+                  </span>
+                </div>
+                <!-- xPub wallet indicator. -->
+                <div *ngIf="hasVariousWalletTypes && wallet.walletType === walletTypes.XPub" class="-wallet-type-label">
+                  <span [matTooltip]="'wallet.xpub-info' | translate">
+                    {{ 'wallet.xpub-small-label' | translate }}
+                    <mat-icon [inline]="true">help</mat-icon>
+                  </span>
+                </div>
+              </div>
+              <!-- Security icon. -->
+              <div class="-flex-fill -encryption d-flex">
+                <div *ngIf="wallet.encrypted && !wallet.isHardware"><img [appImageColor]="true" src="assets/img/lock-configurable.png"
+                    [matTooltip]="'wallet.encryption-enabled' | translate"></div>
+                <div *ngIf="!wallet.encrypted && !wallet.isHardware"><img src="assets/img/unlock-grey.png"
+                    [matTooltip]="'wallet.encryption-disabled' | translate"></div>
+                <div *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware"><img src="assets/img/alert-red.png"
+                    [matTooltip]="'wallet.warning-hw-security' | translate"></div>
+              </div>
+              <!-- Coins and hours. -->
+              <div class="-width-130 text-right" [ngClass]="{'yellow-text': wallet.hasPendingCoins}">
+                {{ (wallet.coins ? wallet.coins : 0) | amount:true:'first' }}
+                <mat-icon
+                  class="unconfirmed-alert"
+                  *ngIf="wallet.hasPendingCoins"
+                  [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (wallet.confirmedCoins | amount:true:'first')}"
+                >warning</mat-icon>
+              </div>
+              <div *ngIf="coinHasHours" class="-width-130 text-right" [ngClass]="{'yellow-text': wallet.hasPendingHours, 'grey-text': !wallet.hasPendingHours}">
+                {{ (wallet.hours ? wallet.hours : 0) | amount:false:'first' }}
+                <mat-icon
+                  class="unconfirmed-alert"
+                  *ngIf="wallet.hasPendingHours"
+                  [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (wallet.confirmedHours | amount:false:'first')}"
+                >warning</mat-icon>
+              </div>
+              <div class="-width-85 -expand">
+                <!-- Expand icon (deterministic wallets). -->
+                <img src="assets/img/chevron-right-grey.png" *ngIf="wallet.walletType === walletTypes.Deterministic"
+                  [ngClass]="{'rotate-270': walletsOpenedState.get(wallet.id), 'rotate-90': !walletsOpenedState.get(wallet.id)}">
+
+                <!-- Options button (bip44 wallets). -->
+                <button mat-icon-button *ngIf="wallet.walletType !== walletTypes.Deterministic" (click)="config($event, wallet)">
+                  <mat-icon class="grey-text">settings</mat-icon>
+                </button>
+              </div>
+            </div>
+            <!-- Wallet options and address list. -->
+            <app-wallet-detail [wallet]="wallet" *ngIf="walletsOpenedState.get(wallet.id)"></app-wallet-detail>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Options at the bottom. -->
+    <div class="action-buttons">
+      <button class="icon-button" mat-button *ngIf="showSwWalletOptions" (click)="addWallet(true)">
+        <img [appImageColor]="true" src="assets/img/plus-configurable.png"> {{ 'wallet.add-button' | translate }}
+      </button>
+      <button class="icon-button" mat-button *ngIf="showSwWalletOptions" (click)="addWallet(false)">
+        <img [appImageColor]="true" src="assets/img/load-configurable.png"> {{ 'wallet.load-button' | translate }}
+      </button>
+      <button class="icon-button" mat-button *ngIf="showHwWalletOptions" (click)="adminHwWallet()">
+        <img [appImageColor]="true" src="assets/img/hw-configurable.png"> {{ 'wallet.hardware-wallet-button' | translate }}
+      </button>
+    </div>
+  </div>
+</div>

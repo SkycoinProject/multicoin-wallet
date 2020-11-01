@@ -1,0 +1,82 @@
+<div>
+  <app-header [headline]="'address-history.title' | translate"></app-header>
+
+  <!-- Loading animation. -->
+  <app-loading-content
+    [isLoading]="loading && !invalidWallet"
+    noDataText="address-history.invalid-wallet"
+    *ngIf="loading"
+  ></app-loading-content>
+
+  <div class="container" *ngIf="!loading">
+    <!-- Button for adding addresses. -->
+    <div class="button-container">
+      <button mat-button class="icon-button" (click)="addAddress()">
+        <img [appImageColor]="true" src="assets/img/plus-configurable.png"> {{ 'address-history.add-button' | translate }}
+      </button>
+    </div>
+
+    <!-- Tables, one for each address type. -->
+    <ng-container *ngFor="let i of [0, 1]">
+      <div class="-table" [ngClass]="{'-top-table-margin': i !== 0}" *ngIf="i === 0 || addresses[i].length > 0">
+        <!-- Table header. -->
+        <div class="-headers">
+          <div class="number-cell">#</div>
+          <div class="-flex-fill">
+            {{ ('address-history.' + (i === 0 ? 'normal-address-table-label' : 'change-address-table-label')) | translate }}
+            <mat-icon class="help-icon" [matTooltip]="('address-history.' + (i === 0 ? 'normal-address-info' : 'change-address-info')) | translate">help</mat-icon>
+          </div>
+          <div class="-width-150 text-right">{{ 'coinSymbol' | commonText }}</div>
+          <div class="-width-150 text-right" *ngIf="coinHasHours">{{ 'hours' | commonText }}</div>
+          <div class="-width-150 text-right">{{ 'address-history.unused-table-label' | translate }}</div>
+          <div class="options-cell"></div>
+        </div>
+        <div class="-body">
+          <!-- Table elements. -->
+          <div class="-row" *ngFor="let address of addresses[i]">
+            <div class="number-cell text-truncate grey-text">{{ address.indexInWallet + 1 }}</div>
+            <div class="-flex-fill break-all">
+              <app-qr-code-button [address]="address.address.printableAddress"></app-qr-code-button>
+              {{ address.address.printableAddress }}
+            </div>
+            <div class="-width-150 text-right" [ngClass]="{'yellow-text': address.address.hasPendingCoins}">
+              {{ address.address.coins | amount:true:'first' }}
+              <mat-icon
+                class="unconfirmed-alert"
+                *ngIf="address.address.hasPendingCoins"
+                [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.address.confirmedCoins | amount:true:'first')}"
+              >warning</mat-icon>
+            </div>
+            <div class="-width-150 text-right" *ngIf="coinHasHours" [ngClass]="{'yellow-text': address.address.hasPendingHours, 'grey-text': !address.address.hasPendingHours}">
+              {{ address.address.hours | amount:false:'first' }}
+              <mat-icon
+                class="unconfirmed-alert"
+                *ngIf="address.address.hasPendingHours"
+                [matTooltip]="'common.unconfirmed-balance-info' | translate:{balance: (address.address.confirmedHours | amount:false:'first')}"
+              >warning</mat-icon>
+            </div>
+            <div class="-width-150 text-right" [ngClass]="{'green-text': !address.alreadyUsed, 'red-text': address.alreadyUsed}">
+              {{ ('address-history.' + (address.alreadyUsed ? 'used-no' : 'used-yes')) | translate }}
+              <mat-icon class="help-icon" [matTooltip]="('address-history.' + (address.alreadyUsed ? 'used-no-info' : 'used-yes-info')) | translate">help</mat-icon>
+            </div>
+            <div class="options-cell">
+              <mat-icon appThemeColorText [showOnlyIfMouseOver]="true" [matMenuTriggerFor]="optionsMenu" [inline]="true">more_vert</mat-icon>
+              <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
+                <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address.printableAddress }">
+                  {{ 'address-history.history' | translate }}
+                </button>
+                <button *ngIf="showOutputsOption" mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address.printableAddress }">
+                  {{ 'wallet.address.outputs' | translate }}
+                </button>
+              </mat-menu>
+            </div>
+          </div>
+          <!-- Button for showing all results. -->
+          <div appThemeColorText class="view-all-button" *ngIf="(i === 0 && externalAddressesTruncated) || (i === 1 && changeAddressesTruncated)" (click)="showAll(i === 0)">
+            {{ 'address-history.view-all' | translate:{ current:maxInitialElements, total:allAddresses[i].length } }}
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

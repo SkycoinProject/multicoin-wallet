@@ -1,0 +1,24 @@
+<app-modal [headline]="'send.bulk-send.title' | translate" [dialog]="dialogRef">
+  <ng-container *ngIf="coinHasHours">
+    {{ 'send.bulk-send.indications' | translate }}
+  </ng-container>
+  <ng-container *ngIf="!coinHasHours">
+    {{ 'send.bulk-send.indications-without-hours' | translate }}
+  </ng-container>
+  <div [formGroup]="form" class="modal-form-container">
+    <div class="form-field">
+      <textarea
+        formControlName="data"
+        id="data"
+        rows="5"
+        [appFormFieldError]="inputErrorMsg"
+        (blur)="validateForm()"
+      ></textarea>
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="processData()" [useMainGradient]="true" [disabled]="!form.valid">
+      {{ 'send.bulk-send.process-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

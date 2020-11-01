@@ -1,0 +1,269 @@
+<div *ngIf="!showSimpleForm && showUsignedOptions" class="mode-selector">
+  <!-- Switch for selecting the advanced mode or the manual usingned tx mode. -->
+  <app-double-button
+    [changeActiveButtonManually]="true"
+    [leftButtonText]="'send.signed-button' | translate"
+    [rightButtonText]="'send.unsigned-button' | translate"
+    className="light small"
+    [activeButton]="!showForManualUnsigned ? doubleButtonActive.LeftButton : doubleButtonActive.RightButton"
+    (onStateChange)="changeFormType($event)"
+    [ngClass]="{ 'element-disabled': busy }"
+  ></app-double-button>
+</div>
+
+<div [formGroup]="form">
+  <!-- Source. -->
+  <app-form-source-selection
+    #formSourceSelection
+    (onSelectionChanged)="sourceSelectionChanged()"
+    [busy]="busy"
+    [selectionMode]="showSimpleForm ? sourceSelectionModes.Wallet : (showForManualUnsigned ? sourceSelectionModes.Manual : sourceSelectionModes.All)"
+    >
+  </app-form-source-selection>
+
+  <!-- Available balance box. -->
+  <div *ngIf="!showSimpleForm || alwaysShowAvailableBalance" class="form-field -available-msg">
+    <ng-container *ngIf="!loadingAvailableBalance && !validFeeNeeded">
+      <ng-container *ngIf="coinHasHours">
+        <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.availableCoins | amount }}
+        </span>
+        <span>{{ 'send.available-funds-msg-part2' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.availableHours | amount:false }}
+        </span>
+        <span>{{ 'send.available-funds-msg-part3' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.minimumFee | amount:false }}
+        </span>
+        <span>{{ 'send.available-funds-msg-part4' | translate }}</span>
+      </ng-container>
+      <ng-container *ngIf="!coinHasHours">
+        <span>{{ 'send.available-funds-without-hours-msg-part1' | translate }}</span>
+        <span class="value">
+          {{ availableBalance.availableCoins | amount }}
+        </span>
+        <span>{{ 'send.available-funds-without-hours-msg-part2' | translate }}</span>
+        <span class="value">
+          {{ feeForSendingAll | amount }}
+        </span>
+        <span>{{ 'send.available-funds-without-hours-msg-part3' | translate }}</span>
+      </ng-container>
+    </ng-container>
+    <ng-container *ngIf="loadingAvailableBalance">
+      <span>{{ 'send.loading-available' | translate }}</span>
+    </ng-container>
+    <ng-container *ngIf="!loadingAvailableBalance && validFeeNeeded">
+      <span>{{ 'send.waiting-for-available' | translate }}</span>
+    </ng-container>
+  </div>
+
+  <!-- Destinations. -->
+  <app-form-destination
+    #formMultipleDestinations
+    (onChanges)="destinationsChanged()"
+    (onBulkRequested)="openMultipleDestinationsPopup()"
+    [availableBalance]="availableBalance"
+    [busy]="busy"
+    [validFeeNeeded]="validFeeNeeded"
+    [showHourFields]="coinHasHours && !autoHours"
+    [showSimpleForm]="showSimpleForm"
+    >
+  </app-form-destination>
+
+  <!-- Change address. -->
+  <div *ngIf="!showSimpleForm && !limitedSendingOptions" class="form-field">
+    <label for="change-address">
+      {{ 'send.change-address-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+      <app-arrow-link
+        [text]="'send.change-address-select-from-list-link'"
+        (pressed)="selectChangeAddress($event)"
+        [ngClass]="{'element-disabled' : busy}">
+      </app-arrow-link>
+    </label>
+    <input
+      formControlName="changeAddress"
+      id="change-address"
+      (keydown.enter)="showForManualUnsigned ? preview() : null"
+      [attr.disabled]="busy ? 'true' : null"
+      [appFormFieldError]="invalidChangeAddress ? 'send.invalid-addresses-error' : changeAddressErrorMsg"
+      (blur)="validateForm()"
+    >
+  </div>
+
+  <!-- Note. -->
+  <div *ngIf="!showForManualUnsigned" class="form-field">
+    <label for="note">
+      {{ 'send.personal-note-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+  </div>
+
+  <div class="fee-link-container" *ngIf="coinFeeType !== feeTypes.None">
+    <app-arrow-link
+      [text]="'send.fee-options'"
+      (pressed)="toggleFeeOptions()"
+      [pointDown]="!showFeeOptions"
+      [noPadding]="true">
+    </app-arrow-link>
+
+    <div class="fee-spinner fee-spinner-external" *ngIf="!showFeeOptions && showFeesLoading"><mat-spinner appMainColorFormElement></mat-spinner></div>
+  </div>
+
+  <!-- BTC fee area. -->
+  <div class="form-field -options-wrapper" *ngIf="coinFeeType === feeTypes.Btc && showFeeOptions">
+    <label for="feeType" class="destinations-label">
+      {{ 'send.fee-label' | translate }}
+    </label>
+    <div class="row">
+      <!-- Fee type. -->
+      <div class="col-8">
+        <div class="fee-spinner fee-spinner-internal" *ngIf="showFeesLoading"><mat-spinner appMainColorFormElement></mat-spinner></div>
+        <div class="-select">
+          <select formControlName="feeType" id="feeType" [attr.disabled]="busy || showFeesLoading || !recommendedFees || recommendedFees.thereWereProblems ? 'true' : null">
+            <!-- Recommended values. -->
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="0">{{ 'send.fees.very-high' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="1">{{ 'send.fees.high' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="2">{{ 'send.fees.Normal' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="3">{{ 'send.fees.Low' | translate }}</option>
+            <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="4">{{ 'send.fees.very-Low' | translate }}</option>
+            <!-- Option for entering a custom value. -->
+            <option [ngValue]="5">{{ 'send.fees.custom' | translate }}</option>
+          </select>
+        </div>
+      </div>
+      <!-- Fee. -->
+      <div class="col-4">
+        <div class="-input-addon">
+          <input
+            formControlName="fee"
+            [id]="fee"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="btcFeeErrorMsg"
+            (blur)="validateForm()"
+          >
+          <span>{{ 'send.fee-measure' | translate:{measure: feePaymentCoinUnit} }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ETH fee area. -->
+  <ng-container *ngIf="coinFeeType === feeTypes.Eth && showFeeOptions">
+    <div class="form-field -options-wrapper">
+      <label for="gasPrice" class="destinations-label">
+        {{ 'send.gas-price-label' | translate }}
+      </label>
+      <div class="row">
+        <!-- Fee type. -->
+        <div class="col-8">
+          <div class="fee-spinner fee-spinner-internal" *ngIf="showFeesLoading"><mat-spinner appMainColorFormElement></mat-spinner></div>
+          <div class="-select">
+            <select formControlName="ethFeeType" id="ethFeeType" [attr.disabled]="busy || showFeesLoading || !recommendedFees || recommendedFees.thereWereProblems ? 'true' : null">
+              <!-- Recommended value. -->
+              <option *ngIf="recommendedFees && !recommendedFees.thereWereProblems" [ngValue]="0">{{ 'send.eth-fees.Normal' | translate }}</option>
+              <!-- Option for entering a custom value. -->
+              <option [ngValue]="1">{{ 'send.eth-fees.custom' | translate }}</option>
+            </select>
+          </div>
+        </div>
+        <!-- Fee. -->
+        <div class="col-4">
+          <div class="-input-addon">
+            <input
+              formControlName="gasPrice"
+              [id]="gasPrice"
+              [attr.disabled]="busy ? 'true' : null"
+              [appFormFieldError]="gasPriceAddressErrorMsg"
+              (blur)="validateForm()"
+            >
+            <span>{{ feePaymentCoinUnit }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gas limit. -->
+    <div class="form-field">
+      <label for="gasLimit">
+        {{ 'send.gas-limit-label' | translate }}
+      </label>
+      <input
+        formControlName="gasLimit"
+        id="gasLimit"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="gasLimitAddressErrorMsg"
+        (blur)="validateForm()"
+      >
+    </div>
+  </ng-container>
+
+  <!-- Hours distributions options for the basic form. -->
+  <div *ngIf="showSimpleForm && coinHasHours" class="form-field">
+    <app-arrow-link
+      [noPadding]="true"
+      [text]="'send.coin-hours-options-link'"
+      (pressed)="toggleAutoHourDistributionOptions($event)"
+      [pointDown]="!showAutoHourDistributionOptions">
+    </app-arrow-link>
+  </div>
+
+  <div *ngIf="showSimpleForm" class="form-field row -options-wrapper" [ngClass]="{ 'd-none': !showAutoHourDistributionOptions }">
+    <ng-container *ngTemplateOutlet="hoursSelector"></ng-container>
+  </div>
+
+  <!-- Automatic hours distributions options. -->
+  <div *ngIf="coinHasHours && !showSimpleForm" class="form-field">
+    <div class="row" [ngClass]="{'element-disabled' : busy}">
+      <div class="col-12">
+        <mat-checkbox appMainColorFormElement class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
+          <span>{{ 'send.hours-allocation-check' | translate:{coinHoursName: ('hours' | commonText)} }}</span>
+          <app-arrow-link
+            *ngIf="autoHours"
+            [text]="'send.options-link'"
+            (mousedown)="$event.stopPropagation();"
+            (pressed)="toggleAutoHourDistributionOptions($event)"
+            [pointDown]="!showAutoHourDistributionOptions">
+          </app-arrow-link>
+        </mat-checkbox>
+      </div>
+    </div>
+
+    <!-- Automatic hours distributions factor. -->
+    <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !showAutoHourDistributionOptions }">
+      <ng-container *ngTemplateOutlet="hoursSelector"></ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- Buttons. -->
+<div class="text-center">
+  <app-button #previewButton (action)="preview()" [disabled]="!form.valid" [useMainGradient]="showSimpleForm">
+    {{ 'send.preview-button' | translate }}
+  </app-button>
+  <app-button #sendButton (action)="send()" [useMainGradient]="true" [disabled]="!form.valid" *ngIf="!showSimpleForm">
+    {{ ('send.' + (showForManualUnsigned ? 'show' : 'send') + '-button') | translate }}
+  </app-button>
+</div>
+
+<ng-template #hoursSelector>
+  <div class="col-md-7">
+    <div class="form-field">
+      <label class="-space-between" for="value">
+        <span>
+          {{ 'send.hours-share-factor-label' | translate:{coinHoursName: ('hours' | commonText)} }}
+          <mat-icon class="help-icon" [matTooltip]="'send.hours-share-factor-help' | translate:{coinHoursName: ('hours' | commonText)}">help</mat-icon>
+        </span>
+        <span>{{ autoShareValue | number:'1.0-2' }}</span>
+      </label>
+      <mat-slider min="0" max="1" step="0.01" id="value"
+                  (input)="setShareValue($event)" [value]="autoShareValue"
+                  [ngClass]="{'element-disabled' : busy}"
+                  appMainColorFormElement
+      ></mat-slider>
+    </div>
+  </div>
+</ng-template>

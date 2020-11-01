@@ -13,3 +13,14 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# Electron.
+electron/release
+electron/.cache
+electron/.electron_cache
+electron/node_modules
+electron/.gox_output
+electron/server
+
+# dependencies
+**/node_modules
